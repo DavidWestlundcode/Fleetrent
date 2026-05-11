@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
-import { Save, User, Building2, Bell, Shield, Globe } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Save, User, Building2, Bell, Globe, Mail, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import Header from '@/components/layout/Header';
-import { useStore } from '@/store';
+import { createClient } from '@/lib/supabase/client';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 const inputClass = 'w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white';
 
@@ -16,13 +17,41 @@ const TABS = [
 type Tab = (typeof TABS)[number]['id'];
 
 export default function SettingsPage() {
-  const { currentUser } = useStore();
   const [activeTab, setActiveTab] = useState<Tab>('company');
   const [saved, setSaved] = useState(false);
+  const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteStatus, setInviteStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [inviteError, setInviteError] = useState('');
+
+  useEffect(() => {
+    createClient().auth.getUser().then(({ data }) => setCurrentUser(data.user));
+  }, []);
 
   const handleSave = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInviteStatus('loading');
+    setInviteError('');
+    try {
+      const res = await fetch('/api/invite-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inviteEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setInviteStatus('success');
+      setInviteEmail('');
+      setTimeout(() => setInviteStatus('idle'), 4000);
+    } catch (err) {
+      setInviteError(err instanceof Error ? err.message : 'Något gick fel');
+      setInviteStatus('error');
+    }
   };
 
   return (
@@ -83,36 +112,65 @@ export default function SettingsPage() {
             )}
 
             {activeTab === 'users' && (
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
-                <h2 className="font-semibold text-slate-900 mb-4">Användare och behörigheter</h2>
-                <div className="space-y-3">
-                  {[
-                    { name: 'Anna Lindström', email: 'anna@fleetrent.se', role: 'Administratör', active: true },
-                    { name: 'Erik Johansson', email: 'erik@fleetrent.se', role: 'Säljare', active: true },
-                    { name: 'Lars Petersson', email: 'lars@fleetrent.se', role: 'Verkstad', active: true },
-                  ].map((user) => (
-                    <div key={user.email} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+              <div className="space-y-4">
+                {/* Current user */}
+                <div className="bg-white rounded-xl border border-slate-200 p-6">
+                  <h2 className="font-semibold text-slate-900 mb-4">Teammedlemmar</h2>
+                  {currentUser && (
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold">
-                          {user.name.charAt(0)}
+                          {(currentUser.user_metadata?.full_name || currentUser.email || '?').charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-slate-800">{user.name}
-                            {user.email === currentUser?.email && <span className="ml-2 text-xs text-blue-600">(Du)</span>}
+                          <p className="text-sm font-medium text-slate-800">
+                            {currentUser.user_metadata?.full_name || currentUser.email}
+                            <span className="ml-2 text-xs text-blue-600">(Du)</span>
                           </p>
-                          <p className="text-xs text-slate-500">{user.email}</p>
+                          <p className="text-xs text-slate-500">{currentUser.email}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs px-2.5 py-1 bg-white border border-slate-200 text-slate-600 rounded-full">{user.role}</span>
-                        <span className="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full">Aktiv</span>
-                      </div>
+                      <span className="text-xs px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-700 rounded-full">Admin</span>
                     </div>
-                  ))}
+                  )}
                 </div>
-                <button className="mt-4 w-full py-2.5 border border-dashed border-slate-300 text-slate-500 text-sm rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors">
-                  + Bjud in användare
-                </button>
+
+                {/* Invite */}
+                <div className="bg-white rounded-xl border border-slate-200 p-6">
+                  <h2 className="font-semibold text-slate-900 mb-1">Bjud in medarbetare</h2>
+                  <p className="text-sm text-slate-500 mb-4">De får ett e-postmeddelande med en länk för att skapa sitt konto och ansluta till ditt företag.</p>
+                  <form onSubmit={handleInvite} className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="email"
+                        required
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        placeholder="medarbetare@foretag.se"
+                        className="w-full pl-9 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={inviteStatus === 'loading'}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors"
+                    >
+                      {inviteStatus === 'loading' ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                      Skicka inbjudan
+                    </button>
+                  </form>
+                  {inviteStatus === 'success' && (
+                    <div className="flex items-center gap-2 mt-3 text-emerald-700 text-sm">
+                      <CheckCircle2 className="w-4 h-4" /> Inbjudan skickad!
+                    </div>
+                  )}
+                  {inviteStatus === 'error' && (
+                    <div className="flex items-center gap-2 mt-3 text-red-600 text-sm">
+                      <XCircle className="w-4 h-4" /> {inviteError}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

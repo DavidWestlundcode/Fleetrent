@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Zap, Lock, Mail, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -8,11 +7,11 @@ import { createClient } from '@/lib/supabase/client';
 type Mode = 'login' | 'signup' | 'forgot';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
@@ -38,7 +37,7 @@ export default function LoginPage() {
           email,
           password,
           options: {
-            data: { full_name: name },
+            data: { full_name: name, company_name: companyName },
             emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         });
@@ -47,7 +46,7 @@ export default function LoginPage() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        window.location.href = '/dashboard';
+        window.location.href = window.location.origin + '/dashboard';
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Något gick fel. Försök igen.';
@@ -184,17 +183,30 @@ export default function LoginPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 {mode === 'signup' && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Namn</label>
-                    <input
-                      type="text"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full px-4 py-3 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="För- och efternamn"
-                    />
-                  </div>
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Ditt namn</label>
+                      <input
+                        type="text"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full px-4 py-3 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="För- och efternamn"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Företagsnamn</label>
+                      <input
+                        type="text"
+                        required
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        className="w-full px-4 py-3 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="T.ex. Eriksson Maskinuthyrning AB"
+                      />
+                    </div>
+                  </>
                 )}
 
                 <div>

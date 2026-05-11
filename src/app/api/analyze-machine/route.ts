@@ -4,6 +4,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 const client = new Anthropic();
 
 export async function POST(request: NextRequest) {
+  if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY.startsWith('din-')) {
+    return NextResponse.json({ error: 'API-nyckel för AI saknas. Lägg till ANTHROPIC_API_KEY i .env.local.' }, { status: 503 });
+  }
+
   try {
     const { nameplateImage, machineImage } = await request.json();
 
