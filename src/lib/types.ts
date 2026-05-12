@@ -24,8 +24,18 @@ export interface Machine {
   registrationNumber: string;
   internalCode: string;
   category: MachineCategory;
-  capacity: string;
+  capacity: number;
   fuelType: FuelType;
+  // Tekniska specifikationer (valfria, beror på maskintyp)
+  liftHeight?: number;    // mm – Lyfthöjd
+  buildHeight?: number;   // mm – Bygghöjd
+  forkLength?: number;    // mm – Gaffellängd
+  freeLift?: number;      // mm – Frilyft
+  maxReach?: number;      // mm – Max räckvidd
+  digDepth?: number;      // mm – Grävdjup
+  bucketVolume?: number;  // liter – Skopvolym
+  workingWeight?: number; // kg – Tjänstevikt
+  enginePower?: number;   // kW – Motoreffekt
   year: number;
   operatingHours: number;
   status: MachineStatus;
@@ -92,6 +102,7 @@ export interface Order {
   internalNotes: string;
   customerNotes: string;
   accessories: string[];
+  insuranceCost?: number;
   returnCondition?: ReturnCondition;
   returnNotes?: string;
   returnImages: string[];
@@ -106,9 +117,14 @@ export interface PriceTemplate {
   name: string;
   description: string;
   category: MachineCategory;
+  capacityMin: number;
+  capacityMax: number;
   dailyPrice: number;
   weeklyPrice: number;
   monthlyPrice: number;
+  insuranceDailyPrice: number;
+  insuranceWeeklyPrice: number;
+  insuranceMonthlyPrice: number;
   startFee: number;
   transportCost: number;
   deposit: number;

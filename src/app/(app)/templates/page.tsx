@@ -1,32 +1,37 @@
 'use client';
 import { useState } from 'react';
-import { Plus, Tag, Edit, Trash2 } from 'lucide-react';
+import { Plus, Tag, Edit, Trash2, Shield, Truck } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, getMatchingTemplate } from '@/lib/utils';
 import { CATEGORY_LABELS, type MachineCategory } from '@/lib/types';
 
-const inputClass = 'w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white';
+const inputClass = 'w-full px-3 py-2 text-[13px] bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:bg-white transition-all';
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
     <div>
       <label className="block text-xs font-medium text-slate-600 mb-1.5">{label}</label>
       {children}
+      {hint && <p className="mt-1 text-[11px] text-slate-400">{hint}</p>}
     </div>
   );
 }
 
+const emptyForm = {
+  name: '', description: '', category: 'motviktstruck' as MachineCategory,
+  capacityMin: 0, capacityMax: 0,
+  dailyPrice: 0, weeklyPrice: 0, monthlyPrice: 0,
+  insuranceDailyPrice: 0, insuranceWeeklyPrice: 0, insuranceMonthlyPrice: 0,
+  startFee: 0, transportCost: 0, deposit: 0, minRentalDays: 1,
+  standardTerms: '', internalNote: '',
+};
+
 export default function TemplatesPage() {
-  const { templates, addTemplate, updateTemplate, deleteTemplate } = useStore();
+  const { templates, machines, addTemplate, updateTemplate, deleteTemplate } = useStore();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    name: '', description: '', category: 'motviktstruck' as MachineCategory,
-    dailyPrice: 0, weeklyPrice: 0, monthlyPrice: 0,
-    startFee: 0, transportCost: 0, deposit: 0, minRentalDays: 1,
-    standardTerms: '', internalNote: '',
-  });
+  const [form, setForm] = useState(emptyForm);
 
   const set = (field: string, value: string | number) => setForm((p) => ({ ...p, [field]: value }));
 
@@ -35,7 +40,9 @@ export default function TemplatesPage() {
     if (!t) return;
     setForm({
       name: t.name, description: t.description, category: t.category,
+      capacityMin: t.capacityMin, capacityMax: t.capacityMax,
       dailyPrice: t.dailyPrice, weeklyPrice: t.weeklyPrice, monthlyPrice: t.monthlyPrice,
+      insuranceDailyPrice: t.insuranceDailyPrice, insuranceWeeklyPrice: t.insuranceWeeklyPrice, insuranceMonthlyPrice: t.insuranceMonthlyPrice,
       startFee: t.startFee, transportCost: t.transportCost, deposit: t.deposit,
       minRentalDays: t.minRentalDays, standardTerms: t.standardTerms, internalNote: t.internalNote,
     });
@@ -52,75 +59,144 @@ export default function TemplatesPage() {
     }
     setShowForm(false);
     setEditId(null);
-    setForm({ name: '', description: '', category: 'motviktstruck', dailyPrice: 0, weeklyPrice: 0, monthlyPrice: 0, startFee: 0, transportCost: 0, deposit: 0, minRentalDays: 1, standardTerms: '', internalNote: '' });
+    setForm(emptyForm);
+  };
+
+  const getMatchCount = (templateId: string) => {
+    const t = templates.find((t) => t.id === templateId);
+    if (!t) return 0;
+    return machines.filter((m) => getMatchingTemplate(m, [t]) !== undefined).length;
   };
 
   return (
-    <div className="flex flex-col flex-1 overflow-auto">
+    <div className="flex flex-col flex-1 overflow-auto bg-slate-50/60">
       <Header
         title="Prismallar"
-        subtitle="Hantera uthyrningsmallar och standardpriser"
+        subtitle="Mallar matchas automatiskt till maskiner baserat på typ och kapacitet"
         actions={
           <button
-            onClick={() => { setShowForm(!showForm); setEditId(null); }}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            onClick={() => { setShowForm(!showForm); setEditId(null); setForm(emptyForm); }}
+            className="flex items-center gap-1.5 px-3.5 py-[7px] bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium rounded-xl shadow-sm transition-all"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             Ny prismall
           </button>
         }
       />
 
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-6 space-y-5">
         {showForm && (
-          <div className="bg-white rounded-xl border border-blue-200 p-6">
-            <h2 className="font-semibold text-slate-900 mb-4">{editId ? 'Redigera prismall' : 'Ny prismall'}</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="bg-white rounded-2xl border border-blue-200 p-6 shadow-sm">
+            <h2 className="text-[14px] font-semibold text-slate-900 mb-5">{editId ? 'Redigera prismall' : 'Ny prismall'}</h2>
+            <form onSubmit={handleSubmit} className="space-y-5">
+
+              {/* Basic info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Namn *">
+                <Field label="Mallnamn *">
                   <input required value={form.name} onChange={(e) => set('name', e.target.value)} className={inputClass} placeholder="T.ex. Motviktstruck 1–1,9 ton" />
                 </Field>
-                <Field label="Kategori">
+                <Field label="Maskintyp">
                   <select value={form.category} onChange={(e) => set('category', e.target.value)} className={inputClass}>
                     {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </Field>
                 <div className="md:col-span-2">
                   <Field label="Beskrivning">
-                    <input value={form.description} onChange={(e) => set('description', e.target.value)} className={inputClass} />
+                    <input value={form.description} onChange={(e) => set('description', e.target.value)} className={inputClass} placeholder="Valfri beskrivning" />
                   </Field>
                 </div>
-                <Field label="Dagspris (kr)">
-                  <input type="number" value={form.dailyPrice} onChange={(e) => set('dailyPrice', Number(e.target.value))} className={inputClass} min={0} />
+              </div>
+
+              {/* Capacity range */}
+              <div>
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Kapacitetsintervall</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Min kapacitet (ton)" hint="Ange 0 för ingen undre gräns">
+                    <div className="relative">
+                      <input type="number" step="0.1" min="0" value={form.capacityMin} onChange={(e) => set('capacityMin', Number(e.target.value))} className={inputClass} placeholder="0" />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400">ton</span>
+                    </div>
+                  </Field>
+                  <Field label="Max kapacitet (ton)" hint="Ange 0 för ingen övre gräns">
+                    <div className="relative">
+                      <input type="number" step="0.1" min="0" value={form.capacityMax} onChange={(e) => set('capacityMax', Number(e.target.value))} className={inputClass} placeholder="0" />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400">ton</span>
+                    </div>
+                  </Field>
+                </div>
+                <p className="mt-2 text-[11px] text-slate-400 bg-slate-50 px-3 py-2 rounded-lg">
+                  Mallen tillämpas automatiskt på maskiner av typen <strong>{CATEGORY_LABELS[form.category]}</strong>
+                  {form.capacityMin > 0 || form.capacityMax > 0 ? ` med kapacitet ${form.capacityMin > 0 ? `från ${form.capacityMin} ton` : ''}${form.capacityMin > 0 && form.capacityMax > 0 ? ' till ' : ''}${form.capacityMax > 0 ? `${form.capacityMax} ton` : ''}` : ' (alla kapaciteter)'}
+                  .
+                </p>
+              </div>
+
+              {/* Rental prices */}
+              <div>
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Hyrespriser</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Field label="Dagspris (kr)">
+                    <input type="number" value={form.dailyPrice} onChange={(e) => set('dailyPrice', Number(e.target.value))} className={inputClass} min={0} />
+                  </Field>
+                  <Field label="Veckopris (kr)">
+                    <input type="number" value={form.weeklyPrice} onChange={(e) => set('weeklyPrice', Number(e.target.value))} className={inputClass} min={0} />
+                  </Field>
+                  <Field label="Månadspris (kr)">
+                    <input type="number" value={form.monthlyPrice} onChange={(e) => set('monthlyPrice', Number(e.target.value))} className={inputClass} min={0} />
+                  </Field>
+                </div>
+              </div>
+
+              {/* Insurance prices */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Shield className="w-3.5 h-3.5 text-blue-500" />
+                  <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Försäkringspriser (tillval)</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Field label="Försäkring dag (kr)">
+                    <input type="number" value={form.insuranceDailyPrice} onChange={(e) => set('insuranceDailyPrice', Number(e.target.value))} className={inputClass} min={0} />
+                  </Field>
+                  <Field label="Försäkring vecka (kr)">
+                    <input type="number" value={form.insuranceWeeklyPrice} onChange={(e) => set('insuranceWeeklyPrice', Number(e.target.value))} className={inputClass} min={0} />
+                  </Field>
+                  <Field label="Försäkring månad (kr)">
+                    <input type="number" value={form.insuranceMonthlyPrice} onChange={(e) => set('insuranceMonthlyPrice', Number(e.target.value))} className={inputClass} min={0} />
+                  </Field>
+                </div>
+              </div>
+
+              {/* Extra fees */}
+              <div>
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Övriga avgifter</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Field label="Startavgift (kr)">
+                    <input type="number" value={form.startFee} onChange={(e) => set('startFee', Number(e.target.value))} className={inputClass} min={0} />
+                  </Field>
+                  <Field label="Transport (kr)">
+                    <input type="number" value={form.transportCost} onChange={(e) => set('transportCost', Number(e.target.value))} className={inputClass} min={0} />
+                  </Field>
+                  <Field label="Deposition (kr)">
+                    <input type="number" value={form.deposit} onChange={(e) => set('deposit', Number(e.target.value))} className={inputClass} min={0} />
+                  </Field>
+                  <Field label="Min. hyresperiod (dagar)">
+                    <input type="number" value={form.minRentalDays} onChange={(e) => set('minRentalDays', Number(e.target.value))} className={inputClass} min={1} />
+                  </Field>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="Standardvillkor">
+                  <textarea value={form.standardTerms} onChange={(e) => set('standardTerms', e.target.value)} className={`${inputClass} resize-none`} rows={3} />
                 </Field>
-                <Field label="Veckopris (kr)">
-                  <input type="number" value={form.weeklyPrice} onChange={(e) => set('weeklyPrice', Number(e.target.value))} className={inputClass} min={0} />
-                </Field>
-                <Field label="Månadspris (kr)">
-                  <input type="number" value={form.monthlyPrice} onChange={(e) => set('monthlyPrice', Number(e.target.value))} className={inputClass} min={0} />
-                </Field>
-                <Field label="Startavgift (kr)">
-                  <input type="number" value={form.startFee} onChange={(e) => set('startFee', Number(e.target.value))} className={inputClass} min={0} />
-                </Field>
-                <Field label="Transportkostnad (kr)">
-                  <input type="number" value={form.transportCost} onChange={(e) => set('transportCost', Number(e.target.value))} className={inputClass} min={0} />
-                </Field>
-                <Field label="Deposition (kr)">
-                  <input type="number" value={form.deposit} onChange={(e) => set('deposit', Number(e.target.value))} className={inputClass} min={0} />
-                </Field>
-                <Field label="Min. hyresperiod (dagar)">
-                  <input type="number" value={form.minRentalDays} onChange={(e) => set('minRentalDays', Number(e.target.value))} className={inputClass} min={1} />
+                <Field label="Intern anteckning">
+                  <textarea value={form.internalNote} onChange={(e) => set('internalNote', e.target.value)} className={`${inputClass} resize-none`} rows={3} />
                 </Field>
               </div>
-              <Field label="Standardvillkor">
-                <textarea value={form.standardTerms} onChange={(e) => set('standardTerms', e.target.value)} className={`${inputClass} resize-none`} rows={3} />
-              </Field>
-              <Field label="Intern anteckning">
-                <textarea value={form.internalNote} onChange={(e) => set('internalNote', e.target.value)} className={`${inputClass} resize-none`} rows={2} />
-              </Field>
-              <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50">Avbryt</button>
-                <button type="submit" className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+
+              <div className="flex justify-end gap-3 pt-1">
+                <button type="button" onClick={() => { setShowForm(false); setEditId(null); }} className="px-4 py-2 text-[13px] text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">Avbryt</button>
+                <button type="submit" className="px-5 py-2 bg-blue-600 text-white text-[13px] font-medium rounded-xl hover:bg-blue-700 transition-colors">
                   {editId ? 'Spara ändringar' : 'Skapa mall'}
                 </button>
               </div>
@@ -128,56 +204,94 @@ export default function TemplatesPage() {
           </div>
         )}
 
+        {templates.length === 0 && !showForm && (
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm py-16 text-center">
+            <Tag className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+            <p className="text-[13px] text-slate-400">Inga prismallar skapade ännu</p>
+            <p className="text-[11px] text-slate-300 mt-1">Klicka på "Ny prismall" för att komma igång</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {templates.map((template) => (
-            <div key={template.id} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <Tag className="w-4 h-4 text-blue-600" />
+          {templates.map((template) => {
+            const matchCount = getMatchCount(template.id);
+            const hasInsurance = template.insuranceDailyPrice > 0 || template.insuranceWeeklyPrice > 0 || template.insuranceMonthlyPrice > 0;
+            return (
+              <div key={template.id} className="bg-white rounded-2xl border border-slate-200/80 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 shadow-sm">
+                <div className="flex items-start justify-between mb-3.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-blue-50 rounded-xl">
+                      <Tag className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-[13px] font-semibold text-slate-800">{template.name}</h3>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{CATEGORY_LABELS[template.category]}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-800">{template.name}</h3>
-                    <p className="text-xs text-slate-500">{CATEGORY_LABELS[template.category]}</p>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => openEdit(template.id)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer">
+                      <Edit className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => { if (confirm('Radera mall?')) deleteTemplate(template.id); }} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => openEdit(template.id)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                    <Edit className="w-3.5 h-3.5" />
-                  </button>
-                  <button onClick={() => { if (confirm('Radera mall?')) deleteTemplate(template.id); }} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+
+                {/* Capacity badge */}
+                <div className="flex items-center gap-1.5 mb-3.5">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 rounded-lg">
+                    <Truck className="w-3 h-3 text-slate-500" />
+                    <span className="text-[11px] font-medium text-slate-600">
+                      {template.capacityMin === 0 && template.capacityMax === 0
+                        ? 'Alla kapaciteter'
+                        : template.capacityMin === 0
+                        ? `Max ${template.capacityMax} ton`
+                        : template.capacityMax === 0
+                        ? `Min ${template.capacityMin} ton`
+                        : `${template.capacityMin}–${template.capacityMax} ton`}
+                    </span>
+                  </div>
+                  <div className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium ${matchCount > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                    {matchCount} maskin{matchCount !== 1 ? 'er' : ''}
+                  </div>
+                  {hasInsurance && (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-lg">
+                      <Shield className="w-3 h-3 text-blue-500" />
+                      <span className="text-[11px] font-medium text-blue-600">Försäkring</span>
+                    </div>
+                  )}
                 </div>
+
+                {template.description && (
+                  <p className="text-[11px] text-slate-500 mb-3">{template.description}</p>
+                )}
+
+                <div className="space-y-1.5">
+                  {[
+                    { label: 'Dagspris', value: `${formatCurrency(template.dailyPrice)}/dag` },
+                    { label: 'Veckopris', value: `${formatCurrency(template.weeklyPrice)}/vecka` },
+                    { label: 'Månadspris', value: `${formatCurrency(template.monthlyPrice)}/mån` },
+                    ...(hasInsurance ? [{ label: 'Försäkring/dag', value: `${formatCurrency(template.insuranceDailyPrice)}/dag` }] : []),
+                    { label: 'Transport', value: formatCurrency(template.transportCost) },
+                    { label: 'Deposition', value: formatCurrency(template.deposit) },
+                    { label: 'Min. period', value: `${template.minRentalDays} dag${template.minRentalDays !== 1 ? 'ar' : ''}` },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="flex justify-between text-[12px]">
+                      <span className="text-slate-400">{label}</span>
+                      <span className="font-medium text-slate-700">{value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {template.internalNote && (
+                  <div className="mt-3.5 pt-3.5 border-t border-slate-100">
+                    <p className="text-[11px] text-slate-400 italic">{template.internalNote}</p>
+                  </div>
+                )}
               </div>
-
-              {template.description && (
-                <p className="text-xs text-slate-500 mb-3">{template.description}</p>
-              )}
-
-              <div className="space-y-2">
-                {[
-                  { label: 'Dagspris', value: `${formatCurrency(template.dailyPrice)}/dag` },
-                  { label: 'Veckopris', value: `${formatCurrency(template.weeklyPrice)}/vecka` },
-                  { label: 'Månadspris', value: `${formatCurrency(template.monthlyPrice)}/mån` },
-                  { label: 'Transport', value: formatCurrency(template.transportCost) },
-                  { label: 'Deposition', value: formatCurrency(template.deposit) },
-                  { label: 'Min. period', value: `${template.minRentalDays} dag${template.minRentalDays !== 1 ? 'ar' : ''}` },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex justify-between text-sm">
-                    <span className="text-slate-500">{label}</span>
-                    <span className="font-medium text-slate-700">{value}</span>
-                  </div>
-                ))}
-              </div>
-
-              {template.internalNote && (
-                <div className="mt-3 pt-3 border-t border-slate-100">
-                  <p className="text-xs text-slate-400 italic">{template.internalNote}</p>
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

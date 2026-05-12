@@ -75,6 +75,19 @@ export function calculateRecoveryPercent(totalRevenue: number, purchasePrice: nu
   return Math.min(100, Math.round((totalRevenue / purchasePrice) * 100));
 }
 
+export function getMatchingTemplate<T extends { category: string; capacityMin: number; capacityMax: number }>(
+  machine: { category: string; capacity: number },
+  templates: T[]
+): T | undefined {
+  const tons = machine.capacity / 1000;
+  return templates.find((t) => {
+    if (t.category !== machine.category) return false;
+    const minOk = t.capacityMin === 0 || tons >= t.capacityMin;
+    const maxOk = t.capacityMax === 0 || tons <= t.capacityMax;
+    return minOk && maxOk;
+  });
+}
+
 export function getMonthlyRevenueData(orders: { startDate: string; totalPrice: number; status: string }[]) {
   const months: Record<string, number> = {};
   const now = new Date();

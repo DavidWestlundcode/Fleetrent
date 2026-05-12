@@ -22,20 +22,23 @@ export async function POST(request: NextRequest) {
 
     const prompt = `Analysera bilden/bilderna av denna maskin. Den första bilden (om den finns) är typskylten, den andra är maskinen.
 
-Returnera ENBART ett JSON-objekt med dessa fält (inga andra ord, ingen markdown):
+Returnera ENBART ett JSON-objekt (ingen markdown, inga kommentarer):
 {
-  "brand": "fabrikat, t.ex. Toyota",
-  "model": "modellbeteckning, t.ex. 8FBN25",
-  "name": "föreslaget maskinnamn, t.ex. Toyota Motviktstruck 2.5T",
-  "serialNumber": "serienummer eller tom sträng",
+  "brand": "fabrikat, t.ex. Toyota, eller tom sträng",
+  "model": "modellbeteckning, t.ex. 8FBN25, eller tom sträng",
+  "name": "föreslaget maskinnamn, t.ex. Toyota Motviktstruck 2.5T, eller tom sträng",
+  "serialNumber": "serienummer eller tom sträng – gissa aldrig",
   "year": 2018,
-  "category": "ett av: motviktstruck, skjutstativtruck, plocktruck, led_truck, teleskoptruck, hjullastare, gravmaskin, truck, traktor, annan",
-  "fuelType": "ett av: diesel, el, bensin, gas, hybrid, manuell",
-  "capacity": "t.ex. 2500 kg eller tom sträng",
-  "notes": "övrig relevant info från typskylten"
+  "category": "ett av: motviktstruck, ledstaplare, skjutstativtruck, teleskoplastare, hjullastare, gravmaskin, kompaktlastare, ovrig",
+  "fuelType": "ett av: el, diesel, gas, lithium, bensin",
+  "capacityKg": 2500,
+  "notes": "övrig relevant info från typskylten eller tom sträng"
 }
 
-Om du inte kan läsa ett värde, lämna det som tom sträng eller 0 för år. Gissa aldrig serienummer.`;
+Regler:
+- capacityKg: heltal i kg (t.ex. 2500 för 2,5 ton), 0 om okänd
+- year: 0 om okänd
+- Gissa aldrig serienummer – lämna tom sträng om osäker`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',

@@ -9,21 +9,70 @@ import { CATEGORY_LABELS, FUEL_LABELS, type MachineCategory, type FuelType } fro
 
 type Mode = 'choose' | 'ai' | 'manual';
 
+const SPEC_FIELDS: Record<MachineCategory, { key: string; label: string; unit: string }[]> = {
+  motviktstruck: [
+    { key: 'liftHeight', label: 'Lyfthöjd', unit: 'mm' },
+    { key: 'buildHeight', label: 'Bygghöjd', unit: 'mm' },
+    { key: 'forkLength', label: 'Gaffellängd', unit: 'mm' },
+    { key: 'freeLift', label: 'Frilyft', unit: 'mm' },
+  ],
+  ledstaplare: [
+    { key: 'liftHeight', label: 'Lyfthöjd', unit: 'mm' },
+    { key: 'buildHeight', label: 'Bygghöjd', unit: 'mm' },
+    { key: 'forkLength', label: 'Gaffellängd', unit: 'mm' },
+    { key: 'freeLift', label: 'Frilyft', unit: 'mm' },
+  ],
+  skjutstativtruck: [
+    { key: 'liftHeight', label: 'Lyfthöjd', unit: 'mm' },
+    { key: 'buildHeight', label: 'Bygghöjd', unit: 'mm' },
+    { key: 'forkLength', label: 'Gaffellängd', unit: 'mm' },
+    { key: 'freeLift', label: 'Frilyft', unit: 'mm' },
+    { key: 'maxReach', label: 'Max räckvidd', unit: 'mm' },
+  ],
+  teleskoplastare: [
+    { key: 'liftHeight', label: 'Lyfthöjd', unit: 'mm' },
+    { key: 'maxReach', label: 'Max räckvidd', unit: 'mm' },
+    { key: 'workingWeight', label: 'Tjänstevikt', unit: 'kg' },
+    { key: 'enginePower', label: 'Motoreffekt', unit: 'kW' },
+  ],
+  hjullastare: [
+    { key: 'bucketVolume', label: 'Skopvolym', unit: 'liter' },
+    { key: 'workingWeight', label: 'Tjänstevikt', unit: 'kg' },
+    { key: 'enginePower', label: 'Motoreffekt', unit: 'kW' },
+  ],
+  gravmaskin: [
+    { key: 'digDepth', label: 'Grävdjup', unit: 'mm' },
+    { key: 'bucketVolume', label: 'Skopvolym', unit: 'liter' },
+    { key: 'workingWeight', label: 'Tjänstevikt', unit: 'kg' },
+    { key: 'enginePower', label: 'Motoreffekt', unit: 'kW' },
+  ],
+  kompaktlastare: [
+    { key: 'bucketVolume', label: 'Skopvolym', unit: 'liter' },
+    { key: 'workingWeight', label: 'Tjänstevikt', unit: 'kg' },
+    { key: 'enginePower', label: 'Motoreffekt', unit: 'kW' },
+  ],
+  ovrig: [],
+};
+
 const emptyForm = {
   name: '', model: '', brand: '', serialNumber: '', registrationNumber: '',
   internalCode: '', category: 'motviktstruck' as MachineCategory,
-  capacity: '', fuelType: 'diesel' as FuelType, year: new Date().getFullYear(),
+  capacity: 0, fuelType: 'diesel' as FuelType, year: new Date().getFullYear(),
   operatingHours: 0, notes: '', location: '',
   purchasePrice: 0, purchaseDate: '', leasingCost: 0, financingCost: 0,
   insuranceCost: 0, serviceCost: 0, otherCosts: 0,
+  liftHeight: 0, buildHeight: 0, forkLength: 0, freeLift: 0,
+  maxReach: 0, digDepth: 0, bucketVolume: 0, workingWeight: 0, enginePower: 0,
 };
+
+type FormState = typeof emptyForm;
 
 export default function NewMachinePage() {
   const router = useRouter();
   const { addMachine } = useStore();
 
   const [mode, setMode] = useState<Mode>('choose');
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState<FormState>(emptyForm);
   const [aiFields, setAiFields] = useState<Set<string>>(new Set());
 
   const [nameplateImage, setNameplateImage] = useState<string | null>(null);
@@ -69,14 +118,14 @@ export default function NewMachinePage() {
       if (data.error) throw new Error(data.error);
 
       const filled = new Set<string>();
-      const updates: Partial<typeof emptyForm> = {};
+      const updates: Partial<FormState> = {};
 
       if (data.brand) { updates.brand = data.brand; filled.add('brand'); }
       if (data.model) { updates.model = data.model; filled.add('model'); }
       if (data.name) { updates.name = data.name; filled.add('name'); }
       if (data.serialNumber) { updates.serialNumber = data.serialNumber; filled.add('serialNumber'); }
       if (data.year && data.year > 1990) { updates.year = data.year; filled.add('year'); }
-      if (data.capacity) { updates.capacity = data.capacity; filled.add('capacity'); }
+      if (data.capacityKg && data.capacityKg > 0) { updates.capacity = data.capacityKg; filled.add('capacity'); }
       if (data.notes) { updates.notes = data.notes; filled.add('notes'); }
       if (data.category && Object.keys(CATEGORY_LABELS).includes(data.category)) {
         updates.category = data.category as MachineCategory; filled.add('category');
@@ -99,6 +148,15 @@ export default function NewMachinePage() {
     e.preventDefault();
     const id = addMachine({
       ...form,
+      liftHeight: form.liftHeight || undefined,
+      buildHeight: form.buildHeight || undefined,
+      forkLength: form.forkLength || undefined,
+      freeLift: form.freeLift || undefined,
+      maxReach: form.maxReach || undefined,
+      digDepth: form.digDepth || undefined,
+      bucketVolume: form.bucketVolume || undefined,
+      workingWeight: form.workingWeight || undefined,
+      enginePower: form.enginePower || undefined,
       status: 'i_lager',
       images: [], documents: [],
       qrCode: Math.random().toString(36).substring(2, 11),
@@ -106,6 +164,8 @@ export default function NewMachinePage() {
     });
     router.push(`/machines/${id}`);
   };
+
+  const specFields = SPEC_FIELDS[form.category] ?? [];
 
   return (
     <div className="flex flex-col flex-1 overflow-auto">
@@ -116,7 +176,6 @@ export default function NewMachinePage() {
           Tillbaka
         </Link>
 
-        {/* Mode chooser */}
         {mode === 'choose' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <button
@@ -131,7 +190,6 @@ export default function NewMachinePage() {
                 <p className="text-slate-500 text-sm mt-1">Ta bild på typskylten och/eller maskinen — AI fyller i formuläret åt dig.</p>
               </div>
             </button>
-
             <button
               onClick={() => setMode('manual')}
               className="group flex flex-col items-start gap-4 p-6 bg-white border-2 border-slate-200 rounded-2xl hover:border-slate-400 hover:shadow-md transition-all text-left"
@@ -147,7 +205,6 @@ export default function NewMachinePage() {
           </div>
         )}
 
-        {/* AI photo step */}
         {mode === 'ai' && !analyzed && (
           <div className="space-y-6">
             <div className="bg-white rounded-xl border border-slate-200 p-6">
@@ -156,40 +213,18 @@ export default function NewMachinePage() {
                 <h2 className="font-semibold text-slate-900">Fotografera maskinen</h2>
               </div>
               <p className="text-sm text-slate-500 mb-6">Ladda upp minst en bild. Typskylten ger bäst resultat för tekniska data.</p>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <PhotoUpload
-                  label="Typskylt"
-                  hint="Fabrikat, modell, serienummer, årsmodell"
-                  image={nameplateImage}
-                  inputRef={nameplateRef}
-                  onChange={handleNameplateChange}
-                  onClear={() => setNameplateImage(null)}
-                />
-                <PhotoUpload
-                  label="Maskinbild"
-                  hint="Hjälper AI att identifiera maskintyp"
-                  image={machineImage}
-                  inputRef={machineRef}
-                  onChange={handleMachineChange}
-                  onClear={() => setMachineImage(null)}
-                />
+                <PhotoUpload label="Typskylt" hint="Fabrikat, modell, serienummer, årsmodell" image={nameplateImage} inputRef={nameplateRef} onChange={handleNameplateChange} onClear={() => setNameplateImage(null)} />
+                <PhotoUpload label="Maskinbild" hint="Hjälper AI att identifiera maskintyp" image={machineImage} inputRef={machineRef} onChange={handleMachineChange} onClear={() => setMachineImage(null)} />
               </div>
-
               {aiError && (
                 <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{aiError}</div>
               )}
             </div>
-
             <div className="flex items-center justify-between">
-              <button onClick={() => setMode('choose')} className="text-sm text-slate-500 hover:text-slate-700">
-                ← Tillbaka
-              </button>
+              <button onClick={() => setMode('choose')} className="text-sm text-slate-500 hover:text-slate-700">← Tillbaka</button>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setMode('manual')}
-                  className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50"
-                >
+                <button onClick={() => setMode('manual')} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50">
                   Fyll i manuellt istället
                 </button>
                 <button
@@ -197,18 +232,13 @@ export default function NewMachinePage() {
                   disabled={(!nameplateImage && !machineImage) || analyzing}
                   className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {analyzing ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Analyserar...</>
-                  ) : (
-                    <><Sparkles className="w-4 h-4" /> Analysera</>
-                  )}
+                  {analyzing ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyserar...</> : <><Sparkles className="w-4 h-4" /> Analysera</>}
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Form (manual or after AI) */}
         {(mode === 'manual' || analyzed) && (
           <form onSubmit={handleSubmit} className="space-y-6">
             {analyzed && (
@@ -216,110 +246,128 @@ export default function NewMachinePage() {
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-emerald-800">AI-analys klar</p>
-                  <p className="text-xs text-emerald-600 mt-0.5">
-                    {aiFields.size} fält fylldes i automatiskt. Granska och komplettera nedan.
-                  </p>
+                  <p className="text-xs text-emerald-600 mt-0.5">{aiFields.size} fält fylldes i automatiskt. Granska och komplettera nedan.</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => { setAnalyzed(false); setMode('ai'); }}
-                  className="ml-auto text-xs text-emerald-700 underline hover:no-underline"
-                >
+                <button type="button" onClick={() => { setAnalyzed(false); setMode('ai'); }} className="ml-auto text-xs text-emerald-700 underline hover:no-underline">
                   Analysera om
                 </button>
               </div>
             )}
 
-            {/* Basic Info */}
             <div className="bg-white rounded-xl border border-slate-200 p-6">
               <h2 className="font-semibold text-slate-900 mb-4">Grundinformation</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="Maskinnamn *" ai={aiFields.has('name')}>
-                  <input required value={form.name} onChange={(e) => set('name', e.target.value)} className={inputClass(aiFields.has('name'))} placeholder="T.ex. Motviktstruck 1.5T" />
+                  <input required value={form.name} onChange={(e) => set('name', e.target.value)} className={inputCls(aiFields.has('name'))} placeholder="T.ex. Motviktstruck 1.5T" />
                 </Field>
                 <Field label="Intern kod *">
-                  <input required value={form.internalCode} onChange={(e) => set('internalCode', e.target.value)} className={inputClass(false)} placeholder="T.ex. MT-001" />
+                  <input required value={form.internalCode} onChange={(e) => set('internalCode', e.target.value)} className={inputCls(false)} placeholder="T.ex. MT-001" />
                 </Field>
                 <Field label="Fabrikat *" ai={aiFields.has('brand')}>
-                  <input required value={form.brand} onChange={(e) => set('brand', e.target.value)} className={inputClass(aiFields.has('brand'))} placeholder="T.ex. Toyota" />
+                  <input required value={form.brand} onChange={(e) => set('brand', e.target.value)} className={inputCls(aiFields.has('brand'))} placeholder="T.ex. Toyota" />
                 </Field>
                 <Field label="Modell *" ai={aiFields.has('model')}>
-                  <input required value={form.model} onChange={(e) => set('model', e.target.value)} className={inputClass(aiFields.has('model'))} placeholder="T.ex. 8FGF25" />
+                  <input required value={form.model} onChange={(e) => set('model', e.target.value)} className={inputCls(aiFields.has('model'))} placeholder="T.ex. 8FGF25" />
                 </Field>
                 <Field label="Kategori" ai={aiFields.has('category')}>
-                  <select value={form.category} onChange={(e) => set('category', e.target.value)} className={inputClass(aiFields.has('category'))}>
+                  <select value={form.category} onChange={(e) => set('category', e.target.value)} className={inputCls(aiFields.has('category'))}>
                     {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </Field>
                 <Field label="Drivmedel" ai={aiFields.has('fuelType')}>
-                  <select value={form.fuelType} onChange={(e) => set('fuelType', e.target.value)} className={inputClass(aiFields.has('fuelType'))}>
+                  <select value={form.fuelType} onChange={(e) => set('fuelType', e.target.value)} className={inputCls(aiFields.has('fuelType'))}>
                     {Object.entries(FUEL_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </Field>
-                <Field label="Kapacitet" ai={aiFields.has('capacity')}>
-                  <input value={form.capacity} onChange={(e) => set('capacity', e.target.value)} className={inputClass(aiFields.has('capacity'))} placeholder="T.ex. 1,5 ton" />
+                <Field label="Kapacitet (kg)" ai={aiFields.has('capacity')}>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={form.capacity || ''}
+                      onChange={(e) => set('capacity', e.target.value ? Number(e.target.value) : 0)}
+                      className={`${inputCls(aiFields.has('capacity'))} pr-10`}
+                      placeholder="T.ex. 1500"
+                      min={0}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none">kg</span>
+                  </div>
                 </Field>
                 <Field label="Årsmodell" ai={aiFields.has('year')}>
-                  <input type="number" value={form.year} onChange={(e) => set('year', Number(e.target.value))} className={inputClass(aiFields.has('year'))} min={1990} max={2030} />
+                  <input type="number" value={form.year} onChange={(e) => set('year', Number(e.target.value))} className={inputCls(aiFields.has('year'))} min={1990} max={2030} />
                 </Field>
                 <Field label="Serienummer" ai={aiFields.has('serialNumber')}>
-                  <input value={form.serialNumber} onChange={(e) => set('serialNumber', e.target.value)} className={inputClass(aiFields.has('serialNumber'))} />
+                  <input value={form.serialNumber} onChange={(e) => set('serialNumber', e.target.value)} className={inputCls(aiFields.has('serialNumber'))} />
                 </Field>
                 <Field label="Registreringsnummer">
-                  <input value={form.registrationNumber} onChange={(e) => set('registrationNumber', e.target.value)} className={inputClass(false)} />
+                  <input value={form.registrationNumber} onChange={(e) => set('registrationNumber', e.target.value)} className={inputCls(false)} />
                 </Field>
                 <Field label="Drifttimmar">
-                  <input type="number" value={form.operatingHours} onChange={(e) => set('operatingHours', Number(e.target.value))} className={inputClass(false)} min={0} />
+                  <input type="number" value={form.operatingHours} onChange={(e) => set('operatingHours', Number(e.target.value))} className={inputCls(false)} min={0} />
                 </Field>
                 <Field label="Placering/lagerplats">
-                  <input value={form.location} onChange={(e) => set('location', e.target.value)} className={inputClass(false)} placeholder="T.ex. Lager A - Plats 3" />
+                  <input value={form.location} onChange={(e) => set('location', e.target.value)} className={inputCls(false)} placeholder="T.ex. Lager A - Plats 3" />
                 </Field>
               </div>
+
+              {specFields.length > 0 && (
+                <div className="mt-5 pt-5 border-t border-slate-100">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Tekniska specifikationer</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {specFields.map(({ key, label, unit }) => (
+                      <Field key={key} label={`${label} (${unit})`}>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            value={(form[key as keyof FormState] as number) || ''}
+                            onChange={(e) => set(key, e.target.value ? Number(e.target.value) : 0)}
+                            className={`${inputCls(false)} pr-14`}
+                            placeholder="0 = ej angiven"
+                            min={0}
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none">{unit}</span>
+                        </div>
+                      </Field>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <Field label="Anteckningar" ai={aiFields.has('notes')} className="mt-4">
-                <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)} className={`${inputClass(aiFields.has('notes'))} resize-none`} rows={3} />
+                <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)} className={`${inputCls(aiFields.has('notes'))} resize-none`} rows={3} />
               </Field>
             </div>
 
-            {/* Financial */}
             <div className="bg-white rounded-xl border border-slate-200 p-6">
               <h2 className="font-semibold text-slate-900 mb-4">Ekonomi och kostnader</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="Inköpspris (kr)">
-                  <input type="number" value={form.purchasePrice} onChange={(e) => set('purchasePrice', Number(e.target.value))} className={inputClass(false)} min={0} />
+                  <input type="number" value={form.purchasePrice} onChange={(e) => set('purchasePrice', Number(e.target.value))} className={inputCls(false)} min={0} />
                 </Field>
                 <Field label="Inköpsdatum">
-                  <input type="date" value={form.purchaseDate} onChange={(e) => set('purchaseDate', e.target.value)} className={inputClass(false)} />
+                  <input type="date" value={form.purchaseDate} onChange={(e) => set('purchaseDate', e.target.value)} className={inputCls(false)} />
                 </Field>
                 <Field label="Leasingkostnad/mån (kr)">
-                  <input type="number" value={form.leasingCost} onChange={(e) => set('leasingCost', Number(e.target.value))} className={inputClass(false)} min={0} />
+                  <input type="number" value={form.leasingCost} onChange={(e) => set('leasingCost', Number(e.target.value))} className={inputCls(false)} min={0} />
                 </Field>
                 <Field label="Finansieringskostnad/mån (kr)">
-                  <input type="number" value={form.financingCost} onChange={(e) => set('financingCost', Number(e.target.value))} className={inputClass(false)} min={0} />
+                  <input type="number" value={form.financingCost} onChange={(e) => set('financingCost', Number(e.target.value))} className={inputCls(false)} min={0} />
                 </Field>
                 <Field label="Försäkring/mån (kr)">
-                  <input type="number" value={form.insuranceCost} onChange={(e) => set('insuranceCost', Number(e.target.value))} className={inputClass(false)} min={0} />
+                  <input type="number" value={form.insuranceCost} onChange={(e) => set('insuranceCost', Number(e.target.value))} className={inputCls(false)} min={0} />
                 </Field>
                 <Field label="Servicekostnad/år (kr)">
-                  <input type="number" value={form.serviceCost} onChange={(e) => set('serviceCost', Number(e.target.value))} className={inputClass(false)} min={0} />
+                  <input type="number" value={form.serviceCost} onChange={(e) => set('serviceCost', Number(e.target.value))} className={inputCls(false)} min={0} />
                 </Field>
                 <Field label="Övriga kostnader/mån (kr)">
-                  <input type="number" value={form.otherCosts} onChange={(e) => set('otherCosts', Number(e.target.value))} className={inputClass(false)} min={0} />
+                  <input type="number" value={form.otherCosts} onChange={(e) => set('otherCosts', Number(e.target.value))} className={inputCls(false)} min={0} />
                 </Field>
               </div>
             </div>
 
             <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => setMode('choose')}
-                className="text-sm text-slate-500 hover:text-slate-700"
-              >
-                ← Tillbaka
-              </button>
+              <button type="button" onClick={() => setMode('choose')} className="text-sm text-slate-500 hover:text-slate-700">← Tillbaka</button>
               <div className="flex items-center gap-3">
-                <Link href="/machines" className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50">
-                  Avbryt
-                </Link>
+                <Link href="/machines" className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50">Avbryt</Link>
                 <button type="submit" className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
                   <Save className="w-4 h-4" />
                   Spara maskin
@@ -333,12 +381,8 @@ export default function NewMachinePage() {
   );
 }
 
-function PhotoUpload({
-  label, hint, image, inputRef, onChange, onClear,
-}: {
-  label: string;
-  hint: string;
-  image: string | null;
+function PhotoUpload({ label, hint, image, inputRef, onChange, onClear }: {
+  label: string; hint: string; image: string | null;
   inputRef: React.RefObject<HTMLInputElement | null>;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClear: () => void;
@@ -351,50 +395,28 @@ function PhotoUpload({
         <div className="relative rounded-xl overflow-hidden border border-slate-200 aspect-video bg-slate-100">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={image} alt={label} className="w-full h-full object-cover" />
-          <button
-            type="button"
-            onClick={onClear}
-            className="absolute top-2 right-2 w-7 h-7 bg-white/90 rounded-full flex items-center justify-center shadow hover:bg-white"
-          >
+          <button type="button" onClick={onClear} className="absolute top-2 right-2 w-7 h-7 bg-white/90 rounded-full flex items-center justify-center shadow hover:bg-white">
             <X className="w-4 h-4 text-slate-700" />
           </button>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="w-full aspect-video border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-blue-400 hover:bg-blue-50/50 transition-colors"
-        >
+        <button type="button" onClick={() => inputRef.current?.click()} className="w-full aspect-video border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-blue-400 hover:bg-blue-50/50 transition-colors">
           <Camera className="w-8 h-8 text-slate-300" />
           <span className="text-sm text-slate-400">Klicka för att välja bild</span>
         </button>
       )}
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={onChange}
-      />
+      <input ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onChange} />
     </div>
   );
 }
 
-const inputClass = (isAi: boolean) =>
+const inputCls = (isAi: boolean) =>
   `w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-    isAi
-      ? 'bg-blue-50 border-blue-200 focus:bg-white'
-      : 'bg-slate-50 border-slate-200 focus:bg-white'
+    isAi ? 'bg-blue-50 border-blue-200 focus:bg-white' : 'bg-slate-50 border-slate-200 focus:bg-white'
   }`;
 
-function Field({
-  label, children, ai, className,
-}: {
-  label: string;
-  children: React.ReactNode;
-  ai?: boolean;
-  className?: string;
+function Field({ label, children, ai, className }: {
+  label: string; children: React.ReactNode; ai?: boolean; className?: string;
 }) {
   return (
     <div className={className}>

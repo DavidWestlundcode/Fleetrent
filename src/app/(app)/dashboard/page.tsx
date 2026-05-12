@@ -33,7 +33,6 @@ export default function DashboardPage() {
     const onService = machines.filter((m) => m.status === 'service').length;
     const damaged = machines.filter((m) => m.status === 'skadad').length;
     const reserved = machines.filter((m) => m.status === 'reserverad').length;
-
     const activeOrders = orders.filter((o) => o.status === 'aktiv' || o.status === 'forsenad');
     const overdueOrders = orders.filter(
       (o) => o.status === 'aktiv' && new Date(o.plannedReturnDate) < new Date()
@@ -42,7 +41,6 @@ export default function DashboardPage() {
       const days = daysUntil(o.plannedReturnDate);
       return o.status === 'aktiv' && days >= 0 && days <= 7;
     });
-
     const totalRevenue = orders
       .filter((o) => o.status === 'avslutad' || o.status === 'aktiv')
       .reduce((sum, o) => sum + o.totalPrice, 0);
@@ -54,9 +52,8 @@ export default function DashboardPage() {
           d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       })
       .reduce((sum, o) => sum + o.totalPrice, 0);
-
-    const occupancyRate = machines.length > 0 ? Math.round(((rented + reserved) / machines.length) * 100) : 0;
-
+    const occupancyRate = machines.length > 0
+      ? Math.round(((rented + reserved) / machines.length) * 100) : 0;
     return {
       inStock, rented, onService, damaged, reserved,
       activeOrders: activeOrders.length,
@@ -100,50 +97,50 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="flex flex-col flex-1 overflow-auto">
+    <div className="flex flex-col flex-1 overflow-auto bg-slate-50/60">
       <Header
         title="Dashboard"
-        subtitle={`Välkommen tillbaka — ${new Date().toLocaleDateString('sv-SE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`}
+        subtitle={new Date().toLocaleDateString('sv-SE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         actions={
           <Link
             href="/orders/new"
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-[7px] bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium rounded-xl shadow-sm transition-all"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             Ny order
           </Link>
         }
       />
 
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-6 space-y-5">
         {/* Alerts */}
         {(stats.overdueOrders > 0 || stats.onService > 0 || stats.damaged > 0) && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-            <div className="flex items-center gap-2 text-red-800 font-semibold mb-2">
+          <div className="bg-red-50 border border-red-200/80 rounded-2xl p-4">
+            <div className="flex items-center gap-2 text-red-800 text-[13px] font-semibold mb-2.5">
               <AlertTriangle className="w-4 h-4" />
               Varningar som kräver åtgärd
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               {stats.overdueOrders > 0 && (
-                <Link href="/orders?status=aktiv" className="flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-700 text-sm rounded-lg hover:bg-red-200 transition-colors">
+                <Link href="/orders?status=aktiv" className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-[12px] font-medium rounded-lg transition-colors cursor-pointer">
                   <Clock className="w-3.5 h-3.5" />
                   {stats.overdueOrders} försenad{stats.overdueOrders !== 1 ? 'e' : ''} retur{stats.overdueOrders !== 1 ? 'er' : ''}
                 </Link>
               )}
               {stats.onService > 0 && (
-                <Link href="/machines?status=service" className="flex items-center gap-2 px-3 py-1.5 bg-orange-100 text-orange-700 text-sm rounded-lg hover:bg-orange-200 transition-colors">
+                <Link href="/machines?status=service" className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 text-[12px] font-medium rounded-lg transition-colors cursor-pointer">
                   <Wrench className="w-3.5 h-3.5" />
                   {stats.onService} maskin{stats.onService !== 1 ? 'er' : ''} på service
                 </Link>
               )}
               {stats.damaged > 0 && (
-                <Link href="/machines?status=skadad" className="flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-700 text-sm rounded-lg hover:bg-red-200 transition-colors">
+                <Link href="/machines?status=skadad" className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-[12px] font-medium rounded-lg transition-colors cursor-pointer">
                   <AlertTriangle className="w-3.5 h-3.5" />
                   {stats.damaged} skadad maskin
                 </Link>
               )}
               {stats.returningIn7Days > 0 && (
-                <span className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 text-amber-700 text-sm rounded-lg">
+                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-700 text-[12px] font-medium rounded-lg">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   {stats.returningIn7Days} return inom 7 dagar
                 </span>
@@ -152,110 +149,70 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* KPI Cards */}
+        {/* KPI Cards row 1 */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard
-            title="Maskiner i lager"
-            value={stats.inStock}
-            subtitle={`av ${stats.totalMachines} totalt`}
-            icon={Package}
-            color="green"
-          />
-          <StatCard
-            title="Maskiner uthyrda"
-            value={stats.rented}
-            subtitle={`${stats.occupancyRate}% beläggning`}
-            icon={Truck}
-            color="blue"
-          />
-          <StatCard
-            title="Aktiva order"
-            value={stats.activeOrders}
-            subtitle={stats.overdueOrders > 0 ? `${stats.overdueOrders} försenade` : 'Inga försenade'}
-            icon={Clock}
-            color={stats.overdueOrders > 0 ? 'red' : 'amber'}
-          />
-          <StatCard
-            title="Aktiva kunder"
-            value={stats.totalCustomers}
-            icon={Users}
-            color="purple"
-          />
+          <StatCard title="Maskiner i lager" value={stats.inStock} subtitle={`av ${stats.totalMachines} totalt`} icon={Package} color="green" />
+          <StatCard title="Maskiner uthyrda" value={stats.rented} subtitle={`${stats.occupancyRate}% beläggning`} icon={Truck} color="blue" />
+          <StatCard title="Aktiva order" value={stats.activeOrders} subtitle={stats.overdueOrders > 0 ? `${stats.overdueOrders} försenade` : 'Inga försenade'} icon={Clock} color={stats.overdueOrders > 0 ? 'red' : 'amber'} />
+          <StatCard title="Aktiva kunder" value={stats.totalCustomers} icon={Users} color="purple" />
         </div>
 
+        {/* KPI Cards row 2 */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard
-            title="Månadsintäkt"
-            value={formatCurrency(stats.thisMonthRevenue)}
-            subtitle="Innevarande månad"
-            icon={TrendingUp}
-            color="green"
-          />
-          <StatCard
-            title="Total intäkt"
-            value={formatCurrency(stats.totalRevenue)}
-            subtitle="Alla order"
-            icon={TrendingUp}
-            color="blue"
-          />
-          <StatCard
-            title="Beläggningsgrad"
-            value={`${stats.occupancyRate}%`}
-            subtitle="Uthyrda + reserverade"
-            icon={BarChart3}
-            color="purple"
-          />
-          <StatCard
-            title="Returer inom 7 dagar"
-            value={stats.returningIn7Days}
-            icon={CheckCircle2}
-            color={stats.returningIn7Days > 0 ? 'amber' : 'green'}
-          />
+          <StatCard title="Månadsintäkt" value={formatCurrency(stats.thisMonthRevenue)} subtitle="Innevarande månad" icon={TrendingUp} color="green" />
+          <StatCard title="Total intäkt" value={formatCurrency(stats.totalRevenue)} subtitle="Alla order" icon={TrendingUp} color="blue" />
+          <StatCard title="Beläggningsgrad" value={`${stats.occupancyRate}%`} subtitle="Uthyrda + reserverade" icon={BarChart3} color="purple" />
+          <StatCard title="Returer inom 7 dagar" value={stats.returningIn7Days} icon={CheckCircle2} color={stats.returningIn7Days > 0 ? 'amber' : 'green'} />
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Revenue Chart */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-slate-900">Intäkter per månad</h2>
-              <span className="text-xs text-slate-500">Senaste 12 månader</span>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-[14px] font-semibold text-slate-900">Intäkter per månad</h2>
+                <p className="text-[11px] text-slate-400 mt-0.5">Senaste 12 månader</p>
+              </div>
             </div>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={revenueData} margin={{ top: 0, right: 0, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={revenueData} margin={{ top: 0, right: 0, left: -15, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v) => [formatCurrency(Number(v)), 'Intäkt']} contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 12 }} />
-                <Bar dataKey="revenue" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                <Tooltip
+                  formatter={(v) => [formatCurrency(Number(v)), 'Intäkt']}
+                  contentStyle={{ borderRadius: 10, border: '1px solid #E2E8F0', fontSize: 12, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}
+                  cursor={{ fill: '#F8FAFC' }}
+                />
+                <Bar dataKey="revenue" fill="#3B82F6" radius={[5, 5, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Fleet Status */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <h2 className="font-semibold text-slate-900 mb-4">Flottans status</h2>
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+            <h2 className="text-[14px] font-semibold text-slate-900 mb-1">Flottans status</h2>
+            <p className="text-[11px] text-slate-400 mb-3">Fördelning just nu</p>
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
-                <Pie data={fleetStatusData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
+                <Pie data={fleetStatusData} cx="50%" cy="50%" innerRadius={48} outerRadius={72} paddingAngle={3} dataKey="value">
                   {fleetStatusData.map((entry, i) => (
                     <Cell key={i} fill={MACHINE_STATUS_COLORS[entry.name] ?? '#94A3B8'} />
                   ))}
                 </Pie>
-                <Legend iconType="circle" iconSize={8} formatter={(value) => <span style={{ fontSize: 11, color: '#64748B' }}>{value}</span>} />
+                <Legend iconType="circle" iconSize={7} formatter={(value) => <span style={{ fontSize: 11, color: '#64748B' }}>{value}</span>} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Tables */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Recent Orders */}
-          <div className="bg-white rounded-xl border border-slate-200">
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-              <h2 className="font-semibold text-slate-900">Senaste order</h2>
-              <Link href="/orders" className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium">
-                Visa alla <ArrowRight className="w-3.5 h-3.5" />
+              <h2 className="text-[14px] font-semibold text-slate-900">Senaste order</h2>
+              <Link href="/orders" className="flex items-center gap-1 text-[12px] text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                Visa alla <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
             <div className="divide-y divide-slate-50">
@@ -266,14 +223,14 @@ export default function DashboardPage() {
                   <Link
                     key={order.id}
                     href={`/orders/${order.id}`}
-                    className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors"
+                    className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50/80 transition-colors cursor-pointer"
                   >
                     <div>
-                      <p className="text-sm font-medium text-slate-800">{order.orderNumber}</p>
-                      <p className="text-xs text-slate-500">{customer?.companyName} · {machine?.name}</p>
+                      <p className="text-[13px] font-medium text-slate-800">{order.orderNumber}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{customer?.companyName} · {machine?.name}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-semibold text-slate-700">{formatCurrency(order.totalPrice)}</span>
+                      <span className="text-[13px] font-semibold text-slate-700">{formatCurrency(order.totalPrice)}</span>
                       <OrderStatusBadge status={order.status} />
                     </div>
                   </Link>
@@ -283,47 +240,48 @@ export default function DashboardPage() {
           </div>
 
           {/* Top Machines */}
-          <div className="bg-white rounded-xl border border-slate-200">
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-              <h2 className="font-semibold text-slate-900">Mest lönsamma maskiner</h2>
-              <Link href="/statistics" className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium">
-                Se statistik <ArrowRight className="w-3.5 h-3.5" />
+              <h2 className="text-[14px] font-semibold text-slate-900">Mest lönsamma maskiner</h2>
+              <Link href="/statistics" className="flex items-center gap-1 text-[12px] text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                Se statistik <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
             <div className="divide-y divide-slate-50">
-              {topMachines.map((machine, i) => {
-                const netResult = machine.totalRevenue - (machine.purchasePrice * 0.1 + machine.totalServiceCost);
-                return (
-                  <Link
-                    key={machine.id}
-                    href={`/machines/${machine.id}`}
-                    className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors"
-                  >
-                    <span className="flex items-center justify-center w-6 h-6 text-xs font-bold text-slate-400 bg-slate-100 rounded-full shrink-0">
-                      {i + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-800 truncate">{machine.name}</p>
-                      <p className="text-xs text-slate-500">{machine.totalRentals} uthyrn. · {machine.totalRentalDays} dagar</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-semibold text-slate-700">{formatCurrency(machine.totalRevenue)}</p>
-                      <MachineStatusBadge status={machine.status} />
-                    </div>
-                  </Link>
-                );
-              })}
+              {topMachines.map((machine, i) => (
+                <Link
+                  key={machine.id}
+                  href={`/machines/${machine.id}`}
+                  className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50/80 transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center justify-center w-5 h-5 text-[11px] font-bold text-slate-400 bg-slate-100 rounded-full shrink-0">
+                    {i + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium text-slate-800 truncate">{machine.name}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">{machine.totalRentals} uthyrn. · {machine.totalRentalDays} dagar</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[13px] font-semibold text-slate-700">{formatCurrency(machine.totalRevenue)}</p>
+                    <MachineStatusBadge status={machine.status} />
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
         </div>
 
         {/* Overdue Orders */}
         {overdueOrders.length > 0 && (
-          <div className="bg-white rounded-xl border border-red-200">
+          <div className="bg-white rounded-2xl border border-red-200/80 shadow-sm overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-red-100">
-              <AlertTriangle className="w-4 h-4 text-red-500" />
-              <h2 className="font-semibold text-slate-900">Försenade returer</h2>
-              <span className="ml-auto text-xs font-medium text-red-600 bg-red-50 px-2 py-0.5 rounded-full">{overdueOrders.length} st</span>
+              <div className="p-1 bg-red-100 rounded-lg">
+                <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+              </div>
+              <h2 className="text-[14px] font-semibold text-slate-900">Försenade returer</h2>
+              <span className="ml-auto text-[11px] font-semibold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
+                {overdueOrders.length} st
+              </span>
             </div>
             <div className="divide-y divide-red-50">
               {overdueOrders.map((order) => {
@@ -334,15 +292,15 @@ export default function DashboardPage() {
                   <Link
                     key={order.id}
                     href={`/orders/${order.id}`}
-                    className="flex items-center justify-between px-5 py-3.5 hover:bg-red-50 transition-colors"
+                    className="flex items-center justify-between px-5 py-3.5 hover:bg-red-50/60 transition-colors cursor-pointer"
                   >
                     <div>
-                      <p className="text-sm font-medium text-slate-800">{customer?.companyName}</p>
-                      <p className="text-xs text-slate-500">{machine?.name} · {order.orderNumber}</p>
+                      <p className="text-[13px] font-medium text-slate-800">{customer?.companyName}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{machine?.name} · {order.orderNumber}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-red-600">{daysLate} dag{daysLate !== 1 ? 'ar' : ''} sen</p>
-                      <p className="text-xs text-slate-500">Skulle returnerat {formatDate(order.plannedReturnDate)}</p>
+                      <p className="text-[13px] font-semibold text-red-600">{daysLate} dag{daysLate !== 1 ? 'ar' : ''} sen</p>
+                      <p className="text-[11px] text-slate-400">Skulle returnerat {formatDate(order.plannedReturnDate)}</p>
                     </div>
                   </Link>
                 );
@@ -354,4 +312,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
@@ -35,17 +35,22 @@ export default function OrdersPage() {
     return counts;
   }, [orders]);
 
+  const statusLabels: Record<string, string> = {
+    all: 'Alla', aktiv: 'Aktiva', reserverad: 'Reserverade',
+    forsenad: 'Försenade', avslutad: 'Avslutade', annullerad: 'Annullerade',
+  };
+
   return (
-    <div className="flex flex-col flex-1 overflow-auto">
+    <div className="flex flex-col flex-1 overflow-auto bg-slate-50/60">
       <Header
         title="Uthyrningsorder"
         subtitle={`${orders.length} order totalt`}
         actions={
           <Link
             href="/orders/new"
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-[7px] bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium rounded-xl shadow-sm transition-all"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             Ny order
           </Link>
         }
@@ -53,59 +58,56 @@ export default function OrdersPage() {
 
       <div className="flex-1 p-6 space-y-4">
         {/* Status Tabs */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {(['all', 'aktiv', 'reserverad', 'forsenad', 'avslutad', 'annullerad'] as const).map((s) => {
-            const labels: Record<string, string> = {
-              all: 'Alla', aktiv: 'Aktiva', reserverad: 'Reserverade', forsenad: 'Försenade',
-              avslutad: 'Avslutade', annullerad: 'Annullerade',
-            };
-            return (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === s
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                {labels[s]} <span className={`ml-1 text-xs ${statusFilter === s ? 'text-blue-200' : 'text-slate-400'}`}>{statusCounts[s] ?? 0}</span>
-              </button>
-            );
-          })}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {(['all', 'aktiv', 'reserverad', 'forsenad', 'avslutad', 'annullerad'] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1.5 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer ${
+                statusFilter === s
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+              }`}
+            >
+              {statusLabels[s]}
+              <span className={`ml-1.5 text-[11px] ${statusFilter === s ? 'text-white/60' : 'text-slate-400'}`}>
+                {statusCounts[s] ?? 0}
+              </span>
+            </button>
+          ))}
         </div>
 
         {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
           <input
             type="text"
             placeholder="Sök ordernr, kund, maskin..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-4 py-2 text-[13px] bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all placeholder:text-slate-400"
           />
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Ordernr</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Kund</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Maskin</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Startdatum</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Retur (planerat)</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Belopp</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+              <tr className="border-b border-slate-100">
+                <th className="text-left px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Ordernr</th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Kund</th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Maskin</th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Start</th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Retur</th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Belopp</th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Status</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-50">
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-slate-400">Inga order hittades</td>
+                  <td colSpan={8} className="px-4 py-14 text-center text-[13px] text-slate-400">Inga order hittades</td>
                 </tr>
               )}
               {filtered.map((order) => {
@@ -114,27 +116,35 @@ export default function OrdersPage() {
                 const isOverdue = order.status === 'aktiv' && new Date(order.plannedReturnDate) < new Date();
                 const daysRemaining = daysUntil(order.plannedReturnDate);
                 return (
-                  <tr key={order.id} className={`hover:bg-slate-50 transition-colors ${isOverdue ? 'bg-red-50/50' : ''}`}>
-                    <td className="px-4 py-3.5">
-                      <span className="font-medium text-slate-800">{order.orderNumber}</span>
+                  <tr
+                    key={order.id}
+                    className={`hover:bg-slate-50/80 transition-colors group ${isOverdue ? 'bg-red-50/40' : ''}`}
+                  >
+                    <td className="px-5 py-3.5">
+                      <span className="text-[13px] font-medium text-slate-800">{order.orderNumber}</span>
                     </td>
-                    <td className="px-4 py-3.5 text-slate-700">{customer?.companyName ?? '–'}</td>
-                    <td className="px-4 py-3.5 text-slate-600">{machine?.name ?? '–'}</td>
-                    <td className="px-4 py-3.5 text-slate-600">{formatDate(order.startDate)}</td>
+                    <td className="px-4 py-3.5 text-[13px] text-slate-700">{customer?.companyName ?? '–'}</td>
+                    <td className="px-4 py-3.5 text-[13px] text-slate-500">{machine?.name ?? '–'}</td>
+                    <td className="px-4 py-3.5 text-[13px] text-slate-500">{formatDate(order.startDate)}</td>
                     <td className="px-4 py-3.5">
                       <div>
-                        <span className="text-slate-600">{formatDate(order.plannedReturnDate)}</span>
+                        <span className="text-[13px] text-slate-500">{formatDate(order.plannedReturnDate)}</span>
                         {order.status === 'aktiv' && (
-                          <p className={`text-xs mt-0.5 ${isOverdue ? 'text-red-600 font-medium' : daysRemaining <= 7 ? 'text-amber-600' : 'text-slate-400'}`}>
+                          <p className={`text-[11px] mt-0.5 font-medium ${isOverdue ? 'text-red-600' : daysRemaining <= 7 ? 'text-amber-600' : 'text-slate-400'}`}>
                             {isOverdue ? `${Math.abs(daysRemaining)} dagar sen` : `${daysRemaining} dagar kvar`}
                           </p>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3.5 font-medium">{formatCurrency(order.totalPrice)}</td>
+                    <td className="px-4 py-3.5 text-[13px] font-medium text-slate-700">{formatCurrency(order.totalPrice)}</td>
                     <td className="px-4 py-3.5"><OrderStatusBadge status={order.status} /></td>
                     <td className="px-4 py-3.5">
-                      <Link href={`/orders/${order.id}`} className="text-blue-600 hover:text-blue-700 text-xs font-medium">Visa</Link>
+                      <Link
+                        href={`/orders/${order.id}`}
+                        className="text-[12px] font-medium text-blue-600 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        Visa →
+                      </Link>
                     </td>
                   </tr>
                 );

@@ -8,7 +8,7 @@ import { TrendingUp, TrendingDown, Truck, DollarSign, BarChart2, Activity } from
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
 import { formatCurrency, calculateROI, calculateRecoveryPercent, getMonthlyRevenueData } from '@/lib/utils';
-import { CATEGORY_LABELS, type MachineCategory } from '@/lib/types';
+import { CATEGORY_LABELS } from '@/lib/types';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#F97316', '#06B6D4', '#84CC16'];
 
@@ -19,7 +19,8 @@ export default function StatisticsPage() {
     const totalRevenue = orders.filter((o) => o.status === 'avslutad' || o.status === 'aktiv').reduce((s, o) => s + o.totalPrice, 0);
     const totalMachineCosts = machines.reduce((s, m) => s + m.purchasePrice + m.totalServiceCost + (m.financingCost + m.insuranceCost + m.otherCosts) * 12, 0);
     const netResult = totalRevenue - totalMachineCosts;
-    const avgOccupancy = machines.length > 0 ? Math.round((machines.filter((m) => m.status === 'uthyrd' || m.status === 'reserverad').length / machines.length) * 100) : 0;
+    const avgOccupancy = machines.length > 0
+      ? Math.round((machines.filter((m) => m.status === 'uthyrd' || m.status === 'reserverad').length / machines.length) * 100) : 0;
     const totalRentals = orders.filter((o) => o.status === 'avslutad').length;
     return { totalRevenue, totalMachineCosts, netResult, avgOccupancy, totalRentals };
   }, [machines, orders]);
@@ -32,9 +33,7 @@ export default function StatisticsPage() {
       const label = CATEGORY_LABELS[m.category];
       byCategory[label] = (byCategory[label] ?? 0) + m.totalRevenue;
     });
-    return Object.entries(byCategory)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
+    return Object.entries(byCategory).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [machines]);
 
   const revenueByCustomer = useMemo(() => {
@@ -47,12 +46,6 @@ export default function StatisticsPage() {
 
   const topMachines = useMemo(() =>
     [...machines].sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 10),
-    [machines]
-  );
-
-  const idleMachines = useMemo(() =>
-    machines.filter((m) => m.status === 'i_lager' && m.totalRentals > 0)
-      .sort((a, b) => (a.totalRentalDays / a.totalRentals) - (b.totalRentalDays / b.totalRentals)).slice(0, 5),
     [machines]
   );
 
@@ -69,11 +62,18 @@ export default function StatisticsPage() {
     [machines]
   );
 
+  const tooltipStyle = {
+    borderRadius: 10,
+    border: '1px solid #E2E8F0',
+    fontSize: 12,
+    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)',
+  };
+
   return (
-    <div className="flex flex-col flex-1 overflow-auto">
+    <div className="flex flex-col flex-1 overflow-auto bg-slate-50/60">
       <Header title="Statistik & Lönsamhet" subtitle="Fullständig analys av flottan och intäkter" />
 
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-6 space-y-5">
         {/* Top KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
@@ -82,97 +82,113 @@ export default function StatisticsPage() {
             { label: 'Nettoresultat', value: formatCurrency(stats.netResult), icon: TrendingUp, trend: stats.netResult > 0 ? '+8%' : '-', positive: stats.netResult > 0 },
             { label: 'Beläggningsgrad', value: `${stats.avgOccupancy}%`, icon: Activity, trend: '', positive: true },
           ].map(({ label, value, icon: Icon, trend, positive }) => (
-            <div key={label} className="bg-white rounded-xl border border-slate-200 p-5">
+            <div key={label} className="relative bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-blue-500" />
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-slate-500">{label}</p>
-                  <p className="text-xl font-bold text-slate-900 mt-1">{value}</p>
+                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
+                  <p className="text-[22px] font-bold text-slate-900 mt-1.5 tracking-tight">{value}</p>
                   {trend && (
-                    <p className={`text-xs mt-1 font-medium ${positive ? 'text-emerald-600' : 'text-red-600'}`}>{trend} vs föregående år</p>
+                    <p className={`text-[11px] mt-1 font-semibold ${positive ? 'text-emerald-600' : 'text-red-500'}`}>
+                      {trend} vs föregående år
+                    </p>
                   )}
                 </div>
                 <div className="p-2.5 bg-blue-50 rounded-xl">
-                  <Icon className="w-5 h-5 text-blue-600" />
+                  <Icon className="w-[18px] h-[18px] text-blue-600" />
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Monthly Revenue + Category breakdown */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
-            <h2 className="font-semibold text-slate-900 mb-4">Intäkter per månad</h2>
-            <ResponsiveContainer width="100%" height={240}>
-              <AreaChart data={revenueByMonth} margin={{ top: 0, right: 0, left: -10, bottom: 0 }}>
+        {/* Monthly Revenue + Category */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+            <div className="mb-5">
+              <h2 className="text-[14px] font-semibold text-slate-900">Intäkter per månad</h2>
+              <p className="text-[11px] text-slate-400 mt-0.5">Trendlinje för 12 månader</p>
+            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={revenueByMonth} margin={{ top: 0, right: 0, left: -15, bottom: 0 }}>
                 <defs>
                   <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2} />
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.15} />
                     <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v) => [formatCurrency(Number(v)), 'Intäkt']} contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 12 }} />
-                <Area type="monotone" dataKey="revenue" stroke="#3B82F6" fill="url(#grad)" strokeWidth={2} />
+                <Tooltip formatter={(v) => [formatCurrency(Number(v)), 'Intäkt']} contentStyle={tooltipStyle} cursor={{ stroke: '#E2E8F0', strokeWidth: 1 }} />
+                <Area type="monotone" dataKey="revenue" stroke="#3B82F6" fill="url(#grad)" strokeWidth={2} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <h2 className="font-semibold text-slate-900 mb-4">Intäkt per kategori</h2>
-            <ResponsiveContainer width="100%" height={200}>
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+            <div className="mb-4">
+              <h2 className="text-[14px] font-semibold text-slate-900">Intäkt per kategori</h2>
+              <p className="text-[11px] text-slate-400 mt-0.5">Fördelning per maskintyp</p>
+            </div>
+            <ResponsiveContainer width="100%" height={195}>
               <PieChart>
-                <Pie data={revenueByCategory} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value">
+                <Pie data={revenueByCategory} cx="50%" cy="50%" innerRadius={44} outerRadius={72} paddingAngle={3} dataKey="value">
                   {revenueByCategory.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
-                <Legend iconType="circle" iconSize={8} formatter={(v) => <span style={{ fontSize: 10, color: '#64748B' }}>{v}</span>} />
+                <Legend iconType="circle" iconSize={7} formatter={(v) => <span style={{ fontSize: 10, color: '#64748B' }}>{v}</span>} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Machine ROI bar chart */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h2 className="font-semibold text-slate-900 mb-4">Intäkt vs Kostnad per maskin</h2>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={machineROIData} margin={{ top: 0, right: 0, left: -10, bottom: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+        {/* Machine ROI */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+          <div className="mb-5">
+            <h2 className="text-[14px] font-semibold text-slate-900">Intäkt vs Kostnad per maskin</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">Jämförelse av lönsamhet</p>
+          </div>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={machineROIData} margin={{ top: 0, right: 0, left: -15, bottom: 55 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
               <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94A3B8' }} angle={-35} textAnchor="end" axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={(v) => formatCurrency(Number(v))} contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 12 }} />
-              <Legend />
-              <Bar dataKey="intäkt" name="Intäkt" fill="#10B981" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="kostnad" name="Kostnad" fill="#EF4444" radius={[3, 3, 0, 0]} />
+              <Tooltip formatter={(v) => formatCurrency(Number(v))} contentStyle={tooltipStyle} />
+              <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+              <Bar dataKey="intäkt" name="Intäkt" fill="#10B981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="kostnad" name="Kostnad" fill="#EF4444" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Revenue by Customer */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5">
-          <h2 className="font-semibold text-slate-900 mb-4">Intäkt per kund (top 8)</h2>
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+          <div className="mb-5">
+            <h2 className="text-[14px] font-semibold text-slate-900">Intäkt per kund (top 8)</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">De mest värdefulla kunderna</p>
+          </div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={revenueByCustomer} layout="vertical" margin={{ top: 0, right: 20, left: 80, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
               <XAxis type="number" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
               <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#64748B' }} axisLine={false} tickLine={false} />
-              <Tooltip formatter={(v) => [formatCurrency(Number(v)), 'Total intäkt']} contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 12 }} />
+              <Tooltip formatter={(v) => [formatCurrency(Number(v)), 'Total intäkt']} contentStyle={tooltipStyle} />
               <Bar dataKey="value" name="Intäkt" fill="#3B82F6" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Top Machines Table */}
-        <div className="bg-white rounded-xl border border-slate-200">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-100">
-            <h2 className="font-semibold text-slate-900">Maskinlönsamhet – detaljvy</h2>
+            <h2 className="text-[14px] font-semibold text-slate-900">Maskinlönsamhet – detaljvy</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">Sorterat efter total intäkt</p>
           </div>
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-100">
+              <tr className="border-b border-slate-100">
                 {['Maskin', 'Uthyrningar', 'Dagar', 'Total intäkt', 'Inköpspris', 'Återbetalt', 'ROI'].map((h) => (
-                  <th key={h} className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
+                  <th key={h} className="text-left px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -182,30 +198,30 @@ export default function StatisticsPage() {
                 const roi = calculateROI(machine.totalRevenue, totalCosts);
                 const recovery = calculateRecoveryPercent(machine.totalRevenue, machine.purchasePrice);
                 return (
-                  <tr key={machine.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="w-5 h-5 flex items-center justify-center text-xs font-bold text-slate-400 bg-slate-100 rounded-full">{i + 1}</span>
+                  <tr key={machine.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-5 h-5 flex items-center justify-center text-[11px] font-bold text-slate-400 bg-slate-100 rounded-full shrink-0">{i + 1}</span>
                         <div>
-                          <p className="font-medium text-slate-800">{machine.name}</p>
-                          <p className="text-xs text-slate-500">{machine.brand} · {machine.internalCode}</p>
+                          <p className="text-[13px] font-medium text-slate-800">{machine.name}</p>
+                          <p className="text-[11px] text-slate-400">{machine.brand} · {machine.internalCode}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{machine.totalRentals}</td>
-                    <td className="px-4 py-3 text-slate-600">{machine.totalRentalDays}</td>
-                    <td className="px-4 py-3 font-semibold text-emerald-600">{formatCurrency(machine.totalRevenue)}</td>
-                    <td className="px-4 py-3 text-slate-600">{formatCurrency(machine.purchasePrice)}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-5 py-3.5 text-[13px] text-slate-500">{machine.totalRentals}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-slate-500">{machine.totalRentalDays}</td>
+                    <td className="px-5 py-3.5 text-[13px] font-semibold text-emerald-600">{formatCurrency(machine.totalRevenue)}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-slate-500">{formatCurrency(machine.purchasePrice)}</td>
+                    <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-slate-100 rounded-full h-1.5 max-w-16">
+                        <div className="flex-1 bg-slate-100 rounded-full h-1.5 max-w-[60px]">
                           <div className="h-1.5 rounded-full bg-blue-500" style={{ width: `${Math.min(100, recovery)}%` }} />
                         </div>
-                        <span className="text-xs font-medium text-slate-600">{recovery}%</span>
+                        <span className="text-[12px] font-medium text-slate-600">{recovery}%</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-sm font-bold ${roi >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{roi}%</span>
+                    <td className="px-5 py-3.5">
+                      <span className={`text-[13px] font-bold ${roi >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{roi}%</span>
                     </td>
                   </tr>
                 );

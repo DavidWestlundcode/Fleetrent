@@ -14,29 +14,28 @@ export default function Header({ title, subtitle, actions }: HeaderProps) {
   const overdueCount = orders.filter(
     (o) => o.status === 'aktiv' && new Date(o.plannedReturnDate) < new Date()
   ).length;
-
   const serviceCount = machines.filter((m) => m.status === 'service').length;
   const alertCount = overdueCount + serviceCount;
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200 shrink-0">
+    <header className="flex items-center justify-between px-6 h-[56px] bg-white border-b border-slate-100 shrink-0">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900">{title}</h1>
-        {subtitle && <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>}
+        <h1 className="text-[15px] font-semibold text-slate-900 tracking-tight leading-tight">{title}</h1>
+        {subtitle && <p className="text-[11px] text-slate-400 leading-tight mt-px">{subtitle}</p>}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <div className="relative hidden md:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
           <input
             type="text"
             placeholder="Sök..."
-            className="pl-9 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-48"
+            className="pl-8 pr-3 py-1.5 text-[13px] bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 w-44 transition-all placeholder:text-slate-400"
           />
         </div>
-        <button className="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors">
-          <Bell className="w-5 h-5" />
+        <button className="relative p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
+          <Bell className="w-4 h-4" />
           {alertCount > 0 && (
-            <span className="absolute top-1 right-1 flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-red-500 rounded-full">
+            <span className="absolute top-0.5 right-0.5 flex items-center justify-center w-3.5 h-3.5 text-[10px] font-bold text-white bg-red-500 rounded-full leading-none">
               {alertCount}
             </span>
           )}
