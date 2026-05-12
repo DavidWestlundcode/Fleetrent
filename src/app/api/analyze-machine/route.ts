@@ -1,49 +1,28 @@
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const client = new Anthropic();
-
 export async function POST(request: NextRequest) {
-  if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY.startsWith('din-')) {
-    return NextResponse.json({ error: 'API-nyckel för AI saknas. Lägg till ANTHROPIC_API_KEY i .env.local.' }, { status: 503 });
+  if (!process.env.OPENAI_API_KEY) {
+    return NextResponse.json({ error: 'API-nyckel för AI saknas.' }, { status: 503 });
   }
 
   try {
     const { nameplateImage, machineImage } = await request.json();
 
-    const imageContent: Anthropic.ImageBlockParam[] = [];
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const imageContent: OpenAI.Chat.ChatCompletionContentPart[] = [];
 
     if (nameplateImage) {
-      const [header, data] = nameplateImage.split(',');
-      const mediaType = header.match(/data:(.*);base64/)?.[1] as 'image/jpeg' | 'image/png' | 'image/webp';
-      imageContent.push({
-        type: 'image',
-        source: { type: 'base64', media_type: mediaType || 'image/jpeg', data },
-      });
+      imageContent.push({ type: 'image_url', image_url: { url: nameplateImage, detail: 'high' } });
     }
-
     if (machineImage) {
-      const [header, data] = machineImage.split(',');
-      const mediaType = header.match(/data:(.*);base64/)?.[1] as 'image/jpeg' | 'image/png' | 'image/webp';
-      imageContent.push({
-        type: 'image',
-        source: { type: 'base64', media_type: mediaType || 'image/jpeg', data },
-      });
+      imageContent.push({ type: 'image_url', image_url: { url: machineImage, detail: 'high' } });
     }
 
-    const response = await client.messages.create({
-      model: 'claude-opus-4-7',
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            ...imageContent,
-            {
-              type: 'text',
-              text: `Analysera bilden/bilderna av denna maskin. Den första bilden (om den finns) är typskylten, den andra är maskinen.
+    const prompt = `Analysera bilden/bilderna av denna maskin. Den första bilden (om den finns) är typskylten, den andra är maskinen.
 
-Returnera ENBART ett JSON-objekt med dessa fält (inga andra ord):
+Returnera ENBART ett JSON-objekt med dessa fält (inga andra ord, ingen markdown):
 {
   "brand": "fabrikat, t.ex. Toyota",
   "model": "modellbeteckning, t.ex. 8FBN25",
@@ -56,14 +35,21 @@ Returnera ENBART ett JSON-objekt med dessa fält (inga andra ord):
   "notes": "övrig relevant info från typskylten"
 }
 
-Om du inte kan läsa ett värde, lämna det som tom sträng eller 0 för år. Gissa aldrig serienummer.`,
-            },
-          ],
+Om du inte kan läsa ett värde, lämna det som tom sträng eller 0 för år. Gissa aldrig serienummer.`;
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: prompt }, ...imageContent],
         },
       ],
+      max_tokens: 500,
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const text = response.choices[0]?.message?.content ?? '';
+
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json({ error: 'Kunde inte tolka AI-svaret' }, { status: 500 });
@@ -73,6 +59,7 @@ Om du inte kan läsa ett värde, lämna det som tom sträng eller 0 för år. Gi
     return NextResponse.json(data);
   } catch (err) {
     console.error('analyze-machine error:', err);
-    return NextResponse.json({ error: 'Analys misslyckades' }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Analys misslyckades';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
