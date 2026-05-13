@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
-  LayoutDashboard, Truck, Users, FileText, Tag, Wrench, BarChart3, Settings, LogOut, Zap,
+  LayoutDashboard, Truck, Users, FileText, Tag, Package, BarChart3, Settings, LogOut, Zap,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
@@ -14,7 +14,7 @@ const navItems = [
   { href: '/orders', icon: FileText, label: 'Uthyrningsorder' },
   { href: '/customers', icon: Users, label: 'Kunder' },
   { href: '/templates', icon: Tag, label: 'Prismallar' },
-  { href: '/service', icon: Wrench, label: 'Service' },
+  { href: '/articles', icon: Package, label: 'Artikelregister' },
   { href: '/statistics', icon: BarChart3, label: 'Statistik' },
   { href: '/settings', icon: Settings, label: 'Inställningar' },
 ];

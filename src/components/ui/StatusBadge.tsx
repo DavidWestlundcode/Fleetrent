@@ -14,6 +14,7 @@ const ORDER_BADGE: Record<OrderStatus, { bg: string; dot: string }> = {
   aktiv:      { bg: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200/80',       dot: 'bg-blue-500' },
   reserverad: { bg: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200/80',    dot: 'bg-amber-400' },
   forsenad:   { bg: 'bg-red-50 text-red-700 ring-1 ring-red-200/80',          dot: 'bg-red-500' },
+  klar_for_fakturering: { bg: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200/80', dot: 'bg-violet-500' },
   avslutad:   { bg: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/80', dot: 'bg-emerald-500' },
   annullerad: { bg: 'bg-slate-100 text-slate-500 ring-1 ring-slate-200/80',   dot: 'bg-slate-400' },
 };

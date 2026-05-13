@@ -1,6 +1,6 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity } from 'lucide-react';
 import Header from '@/components/layout/Header';
@@ -21,20 +21,19 @@ function Field({ label, children, required }: { label: string; children: React.R
   );
 }
 
-function NewOrderForm() {
+export default function EditOrderPage() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { machines, customers, templates, articles, addOrder, currentUser } = useStore();
+  const { orders, machines, customers, templates, articles, editOrder, currentUser } = useStore();
 
-  const today = new Date().toISOString().split('T')[0];
-  const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const order = orders.find((o) => o.id === id);
 
   const [form, setForm] = useState({
     machineId: '',
-    customerId: searchParams.get('customer') ?? '',
+    customerId: '',
     templateId: '',
-    startDate: today,
-    plannedReturnDate: nextMonth,
+    startDate: '',
+    plannedReturnDate: '',
     dailyPrice: 0,
     weeklyPrice: 0,
     monthlyPrice: 0,
@@ -50,8 +49,43 @@ function NewOrderForm() {
   });
   const [includeInsurance, setIncludeInsurance] = useState(false);
   const [rentalType, setRentalType] = useState<'short' | 'long'>('short');
-  const [autoMatchedTemplate, setAutoMatchedTemplate] = useState<string | null>(null);
   const [openEnded, setOpenEnded] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  // Pre-populate from existing order
+  useEffect(() => {
+    if (!order || initialized) return;
+    setForm({
+      machineId: order.machineId,
+      customerId: order.customerId,
+      templateId: order.templateId ?? '',
+      startDate: order.startDate,
+      plannedReturnDate: order.plannedReturnDate ?? '',
+      dailyPrice: order.dailyPrice,
+      weeklyPrice: order.weeklyPrice,
+      monthlyPrice: order.monthlyPrice,
+      transportCost: order.transportCost,
+      deposit: order.deposit,
+      internalNotes: order.internalNotes,
+      customerNotes: order.customerNotes,
+      accessories: order.accessories.join(', '),
+      rentalArticleId: order.rentalArticleId ?? '',
+      insuranceArticleId: order.insuranceArticleId ?? '',
+      transportArticleId: order.transportArticleId ?? '',
+      depositArticleId: order.depositArticleId ?? '',
+    });
+    setOpenEnded(order.openEnded === true);
+    setIncludeInsurance(!!order.insuranceCost || !!order.insuranceMonthlyRate);
+    setInitialized(true);
+  }, [order, initialized]);
+
+  if (!order) {
+    return (
+      <div className="flex items-center justify-center flex-1 text-slate-400">
+        <p>Ordern hittades inte</p>
+      </div>
+    );
+  }
 
   const set = (field: string, value: string | number) => setForm((p) => ({ ...p, [field]: value }));
 
@@ -86,24 +120,25 @@ function NewOrderForm() {
     }));
   };
 
-  useEffect(() => {
-    if (!form.machineId) { setAutoMatchedTemplate(null); return; }
-    const machine = machines.find((m) => m.id === form.machineId);
-    if (!machine) { setAutoMatchedTemplate(null); return; }
-    const matched = getMatchingTemplate(machine, templates);
-    if (matched && matched.id !== form.templateId) {
-      setAutoMatchedTemplate(matched.id);
-    } else if (!matched) {
-      setAutoMatchedTemplate(null);
-    }
-  }, [form.machineId, machines, templates]);
-
   const selectedTemplate = templates.find((t) => t.id === form.templateId);
   const hasLongTermOption = selectedTemplate && (
     (selectedTemplate.longTermDailyPrice ?? 0) > 0 ||
     (selectedTemplate.longTermWeeklyPrice ?? 0) > 0 ||
     (selectedTemplate.longTermMonthlyPrice ?? 0) > 0
   );
+  const hasInsuranceOption = selectedTemplate && (
+    selectedTemplate.insuranceDailyPrice > 0 ||
+    selectedTemplate.insuranceWeeklyPrice > 0 ||
+    selectedTemplate.insuranceMonthlyPrice > 0
+  );
+
+  // Machines: available (i_lager) + current machine of THIS order, filtered by template if selected
+  const availableMachines = machines.filter((m) => {
+    const isCurrentOrAvailable = m.status === 'i_lager' || m.id === order.machineId;
+    if (!isCurrentOrAvailable) return false;
+    if (!selectedTemplate) return true;
+    return machineMatchesTemplate(m.id, selectedTemplate);
+  });
 
   function rentalDays() {
     if (openEnded) return 0;
@@ -115,32 +150,18 @@ function NewOrderForm() {
   const days = rentalDays();
   const priceBreakdown = calcBreakdown(days, form.dailyPrice, form.weeklyPrice, form.monthlyPrice);
   const calculatedPrice = priceBreakdown.total;
-
   const insuranceMonths = days > 0 ? Math.ceil(days / 30) : 0;
   const insuranceCost = !openEnded && includeInsurance && selectedTemplate
     ? insuranceMonths * selectedTemplate.insuranceMonthlyPrice
     : 0;
-
   const totalPrice = openEnded
     ? form.transportCost + form.deposit
     : calculatedPrice + form.transportCost + insuranceCost;
 
-  const availableMachines = machines.filter((m) => {
-    if (m.status !== 'i_lager' && m.id !== form.machineId) return false;
-    if (!selectedTemplate) return true;
-    return machineMatchesTemplate(m.id, selectedTemplate);
-  });
-
-  const hasInsuranceOption = selectedTemplate && (
-    selectedTemplate.insuranceDailyPrice > 0 ||
-    selectedTemplate.insuranceWeeklyPrice > 0 ||
-    selectedTemplate.insuranceMonthlyPrice > 0
-  );
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.machineId || !form.customerId) return;
-    const id = addOrder({
+    editOrder(order.id, {
       machineId: form.machineId,
       customerId: form.customerId,
       templateId: form.templateId || undefined,
@@ -153,11 +174,9 @@ function NewOrderForm() {
       deposit: form.deposit,
       insuranceCost: (!openEnded && includeInsurance && insuranceCost) ? insuranceCost : undefined,
       totalPrice,
-      status: 'aktiv',
       internalNotes: form.internalNotes,
       customerNotes: form.customerNotes,
       accessories: form.accessories ? form.accessories.split(',').map((s) => s.trim()).filter(Boolean) : [],
-      createdBy: currentUser?.id ?? 'u1',
       rentalArticleId: form.rentalArticleId || undefined,
       insuranceArticleId: form.insuranceArticleId || undefined,
       transportArticleId: form.transportArticleId || undefined,
@@ -167,18 +186,23 @@ function NewOrderForm() {
         ? selectedTemplate.insuranceMonthlyPrice
         : undefined,
     });
-    router.push(`/orders/${id}`);
+    router.push(`/orders/${order.id}`);
   };
 
   const selectedMachine = machines.find((m) => m.id === form.machineId);
   const selectedCustomer = customers.find((c) => c.id === form.customerId);
 
+  // Auto-match hint when template is selected
+  const autoMatchedTemplate = !form.templateId && form.machineId
+    ? getMatchingTemplate(machines.find(m => m.id === form.machineId)!, templates)
+    : null;
+
   return (
     <div className="flex flex-col flex-1 overflow-auto bg-slate-50/60">
-      <Header title="Skapa uthyrningsorder" />
+      <Header title={`Redigera ${order.orderNumber}`} />
       <div className="flex-1 p-6 max-w-5xl mx-auto w-full">
-        <Link href="/orders" className="inline-flex items-center gap-1.5 text-[13px] text-slate-500 hover:text-slate-700 mb-6 transition-colors">
-          <ArrowLeft className="w-3.5 h-3.5" /> Tillbaka
+        <Link href={`/orders/${order.id}`} className="inline-flex items-center gap-1.5 text-[13px] text-slate-500 hover:text-slate-700 mb-6 transition-colors">
+          <ArrowLeft className="w-3.5 h-3.5" /> Tillbaka till order
         </Link>
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -197,7 +221,7 @@ function NewOrderForm() {
                 </Field>
 
                 <Field label="Prismall">
-                  <select value={form.templateId} onChange={(e) => { applyTemplate(e.target.value); setAutoMatchedTemplate(null); }} className={inputClass}>
+                  <select value={form.templateId} onChange={(e) => applyTemplate(e.target.value)} className={inputClass}>
                     <option value="">Välj mall (valfritt)...</option>
                     {templates.map((t) => (
                       <option key={t.id} value={t.id}>{t.name}</option>
@@ -217,6 +241,11 @@ function NewOrderForm() {
                       )}
                     </select>
                   </Field>
+                  {selectedTemplate && (selectedTemplate.capacityMin > 0 || selectedTemplate.capacityMax > 0) && (
+                    <p className="mt-1.5 text-[11px] text-slate-400">
+                      Prismall kräver: {selectedTemplate.capacityMin > 0 ? `≥ ${selectedTemplate.capacityMin.toLocaleString('sv-SE')} kg` : ''}{selectedTemplate.capacityMin > 0 && selectedTemplate.capacityMax > 0 ? ', ' : ''}{selectedTemplate.capacityMax > 0 ? `≤ ${selectedTemplate.capacityMax.toLocaleString('sv-SE')} kg` : ''}
+                    </p>
+                  )}
                   {selectedMachine && (
                     <div className="mt-2 p-3 bg-slate-50 rounded-xl flex items-center gap-3">
                       <MachineStatusBadge status={selectedMachine.status} />
@@ -257,27 +286,23 @@ function NewOrderForm() {
                       </div>
                     </div>
                   )}
-                  {/* Auto-match suggestion */}
-                  {autoMatchedTemplate && !form.templateId && (() => {
-                    const t = templates.find((t) => t.id === autoMatchedTemplate);
-                    return t ? (
-                      <div className="mt-2 p-3 bg-blue-50 border border-blue-200/80 rounded-xl flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                          <span className="text-[12px] text-blue-700">
-                            Matchad mall: <strong>{t.name}</strong>
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => { applyTemplate(autoMatchedTemplate); setAutoMatchedTemplate(null); }}
-                          className="text-[12px] font-medium text-blue-600 hover:text-blue-800 shrink-0 cursor-pointer transition-colors"
-                        >
-                          Tillämpa →
-                        </button>
+                  {autoMatchedTemplate && !form.templateId && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200/80 rounded-xl flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                        <span className="text-[12px] text-blue-700">
+                          Matchad mall: <strong>{autoMatchedTemplate.name}</strong>
+                        </span>
                       </div>
-                    ) : null;
-                  })()}
+                      <button
+                        type="button"
+                        onClick={() => applyTemplate(autoMatchedTemplate.id)}
+                        className="text-[12px] font-medium text-blue-600 hover:text-blue-800 shrink-0 cursor-pointer transition-colors"
+                      >
+                        Tillämpa →
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -344,10 +369,9 @@ function NewOrderForm() {
                 </Field>
               </div>
 
-              {/* Insurance toggle */}
               {hasInsuranceOption && (
                 <div className="mt-4 pt-4 border-t border-slate-100">
-                  <label className="flex items-center gap-3 cursor-pointer group">
+                  <label className="flex items-center gap-3 cursor-pointer">
                     <div
                       onClick={() => setIncludeInsurance(!includeInsurance)}
                       className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${includeInsurance ? 'bg-blue-500' : 'bg-slate-200'}`}
@@ -389,9 +413,9 @@ function NewOrderForm() {
             </div>
 
             <div className="flex items-center justify-end gap-3">
-              <Link href="/orders" className="px-4 py-2 text-[13px] font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">Avbryt</Link>
+              <Link href={`/orders/${order.id}`} className="px-4 py-2 text-[13px] font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">Avbryt</Link>
               <button type="submit" className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-[13px] font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-sm">
-                <Save className="w-4 h-4" /> Skapa order
+                <Save className="w-4 h-4" /> Spara ändringar
               </button>
             </div>
           </div>
@@ -401,7 +425,7 @@ function NewOrderForm() {
             <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm sticky top-6">
               <div className="flex items-center gap-2 mb-4">
                 <Calculator className="w-4 h-4 text-slate-400" />
-                <h3 className="text-[14px] font-semibold text-slate-900">Ordersammanfattning</h3>
+                <h3 className="text-[14px] font-semibold text-slate-900">Sammanfattning</h3>
               </div>
               <div className="space-y-3">
                 {selectedCustomer && (
@@ -414,12 +438,6 @@ function NewOrderForm() {
                   <div>
                     <p className="text-[10px] text-slate-400 uppercase tracking-wide">Maskin</p>
                     <p className="text-[13px] font-medium text-slate-800 mt-0.5">{selectedMachine.name}</p>
-                  </div>
-                )}
-                {selectedTemplate && (
-                  <div>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wide">Prismall</p>
-                    <p className="text-[13px] font-medium text-slate-800 mt-0.5">{selectedTemplate.name}</p>
                   </div>
                 )}
                 <div>
@@ -445,9 +463,7 @@ function NewOrderForm() {
                             {openEnded ? 'Beräknas vid retur' : formatCurrency(calculatedPrice)}
                           </span>
                         </div>
-                        {rentalArt && (
-                          <p className="text-[11px] text-blue-500 mt-0.5">#{rentalArt.articleNumber} {rentalArt.name}</p>
-                        )}
+                        {rentalArt && <p className="text-[11px] text-blue-500 mt-0.5">#{rentalArt.articleNumber} {rentalArt.name}</p>}
                       </div>
                       {form.transportCost > 0 && (
                         <div>
@@ -455,9 +471,7 @@ function NewOrderForm() {
                             <span className="text-slate-500">Transport</span>
                             <span className="font-medium">{formatCurrency(form.transportCost)}</span>
                           </div>
-                          {transArt && (
-                            <p className="text-[11px] text-blue-500 mt-0.5">#{transArt.articleNumber} {transArt.name}</p>
-                          )}
+                          {transArt && <p className="text-[11px] text-blue-500 mt-0.5">#{transArt.articleNumber} {transArt.name}</p>}
                         </div>
                       )}
                       {includeInsurance && (
@@ -468,9 +482,7 @@ function NewOrderForm() {
                               {openEnded ? 'Beräknas vid retur' : formatCurrency(insuranceCost)}
                             </span>
                           </div>
-                          {insArt && (
-                            <p className="text-[11px] text-blue-500 mt-0.5">#{insArt.articleNumber} {insArt.name}</p>
-                          )}
+                          {insArt && <p className="text-[11px] text-blue-500 mt-0.5">#{insArt.articleNumber} {insArt.name}</p>}
                         </div>
                       )}
                       {form.deposit > 0 && (
@@ -479,9 +491,7 @@ function NewOrderForm() {
                             <span className="text-slate-500">Deposition</span>
                             <span className="font-medium">{formatCurrency(form.deposit)}</span>
                           </div>
-                          {depArt && (
-                            <p className="text-[11px] text-blue-500 mt-0.5">#{depArt.articleNumber} {depArt.name}</p>
-                          )}
+                          {depArt && <p className="text-[11px] text-blue-500 mt-0.5">#{depArt.articleNumber} {depArt.name}</p>}
                         </div>
                       )}
                     </>
@@ -513,13 +523,5 @@ function NewOrderForm() {
         </form>
       </div>
     </div>
-  );
-}
-
-export default function NewOrderPage() {
-  return (
-    <Suspense fallback={<div className="flex items-center justify-center flex-1 text-slate-400">Laddar...</div>}>
-      <NewOrderForm />
-    </Suspense>
   );
 }

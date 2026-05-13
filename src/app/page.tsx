@@ -1013,16 +1013,30 @@ export default function LandingPage() {
               </div>
             </div>
             {[
-              { title: 'Produkt', links: ['Funktioner', 'Changelog', 'Roadmap'] },
-              { title: 'Företag', links: ['Om oss', 'Karriär', 'Press', 'Kontakt'] },
-              { title: 'Juridik', links: ['Integritetspolicy', 'Villkor', 'GDPR', 'Säkerhet'] },
+              { title: 'Produkt', links: [
+                { label: 'Funktioner', href: '/funktioner' },
+                { label: 'Changelog', href: '/changelog' },
+                { label: 'Roadmap', href: '/roadmap' },
+              ]},
+              { title: 'Företag', links: [
+                { label: 'Om oss', href: '/om-oss' },
+                { label: 'Karriär', href: '/karriar' },
+                { label: 'Press', href: '/press' },
+                { label: 'Kontakt', href: '/kontakt' },
+              ]},
+              { title: 'Juridik', links: [
+                { label: 'Integritetspolicy', href: '/integritetspolicy' },
+                { label: 'Villkor', href: '/villkor' },
+                { label: 'GDPR', href: '/gdpr' },
+                { label: 'Säkerhet', href: '/sakerhet' },
+              ]},
             ].map(({ title, links }) => (
               <div key={title}>
                 <h4 className="text-[12px] font-semibold text-white uppercase tracking-wider mb-4">{title}</h4>
                 <ul className="space-y-2.5">
-                  {links.map((link) => (
-                    <li key={link}>
-                      <a href="#" className="text-[13px] text-slate-500 hover:text-slate-300 transition-colors">{link}</a>
+                  {links.map(({ label, href }) => (
+                    <li key={label}>
+                      <a href={href} className="text-[13px] text-slate-500 hover:text-slate-300 transition-colors">{label}</a>
                     </li>
                   ))}
                 </ul>
@@ -1031,7 +1045,7 @@ export default function LandingPage() {
           </div>
           <div className="pt-8 border-t border-white/[0.05] flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-[12px] text-slate-600">
-              © {new Date().getFullYear()} FleetRent Sverige AB. Alla rättigheter förbehållna.
+              © {new Date().getFullYear()} DSE ENTERPRISE AB. Alla rättigheter förbehållna.
             </p>
             <div className="flex items-center gap-2 text-[12px] text-slate-600">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />

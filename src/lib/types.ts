@@ -9,11 +9,27 @@ export type MachineCategory =
   | 'gravmaskin'
   | 'kompaktlastare'
   | 'ovrig';
-export type OrderStatus = 'aktiv' | 'avslutad' | 'forsenad' | 'annullerad' | 'reserverad';
+export type OrderStatus = 'aktiv' | 'avslutad' | 'klar_for_fakturering' | 'forsenad' | 'annullerad' | 'reserverad';
 export type UserRole = 'admin' | 'saljare' | 'verkstad';
 export type ServiceType = 'periodisk' | 'reparation' | 'besiktning' | 'kontroll';
 export type ServiceStatus = 'planerad' | 'pagaende' | 'avslutad';
 export type ReturnCondition = 'bra' | 'skadat' | 'kraver_service' | 'kraver_kontroll';
+export type ArticleType = 'hyra' | 'försäkring' | 'transport' | 'deposition' | 'service' | 'övrigt';
+export type ArticleUnit = 'dag' | 'vecka' | 'månad' | 'st' | 'tim';
+
+export interface Article {
+  id: string;
+  articleNumber: string;
+  name: string;
+  description: string;
+  type: ArticleType;
+  unit: ArticleUnit;
+  defaultPrice: number;
+  accountNumber: string;
+  vatRate: number;
+  isActive: boolean;
+  createdAt: string;
+}
 
 export interface Machine {
   id: string;
@@ -108,6 +124,12 @@ export interface Order {
   returnImages: string[];
   returnOperatingHours?: number;
   events: OrderEvent[];
+  rentalArticleId?: string;
+  insuranceArticleId?: string;
+  transportArticleId?: string;
+  depositArticleId?: string;
+  openEnded?: boolean;
+  insuranceMonthlyRate?: number;
   createdAt: string;
   createdBy: string;
 }
@@ -122,6 +144,9 @@ export interface PriceTemplate {
   dailyPrice: number;
   weeklyPrice: number;
   monthlyPrice: number;
+  longTermDailyPrice: number;
+  longTermWeeklyPrice: number;
+  longTermMonthlyPrice: number;
   insuranceDailyPrice: number;
   insuranceWeeklyPrice: number;
   insuranceMonthlyPrice: number;
@@ -131,6 +156,10 @@ export interface PriceTemplate {
   minRentalDays: number;
   standardTerms: string;
   internalNote: string;
+  rentalArticleId?: string;
+  insuranceArticleId?: string;
+  transportArticleId?: string;
+  depositArticleId?: string;
   createdAt: string;
 }
 
@@ -177,6 +206,7 @@ export const STATUS_COLORS: Record<MachineStatus, string> = {
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   aktiv: 'Aktiv',
   avslutad: 'Avslutad',
+  klar_for_fakturering: 'Klar för fakturering',
   forsenad: 'Försenad',
   annullerad: 'Annullerad',
   reserverad: 'Reserverad',
@@ -185,6 +215,7 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
   aktiv: 'bg-blue-100 text-blue-800',
   avslutad: 'bg-emerald-100 text-emerald-800',
+  klar_for_fakturering: 'bg-violet-100 text-violet-800',
   forsenad: 'bg-red-100 text-red-800',
   annullerad: 'bg-slate-100 text-slate-600',
   reserverad: 'bg-amber-100 text-amber-800',
@@ -207,4 +238,30 @@ export const FUEL_LABELS: Record<FuelType, string> = {
   gas: 'Gas',
   lithium: 'Lithium',
   bensin: 'Bensin',
+};
+
+export const ARTICLE_TYPE_LABELS: Record<ArticleType, string> = {
+  hyra: 'Hyra',
+  försäkring: 'Försäkring',
+  transport: 'Transport',
+  deposition: 'Deposition',
+  service: 'Service',
+  övrigt: 'Övrigt',
+};
+
+export const ARTICLE_TYPE_COLORS: Record<ArticleType, string> = {
+  hyra: 'bg-blue-100 text-blue-800',
+  försäkring: 'bg-violet-100 text-violet-800',
+  transport: 'bg-amber-100 text-amber-800',
+  deposition: 'bg-slate-100 text-slate-700',
+  service: 'bg-orange-100 text-orange-800',
+  övrigt: 'bg-gray-100 text-gray-700',
+};
+
+export const ARTICLE_UNIT_LABELS: Record<ArticleUnit, string> = {
+  dag: 'Dag',
+  vecka: 'Vecka',
+  månad: 'Månad',
+  st: 'St',
+  tim: 'Tim',
 };

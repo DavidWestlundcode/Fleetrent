@@ -47,6 +47,21 @@ export function daysUntil(dateString: string): number {
   return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }
 
+export function calcBreakdown(days: number, daily: number, weekly: number, monthly: number) {
+  let rem = days;
+  const months = monthly > 0 ? Math.floor(rem / 30) : 0;
+  if (monthly > 0) rem %= 30;
+  const weeks = weekly > 0 ? Math.floor(rem / 7) : 0;
+  if (weekly > 0) rem %= 7;
+  const remainingDays = rem;
+  return {
+    months,
+    weeks,
+    days: remainingDays,
+    total: months * monthly + weeks * weekly + remainingDays * daily,
+  };
+}
+
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 11);
 }
@@ -79,11 +94,10 @@ export function getMatchingTemplate<T extends { category: string; capacityMin: n
   machine: { category: string; capacity: number },
   templates: T[]
 ): T | undefined {
-  const tons = machine.capacity / 1000;
   return templates.find((t) => {
     if (t.category !== machine.category) return false;
-    const minOk = t.capacityMin === 0 || tons >= t.capacityMin;
-    const maxOk = t.capacityMax === 0 || tons <= t.capacityMax;
+    const minOk = t.capacityMin === 0 || machine.capacity >= t.capacityMin;
+    const maxOk = t.capacityMax === 0 || machine.capacity <= t.capacityMax;
     return minOk && maxOk;
   });
 }

@@ -1,16 +1,17 @@
 'use client';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Clock, Truck, Building2, Calendar, Package, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Clock, Truck, Building2, Calendar, Package, CheckCircle2, Trash2, Pencil } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { MachineStatusBadge, OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
 import { formatCurrency, formatDate, formatDateTime, daysBetween, daysUntil } from '@/lib/utils';
+import { ARTICLE_UNIT_LABELS } from '@/lib/types';
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { orders, machines, customers, updateOrder } = useStore();
+  const { orders, machines, customers, articles, updateOrder, deleteOrder } = useStore();
 
   const order = orders.find((o) => o.id === id);
   if (!order) {
@@ -26,8 +27,8 @@ export default function OrderDetailPage() {
 
   const machine = machines.find((m) => m.id === order.machineId);
   const customer = customers.find((c) => c.id === order.customerId);
-  const isOverdue = order.status === 'aktiv' && new Date(order.plannedReturnDate) < new Date();
-  const daysRemaining = daysUntil(order.plannedReturnDate);
+  const isOverdue = order.status === 'aktiv' && !!order.plannedReturnDate && new Date(order.plannedReturnDate) < new Date();
+  const daysRemaining = order.plannedReturnDate ? daysUntil(order.plannedReturnDate) : null;
   const actualDays = order.actualReturnDate
     ? daysBetween(order.startDate, order.actualReturnDate)
     : daysBetween(order.startDate, new Date().toISOString());
@@ -35,6 +36,13 @@ export default function OrderDetailPage() {
   const handleCancelOrder = () => {
     if (confirm('Är du säker på att du vill annullera denna order?')) {
       updateOrder(order.id, { status: 'annullerad' });
+    }
+  };
+
+  const handleDeleteOrder = () => {
+    if (confirm(`Radera order ${order.orderNumber}? Detta går inte att ångra.`)) {
+      deleteOrder(order.id);
+      router.push('/orders');
     }
   };
 
@@ -48,7 +56,7 @@ export default function OrderDetailPage() {
             {(order.status === 'aktiv' || order.status === 'reserverad') && (
               <>
                 <Link
-                  href={`/return/${order.id}`}
+                  href={`/return/${order.id}?from=order`}
                   className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors"
                 >
                   <CheckCircle2 className="w-4 h-4" />
@@ -62,6 +70,29 @@ export default function OrderDetailPage() {
                 </button>
               </>
             )}
+            {order.status === 'klar_for_fakturering' && (
+              <button
+                onClick={() => updateOrder(order.id, { status: 'avslutad' })}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-violet-600 rounded-lg hover:bg-violet-700 transition-colors"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                Markera fakturerad
+              </button>
+            )}
+            <Link
+              href={`/orders/${order.id}/edit`}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              <Pencil className="w-4 h-4" />
+              Redigera
+            </Link>
+            <button
+              onClick={handleDeleteOrder}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              Radera
+            </button>
           </div>
         }
       />
@@ -76,7 +107,7 @@ export default function OrderDetailPage() {
             <Clock className="w-5 h-5 text-red-500 shrink-0" />
             <div>
               <p className="font-semibold text-red-800">Försenad retur!</p>
-              <p className="text-sm text-red-700">Maskinen skulle ha returnerats för {Math.abs(daysRemaining)} dagar sedan.</p>
+              <p className="text-sm text-red-700">Maskinen skulle ha returnerats för {daysRemaining !== null ? Math.abs(daysRemaining) : 0} dagar sedan.</p>
             </div>
           </div>
         )}
@@ -123,7 +154,7 @@ export default function OrderDetailPage() {
                 <div>
                   <p className="text-xs text-slate-400 mb-1">Planerad retur</p>
                   <p className={`text-sm font-medium ${isOverdue ? 'text-red-600' : 'text-slate-800'}`}>
-                    {formatDate(order.plannedReturnDate)}
+                    {order.plannedReturnDate ? formatDate(order.plannedReturnDate) : 'Löpande'}
                   </p>
                 </div>
                 {order.actualReturnDate && (
@@ -192,6 +223,77 @@ export default function OrderDetailPage() {
               </div>
             )}
 
+            {/* Articles Table */}
+            {(order.rentalArticleId || order.insuranceArticleId || order.transportArticleId || order.depositArticleId) && (() => {
+              const totalDays = order.actualReturnDate
+                ? daysBetween(order.startDate, order.actualReturnDate)
+                : order.plannedReturnDate
+                ? daysBetween(order.startDate, order.plannedReturnDate)
+                : null;
+
+              const rows = [
+                { id: order.rentalArticleId, type: 'rental' as const },
+                { id: order.insuranceArticleId, type: 'insurance' as const },
+                { id: order.transportArticleId, type: 'transport' as const },
+                { id: order.depositArticleId, type: 'deposit' as const },
+              ]
+                .filter((r) => r.id)
+                .map((r) => {
+                  const art = articles.find((a) => a.id === r.id);
+                  if (!art) return null;
+                  let antal: number | string;
+                  if (totalDays === null) {
+                    antal = 'Löpande';
+                  } else if (r.type === 'transport' || r.type === 'deposit') {
+                    antal = 1;
+                  } else if (r.type === 'insurance') {
+                    antal = Math.ceil(totalDays / 30);
+                  } else {
+                    switch (art.unit) {
+                      case 'dag': antal = totalDays; break;
+                      case 'vecka': antal = Math.ceil(totalDays / 7); break;
+                      case 'månad': antal = Math.ceil(totalDays / 30); break;
+                      default: antal = 1;
+                    }
+                  }
+                  return { art, antal };
+                })
+                .filter(Boolean) as { art: (typeof articles)[number]; antal: number | string }[];
+
+              if (rows.length === 0) return null;
+              return (
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="px-5 py-4 border-b border-slate-100">
+                    <h2 className="font-semibold text-slate-900">Artiklar</h2>
+                  </div>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-slate-50/80 border-b border-slate-100">
+                        <th className="text-left px-5 py-2.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Art.nr</th>
+                        <th className="text-left px-5 py-2.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Beskrivning</th>
+                        <th className="text-right px-5 py-2.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Antal</th>
+                        <th className="text-left px-5 py-2.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Enhet</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {rows.map((row) => (
+                        <tr key={row.art.id} className="hover:bg-slate-50/60 transition-colors">
+                          <td className="px-5 py-3 font-mono text-[13px] text-slate-700">{row.art.articleNumber}</td>
+                          <td className="px-5 py-3 text-[13px] text-slate-800">{row.art.name}</td>
+                          <td className="px-5 py-3 text-[13px] text-right font-medium text-slate-700">
+                            {typeof row.antal === 'string'
+                              ? <span className="text-amber-600">{row.antal}</span>
+                              : row.antal}
+                          </td>
+                          <td className="px-5 py-3 text-[13px] text-slate-500">{ARTICLE_UNIT_LABELS[row.art.unit]}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
+
             {/* Event Log */}
             <div className="bg-white rounded-xl border border-slate-200">
               <div className="px-5 py-4 border-b border-slate-100">
@@ -225,6 +327,7 @@ export default function OrderDetailPage() {
                   { label: 'Veckopris', value: formatCurrency(order.weeklyPrice) + '/vecka' },
                   { label: 'Månadspris', value: formatCurrency(order.monthlyPrice) + '/mån' },
                   { label: 'Transport', value: formatCurrency(order.transportCost) },
+                  ...(order.insuranceCost ? [{ label: 'Försäkring', value: formatCurrency(order.insuranceCost) }] : []),
                   { label: 'Deposition', value: formatCurrency(order.deposit) },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex justify-between text-sm">
@@ -245,16 +348,24 @@ export default function OrderDetailPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-500">Planerade dagar</span>
-                  <span className="font-medium">{daysBetween(order.startDate, order.plannedReturnDate)}</span>
+                  <span className="font-medium">
+                    {order.plannedReturnDate ? daysBetween(order.startDate, order.plannedReturnDate) : '–'}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-500">Faktiska dagar</span>
                   <span className="font-medium">{actualDays}</span>
                 </div>
-                {order.status === 'aktiv' && !isOverdue && (
+                {order.status === 'aktiv' && !isOverdue && daysRemaining !== null && (
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500">Dagar kvar</span>
                     <span className="font-medium text-emerald-600">{daysRemaining}</span>
+                  </div>
+                )}
+                {order.status === 'aktiv' && !order.plannedReturnDate && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500">Typ</span>
+                    <span className="font-medium text-amber-600">Löpande</span>
                   </div>
                 )}
               </div>

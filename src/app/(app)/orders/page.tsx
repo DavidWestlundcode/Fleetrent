@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Trash2 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
@@ -9,7 +9,7 @@ import { formatCurrency, formatDate, daysUntil } from '@/lib/utils';
 import type { OrderStatus } from '@/lib/types';
 
 export default function OrdersPage() {
-  const { orders, machines, customers } = useStore();
+  const { orders, machines, customers, deleteOrder } = useStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
 
@@ -37,7 +37,8 @@ export default function OrdersPage() {
 
   const statusLabels: Record<string, string> = {
     all: 'Alla', aktiv: 'Aktiva', reserverad: 'Reserverade',
-    forsenad: 'Försenade', avslutad: 'Avslutade', annullerad: 'Annullerade',
+    forsenad: 'Försenade', klar_for_fakturering: 'Klar för fakturering',
+    avslutad: 'Avslutade', annullerad: 'Annullerade',
   };
 
   return (
@@ -59,7 +60,7 @@ export default function OrdersPage() {
       <div className="flex-1 p-6 space-y-4">
         {/* Status Tabs */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          {(['all', 'aktiv', 'reserverad', 'forsenad', 'avslutad', 'annullerad'] as const).map((s) => (
+          {(['all', 'aktiv', 'reserverad', 'forsenad', 'klar_for_fakturering', 'avslutad', 'annullerad'] as const).map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
@@ -113,8 +114,8 @@ export default function OrdersPage() {
               {filtered.map((order) => {
                 const machine = machines.find((m) => m.id === order.machineId);
                 const customer = customers.find((c) => c.id === order.customerId);
-                const isOverdue = order.status === 'aktiv' && new Date(order.plannedReturnDate) < new Date();
-                const daysRemaining = daysUntil(order.plannedReturnDate);
+                const isOverdue = order.status === 'aktiv' && !!order.plannedReturnDate && new Date(order.plannedReturnDate) < new Date();
+                const daysRemaining = order.plannedReturnDate ? daysUntil(order.plannedReturnDate) : null;
                 return (
                   <tr
                     key={order.id}
@@ -128,8 +129,10 @@ export default function OrdersPage() {
                     <td className="px-4 py-3.5 text-[13px] text-slate-500">{formatDate(order.startDate)}</td>
                     <td className="px-4 py-3.5">
                       <div>
-                        <span className="text-[13px] text-slate-500">{formatDate(order.plannedReturnDate)}</span>
-                        {order.status === 'aktiv' && (
+                        <span className="text-[13px] text-slate-500">
+                          {order.plannedReturnDate ? formatDate(order.plannedReturnDate) : 'Löpande'}
+                        </span>
+                        {order.status === 'aktiv' && daysRemaining !== null && (
                           <p className={`text-[11px] mt-0.5 font-medium ${isOverdue ? 'text-red-600' : daysRemaining <= 7 ? 'text-amber-600' : 'text-slate-400'}`}>
                             {isOverdue ? `${Math.abs(daysRemaining)} dagar sen` : `${daysRemaining} dagar kvar`}
                           </p>
@@ -139,12 +142,23 @@ export default function OrdersPage() {
                     <td className="px-4 py-3.5 text-[13px] font-medium text-slate-700">{formatCurrency(order.totalPrice)}</td>
                     <td className="px-4 py-3.5"><OrderStatusBadge status={order.status} /></td>
                     <td className="px-4 py-3.5">
-                      <Link
-                        href={`/orders/${order.id}`}
-                        className="text-[12px] font-medium text-blue-600 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        Visa →
-                      </Link>
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Link
+                          href={`/orders/${order.id}`}
+                          className="text-[12px] font-medium text-blue-600 hover:text-blue-700"
+                        >
+                          Visa →
+                        </Link>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm(`Radera order ${order.orderNumber}?`)) deleteOrder(order.id);
+                          }}
+                          className="p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

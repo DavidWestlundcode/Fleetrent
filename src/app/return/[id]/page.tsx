@@ -1,10 +1,10 @@
 'use client';
-import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, Truck, ArrowLeft, Camera, AlertTriangle, Wrench } from 'lucide-react';
 import { useStore } from '@/store';
-import { formatDate, daysBetween } from '@/lib/utils';
+import { formatDate, daysBetween, calcBreakdown, formatCurrency } from '@/lib/utils';
 import { MachineStatusBadge } from '@/components/ui/StatusBadge';
 
 type ReturnCondition = 'bra' | 'skadat' | 'kraver_service' | 'kraver_kontroll';
@@ -16,9 +16,11 @@ const CONDITIONS: { value: ReturnCondition; label: string; desc: string; color: 
   { value: 'kraver_kontroll', label: 'Kräver kontroll', desc: 'Behöver kontrolleras innan ny uthyrning', color: 'border-amber-500 bg-amber-50 text-amber-700' },
 ];
 
-export default function ReturnPage() {
+function ReturnPageInner() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromOrder = searchParams.get('from') === 'order';
   const { orders, machines, customers, returnMachine } = useStore();
 
   const order = orders.find((o) => o.id === id);
@@ -50,13 +52,29 @@ export default function ReturnPage() {
           <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
           <p className="text-lg font-semibold">Ordern är redan avslutad</p>
           <p className="text-slate-400 text-sm mt-2">Denna order har status: {order.status}</p>
-          <Link href={`/qr/${machine.id}`} className="mt-4 block text-blue-400 hover:underline text-sm">← Till maskinens QR-sida</Link>
+          {fromOrder ? (
+            <Link href={`/orders/${order.id}`} className="mt-4 block text-blue-400 hover:underline text-sm">← Till ordern</Link>
+          ) : (
+            <Link href={`/qr/${machine.id}`} className="mt-4 block text-blue-400 hover:underline text-sm">← Till maskinens QR-sida</Link>
+          )}
         </div>
       </div>
     );
   }
 
   const rentalDays = daysBetween(order.startDate, new Date().toISOString());
+  const isOpenEnded = order.openEnded === true || !order.plannedReturnDate;
+
+  const priceBreakdown = isOpenEnded
+    ? calcBreakdown(rentalDays, order.dailyPrice, order.weeklyPrice, order.monthlyPrice)
+    : null;
+  const rentalCost = priceBreakdown ? priceBreakdown.total : 0;
+  const insuranceCostAtReturn = isOpenEnded && order.insuranceMonthlyRate
+    ? Math.ceil(rentalDays / 30) * order.insuranceMonthlyRate
+    : 0;
+  const finalTotalPrice = isOpenEnded
+    ? rentalCost + (order.transportCost ?? 0) + insuranceCostAtReturn + (order.deposit ?? 0)
+    : undefined;
 
   const handleSubmit = () => {
     if (!condition) return;
@@ -65,8 +83,13 @@ export default function ReturnPage() {
       returnNotes: notes,
       returnOperatingHours: operatingHours,
       sendToService: condition === 'kraver_service' || condition === 'skadat',
+      finalTotalPrice,
     });
-    setSubmitted(true);
+    if (fromOrder) {
+      router.push(`/orders/${order.id}`);
+    } else {
+      setSubmitted(true);
+    }
   };
 
   if (submitted) {
@@ -76,24 +99,19 @@ export default function ReturnPage() {
           <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="w-8 h-8 text-emerald-600" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Retur registrerad!</h2>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Order avslutad!</h2>
           <p className="text-slate-500 text-sm mb-6">
             {machine.name} har markerats som{' '}
             {condition === 'skadat' || condition === 'kraver_service' ? 'skickad till service' : 'tillbaka i lager'}.
           </p>
           <div className="bg-slate-50 rounded-xl p-4 text-left space-y-2 mb-6">
-            <p className="text-sm text-slate-600">
-              <span className="font-medium">Maskin:</span> {machine.name}
-            </p>
-            <p className="text-sm text-slate-600">
-              <span className="font-medium">Kund:</span> {customer?.companyName}
-            </p>
-            <p className="text-sm text-slate-600">
-              <span className="font-medium">Hyresperiod:</span> {rentalDays} dagar
-            </p>
-            <p className="text-sm text-slate-600">
-              <span className="font-medium">Skick:</span> {CONDITIONS.find((c) => c.value === condition)?.label}
-            </p>
+            <p className="text-sm text-slate-600"><span className="font-medium">Maskin:</span> {machine.name}</p>
+            <p className="text-sm text-slate-600"><span className="font-medium">Kund:</span> {customer?.companyName}</p>
+            <p className="text-sm text-slate-600"><span className="font-medium">Hyresperiod:</span> {rentalDays} dagar</p>
+            <p className="text-sm text-slate-600"><span className="font-medium">Skick:</span> {CONDITIONS.find((c) => c.value === condition)?.label}</p>
+            {finalTotalPrice !== undefined && (
+              <p className="text-sm text-slate-600"><span className="font-medium">Totalt:</span> {formatCurrency(finalTotalPrice)}</p>
+            )}
           </div>
           <Link
             href={`/qr/${machine.id}`}
@@ -106,16 +124,17 @@ export default function ReturnPage() {
     );
   }
 
+  const backHref = fromOrder ? `/orders/${order.id}` : `/qr/${machine.id}`;
+
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col">
-      {/* Header */}
       <div className="bg-slate-800 border-b border-slate-700 px-4 py-4 flex items-center gap-3">
-        <Link href={`/qr/${machine.id}`} className="text-slate-400 hover:text-white">
+        <Link href={backHref} className="text-slate-400 hover:text-white">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
           <p className="text-white font-bold">Returregistrering</p>
-          <p className="text-slate-400 text-xs">{machine.name}</p>
+          <p className="text-slate-400 text-xs">{machine.name} · {order.orderNumber}</p>
         </div>
       </div>
 
@@ -148,7 +167,9 @@ export default function ReturnPage() {
             <div className="mt-2 pt-2 border-t border-slate-200 flex justify-between">
               <div>
                 <p className="text-xs text-slate-400">Planerad retur</p>
-                <p className="text-sm font-semibold text-slate-700">{formatDate(order.plannedReturnDate)}</p>
+                <p className="text-sm font-semibold text-slate-700">
+                  {order.plannedReturnDate ? formatDate(order.plannedReturnDate) : 'Löpande'}
+                </p>
               </div>
               <div className="text-right">
                 <p className="text-xs text-slate-400">Faktiska dagar</p>
@@ -160,7 +181,6 @@ export default function ReturnPage() {
 
         {step === 1 ? (
           <>
-            {/* Condition Selection */}
             <div className="bg-white rounded-2xl p-5 mb-4">
               <h3 className="font-bold text-slate-900 mb-3">Maskinens skick vid retur</h3>
               <div className="space-y-2">
@@ -169,7 +189,7 @@ export default function ReturnPage() {
                     key={c.value}
                     onClick={() => setCondition(c.value)}
                     className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                      condition === c.value ? c.color + ' border-opacity-100' : 'border-slate-200 hover:border-slate-300'
+                      condition === c.value ? c.color : 'border-slate-200 hover:border-slate-300'
                     }`}
                   >
                     <p className="font-semibold text-sm">{c.label}</p>
@@ -179,7 +199,6 @@ export default function ReturnPage() {
               </div>
             </div>
 
-            {/* Operating Hours */}
             <div className="bg-white rounded-2xl p-5 mb-4">
               <h3 className="font-bold text-slate-900 mb-3">Drifttimmar vid retur</h3>
               <input
@@ -202,7 +221,6 @@ export default function ReturnPage() {
           </>
         ) : (
           <>
-            {/* Notes and Photos */}
             <div className="bg-white rounded-2xl p-5 mb-4">
               <h3 className="font-bold text-slate-900 mb-3">Kommentar och dokumentation</h3>
               <textarea
@@ -218,7 +236,6 @@ export default function ReturnPage() {
               </button>
             </div>
 
-            {/* Summary */}
             <div className="bg-white rounded-2xl p-5 mb-4">
               <h3 className="font-bold text-slate-900 mb-3">Sammanfattning</h3>
               <div className="space-y-2">
@@ -240,6 +257,53 @@ export default function ReturnPage() {
                     <p className="text-xs text-orange-700 font-medium">Maskinen skickas automatiskt till service</p>
                   </div>
                 )}
+                {isOpenEnded && priceBreakdown && (
+                  <div className="mt-3 pt-3 border-t border-slate-200">
+                    <p className="text-xs font-semibold text-slate-500 mb-2">Beräknad hyreskostnad</p>
+                    <div className="space-y-1">
+                      {priceBreakdown.months > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">{priceBreakdown.months} mån à {formatCurrency(order.monthlyPrice)}</span>
+                          <span className="font-medium">{formatCurrency(priceBreakdown.months * order.monthlyPrice)}</span>
+                        </div>
+                      )}
+                      {priceBreakdown.weeks > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">{priceBreakdown.weeks} veckor à {formatCurrency(order.weeklyPrice)}</span>
+                          <span className="font-medium">{formatCurrency(priceBreakdown.weeks * order.weeklyPrice)}</span>
+                        </div>
+                      )}
+                      {priceBreakdown.days > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">{priceBreakdown.days} dagar à {formatCurrency(order.dailyPrice)}</span>
+                          <span className="font-medium">{formatCurrency(priceBreakdown.days * order.dailyPrice)}</span>
+                        </div>
+                      )}
+                      {insuranceCostAtReturn > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Försäkring ({Math.ceil(rentalDays / 30)} mån)</span>
+                          <span className="font-medium">{formatCurrency(insuranceCostAtReturn)}</span>
+                        </div>
+                      )}
+                      {order.transportCost > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Transport</span>
+                          <span className="font-medium">{formatCurrency(order.transportCost)}</span>
+                        </div>
+                      )}
+                      {order.deposit > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-500">Deposition</span>
+                          <span className="font-medium">{formatCurrency(order.deposit)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-sm font-semibold pt-2 border-t border-slate-200">
+                        <span>Totalt</span>
+                        <span className="text-blue-600">{formatCurrency(finalTotalPrice ?? 0)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -255,12 +319,20 @@ export default function ReturnPage() {
                 className="flex-1 py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-2"
               >
                 <CheckCircle2 className="w-5 h-5" />
-                Bekräfta retur
+                Avsluta order
               </button>
             </div>
           </>
         )}
       </div>
     </div>
+  );
+}
+
+export default function ReturnPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-900" />}>
+      <ReturnPageInner />
+    </Suspense>
   );
 }

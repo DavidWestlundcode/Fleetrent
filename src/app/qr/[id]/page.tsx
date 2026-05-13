@@ -30,8 +30,8 @@ export default function QRPage() {
     (o) => o.machineId === machine.id && (o.status === 'aktiv' || o.status === 'reserverad')
   );
   const customer = activeOrder ? customers.find((c) => c.id === activeOrder.customerId) : null;
-  const isOverdue = activeOrder && new Date(activeOrder.plannedReturnDate) < new Date();
-  const daysLeft = activeOrder ? daysUntil(activeOrder.plannedReturnDate) : null;
+  const isOverdue = activeOrder && !!activeOrder.plannedReturnDate && new Date(activeOrder.plannedReturnDate) < new Date();
+  const daysLeft = activeOrder?.plannedReturnDate ? daysUntil(activeOrder.plannedReturnDate) : null;
 
   const qrUrl = typeof window !== 'undefined' ? window.location.href : '';
 
@@ -117,16 +117,18 @@ export default function QRPage() {
                   <p className="font-semibold text-slate-800">{formatDate(activeOrder.startDate)}</p>
                 </div>
               </div>
-              <div className={`flex items-center gap-3 p-3 rounded-xl ${isOverdue ? 'bg-red-50' : 'bg-amber-50'}`}>
-                <Clock className={`w-4 h-4 ${isOverdue ? 'text-red-500' : 'text-amber-600'}`} />
+              <div className={`flex items-center gap-3 p-3 rounded-xl ${isOverdue ? 'bg-red-50' : activeOrder.plannedReturnDate ? 'bg-amber-50' : 'bg-slate-50'}`}>
+                <Clock className={`w-4 h-4 ${isOverdue ? 'text-red-500' : activeOrder.plannedReturnDate ? 'text-amber-600' : 'text-slate-400'}`} />
                 <div>
                   <p className="text-xs text-slate-400">Planerad retur</p>
-                  <p className={`font-bold ${isOverdue ? 'text-red-700' : 'text-amber-700'}`}>
-                    {formatDate(activeOrder.plannedReturnDate)}
+                  <p className={`font-bold ${isOverdue ? 'text-red-700' : activeOrder.plannedReturnDate ? 'text-amber-700' : 'text-slate-600'}`}>
+                    {activeOrder.plannedReturnDate ? formatDate(activeOrder.plannedReturnDate) : 'Löpande'}
                   </p>
-                  <p className={`text-xs font-medium ${isOverdue ? 'text-red-600' : 'text-amber-600'}`}>
-                    {isOverdue ? `FÖRSENAD – ${Math.abs(daysLeft!)} dag${Math.abs(daysLeft!) !== 1 ? 'ar' : ''} sen` : `${daysLeft} dag${daysLeft !== 1 ? 'ar' : ''} kvar`}
-                  </p>
+                  {daysLeft !== null && (
+                    <p className={`text-xs font-medium ${isOverdue ? 'text-red-600' : 'text-amber-600'}`}>
+                      {isOverdue ? `FÖRSENAD – ${Math.abs(daysLeft)} dag${Math.abs(daysLeft) !== 1 ? 'ar' : ''} sen` : `${daysLeft} dag${daysLeft !== 1 ? 'ar' : ''} kvar`}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -137,7 +139,7 @@ export default function QRPage() {
               className="mt-4 flex items-center justify-center gap-2 w-full py-4 bg-emerald-600 text-white font-bold text-base rounded-xl hover:bg-emerald-700 active:scale-95 transition-all"
             >
               <CheckCircle2 className="w-5 h-5" />
-              Markera som tillbaka i lager
+              Avsluta order
             </Link>
           </div>
         ) : (
