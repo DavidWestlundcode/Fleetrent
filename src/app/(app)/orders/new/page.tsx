@@ -24,7 +24,7 @@ function Field({ label, children, required }: { label: string; children: React.R
 function NewOrderForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { machines, customers, templates, articles, addOrder, currentUser } = useStore();
+  const { machines, customers, templates, articles, addOrder } = useStore();
 
   const today = new Date().toISOString().split('T')[0];
   const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -157,7 +157,7 @@ function NewOrderForm() {
       internalNotes: form.internalNotes,
       customerNotes: form.customerNotes,
       accessories: form.accessories ? form.accessories.split(',').map((s) => s.trim()).filter(Boolean) : [],
-      createdBy: currentUser?.id ?? 'u1',
+      createdBy: '',
       rentalArticleId: form.rentalArticleId || undefined,
       insuranceArticleId: form.insuranceArticleId || undefined,
       transportArticleId: form.transportArticleId || undefined,

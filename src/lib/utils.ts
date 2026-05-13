@@ -63,7 +63,7 @@ export function calcBreakdown(days: number, daily: number, weekly: number, month
 }
 
 export function generateId(): string {
-  return Math.random().toString(36).substring(2, 11);
+  return crypto.randomUUID();
 }
 
 export function generateOrderNumber(): string {

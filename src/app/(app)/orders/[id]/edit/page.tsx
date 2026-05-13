@@ -24,7 +24,7 @@ function Field({ label, children, required }: { label: string; children: React.R
 export default function EditOrderPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { orders, machines, customers, templates, articles, editOrder, currentUser } = useStore();
+  const { orders, machines, customers, templates, articles, editOrder } = useStore();
 
   const order = orders.find((o) => o.id === id);
 
