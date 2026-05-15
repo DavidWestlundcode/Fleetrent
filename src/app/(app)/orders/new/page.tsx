@@ -378,7 +378,7 @@ function NewOrderForm() {
             <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
               <h2 className="text-[14px] font-semibold text-slate-900 mb-4">Anteckningar och tillbehör</h2>
               <div className="space-y-4">
-                <Field label="Ordermärkning" hint="Kundens egna ordernummer eller referens">
+                <Field label="Ordermärkning">
                   <input value={form.orderReference} onChange={(e) => set('orderReference', e.target.value)} className={inputClass} placeholder="T.ex. PO-12345 eller kundreferens" />
                 </Field>
                 <Field label="Tillbehör (kommaseparerade)">
