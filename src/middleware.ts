@@ -11,6 +11,8 @@ const PROTECTED_PATHS = [
   '/service',
   '/settings',
   '/statistics',
+  '/qr',
+  '/return',
 ];
 
 export async function middleware(request: NextRequest) {
@@ -42,7 +44,9 @@ export async function middleware(request: NextRequest) {
   const isProtected = PROTECTED_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'));
 
   if (!user && isProtected) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('next', pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   if (user && pathname === '/login') {
@@ -53,5 +57,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api|qr|return).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api).*)'],
 };

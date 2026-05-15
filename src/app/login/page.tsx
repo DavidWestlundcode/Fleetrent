@@ -1,12 +1,15 @@
 'use client';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Zap, Lock, Mail, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 type Mode = 'login' | 'signup' | 'forgot';
 
-export default function LoginPage() {
+function LoginPageInner() {
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams.get('next') ?? '/dashboard';
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,7 +49,7 @@ export default function LoginPage() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        window.location.href = window.location.origin + '/dashboard';
+        window.location.href = window.location.origin + nextUrl;
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Något gick fel. Försök igen.';
@@ -288,5 +291,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0B1120]" />}>
+      <LoginPageInner />
+    </Suspense>
   );
 }
