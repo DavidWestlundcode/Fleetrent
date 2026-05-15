@@ -94,7 +94,7 @@ function toDbMachine(m: Machine, orgId: string): DbRow {
     location: m.location,
     qr_code: m.qrCode,
     purchase_price: m.purchasePrice,
-    purchase_date: m.purchaseDate || null,
+    purchase_date: m.purchaseDate || '',
     leasing_cost: m.leasingCost,
     financing_cost: m.financingCost,
     insurance_cost: m.insuranceCost,
