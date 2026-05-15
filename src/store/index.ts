@@ -10,6 +10,12 @@ import { generateOrderNumber } from '@/lib/utils';
 
 type DbRow = Record<string, unknown>;
 
+function syncQuery(query: unknown, label: string) {
+  (query as Promise<{ error: unknown }>).then(({ error }) => {
+    if (error) console.error(label, error);
+  });
+}
+
 // ---- MAPPERS ----
 
 function fromDbMachine(r: DbRow): Machine {
@@ -524,12 +530,11 @@ export const useStore = create<AppStore>()((set, get) => ({
   addMachine: (machine) => {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
-    const newMachine: Machine = { ...machine, id, createdAt: now, updatedAt: now };
+    const newMachine: Machine = { ...machine, id, qrCode: id, createdAt: now, updatedAt: now };
     set((s) => ({ machines: [...s.machines, newMachine] }));
     const { organizationId } = get();
     if (organizationId) {
-      (sb().from('machines').insert(toDbMachine(newMachine, organizationId)) as unknown as Promise<{ error: unknown }>)
-        .then(({ error }) => { if (error) console.error('sync addMachine:', error); });
+      syncQuery(sb().from('machines').insert(toDbMachine(newMachine, organizationId)), 'sync addMachine:');
     }
     return id;
   },
@@ -545,8 +550,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     if (organizationId) {
       const updated = get().machines.find((m) => m.id === id);
       if (updated) {
-        sb().from('machines').update(toDbMachine(updated, organizationId)).eq('id', id)
-          .then(({ error }) => { if (error) console.error('sync updateMachine:', error); });
+        syncQuery(sb().from('machines').update(toDbMachine(updated, organizationId)).eq('id', id), 'sync updateMachine:');
       }
     }
   },
@@ -555,8 +559,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     set((s) => ({ machines: s.machines.filter((m) => m.id !== id) }));
     const { organizationId } = get();
     if (organizationId) {
-      sb().from('machines').delete().eq('id', id)
-        .then(({ error }) => { if (error) console.error('sync deleteMachine:', error); });
+      syncQuery(sb().from('machines').delete().eq('id', id), 'sync deleteMachine:');
     }
   },
 
@@ -568,8 +571,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     set((s) => ({ customers: [...s.customers, newCustomer] }));
     const { organizationId } = get();
     if (organizationId) {
-      sb().from('customers').insert(toDbCustomer(newCustomer, organizationId))
-        .then(({ error }) => { if (error) console.error('sync addCustomer:', error); });
+      syncQuery(sb().from('customers').insert(toDbCustomer(newCustomer, organizationId)), 'sync addCustomer:');
     }
     return id;
   },
@@ -582,8 +584,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     if (organizationId) {
       const updated = get().customers.find((c) => c.id === id);
       if (updated) {
-        sb().from('customers').update(toDbCustomer(updated, organizationId)).eq('id', id)
-          .then(({ error }) => { if (error) console.error('sync updateCustomer:', error); });
+        syncQuery(sb().from('customers').update(toDbCustomer(updated, organizationId)).eq('id', id), 'sync updateCustomer:');
       }
     }
   },
@@ -592,8 +593,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     set((s) => ({ customers: s.customers.filter((c) => c.id !== id) }));
     const { organizationId } = get();
     if (organizationId) {
-      sb().from('customers').delete().eq('id', id)
-        .then(({ error }) => { if (error) console.error('sync deleteCustomer:', error); });
+      syncQuery(sb().from('customers').delete().eq('id', id), 'sync deleteCustomer:');
     }
   },
 
@@ -662,8 +662,7 @@ export const useStore = create<AppStore>()((set, get) => ({
       if (updates.returnOperatingHours !== undefined) dbUpdates.return_operating_hours = updates.returnOperatingHours;
       if (updates.returnImages !== undefined) dbUpdates.return_images = updates.returnImages;
       if (Object.keys(dbUpdates).length > 0) {
-        sb().from('orders').update(dbUpdates).eq('id', id)
-          .then(({ error }) => { if (error) console.error('sync updateOrder:', error); });
+        syncQuery(sb().from('orders').update(dbUpdates).eq('id', id), 'sync updateOrder:');
       }
     }
   },
@@ -849,8 +848,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     set((s) => ({ templates: [...s.templates, newTemplate] }));
     const { organizationId } = get();
     if (organizationId) {
-      sb().from('templates').insert(toDbTemplate(newTemplate, organizationId))
-        .then(({ error }) => { if (error) console.error('sync addTemplate:', error); });
+      syncQuery(sb().from('templates').insert(toDbTemplate(newTemplate, organizationId)), 'sync addTemplate:');
     }
     return id;
   },
@@ -863,8 +861,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     if (organizationId) {
       const updated = get().templates.find((t) => t.id === id);
       if (updated) {
-        sb().from('templates').update(toDbTemplate(updated, organizationId)).eq('id', id)
-          .then(({ error }) => { if (error) console.error('sync updateTemplate:', error); });
+        syncQuery(sb().from('templates').update(toDbTemplate(updated, organizationId)).eq('id', id), 'sync updateTemplate:');
       }
     }
   },
@@ -873,8 +870,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     set((s) => ({ templates: s.templates.filter((t) => t.id !== id) }));
     const { organizationId } = get();
     if (organizationId) {
-      sb().from('templates').delete().eq('id', id)
-        .then(({ error }) => { if (error) console.error('sync deleteTemplate:', error); });
+      syncQuery(sb().from('templates').delete().eq('id', id), 'sync deleteTemplate:');
     }
   },
 
@@ -886,8 +882,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     set((s) => ({ serviceRecords: [...s.serviceRecords, newRecord] }));
     const { organizationId } = get();
     if (organizationId) {
-      sb().from('service_records').insert(toDbServiceRecord(newRecord, organizationId))
-        .then(({ error }) => { if (error) console.error('sync addServiceRecord:', error); });
+      syncQuery(sb().from('service_records').insert(toDbServiceRecord(newRecord, organizationId)), 'sync addServiceRecord:');
     }
     return id;
   },
@@ -900,8 +895,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     if (organizationId) {
       const updated = get().serviceRecords.find((sr) => sr.id === id);
       if (updated) {
-        sb().from('service_records').update(toDbServiceRecord(updated, organizationId)).eq('id', id)
-          .then(({ error }) => { if (error) console.error('sync updateServiceRecord:', error); });
+        syncQuery(sb().from('service_records').update(toDbServiceRecord(updated, organizationId)).eq('id', id), 'sync updateServiceRecord:');
       }
     }
   },
@@ -914,8 +908,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     set((s) => ({ articles: [...s.articles, newArticle] }));
     const { organizationId } = get();
     if (organizationId) {
-      sb().from('articles').insert(toDbArticle(newArticle, organizationId))
-        .then(({ error }) => { if (error) console.error('sync addArticle:', error); });
+      syncQuery(sb().from('articles').insert(toDbArticle(newArticle, organizationId)), 'sync addArticle:');
     }
     return id;
   },
@@ -928,8 +921,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     if (organizationId) {
       const updated = get().articles.find((a) => a.id === id);
       if (updated) {
-        sb().from('articles').update(toDbArticle(updated, organizationId)).eq('id', id)
-          .then(({ error }) => { if (error) console.error('sync updateArticle:', error); });
+        syncQuery(sb().from('articles').update(toDbArticle(updated, organizationId)).eq('id', id), 'sync updateArticle:');
       }
     }
   },
@@ -938,8 +930,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     set((s) => ({ articles: s.articles.filter((a) => a.id !== id) }));
     const { organizationId } = get();
     if (organizationId) {
-      sb().from('articles').delete().eq('id', id)
-        .then(({ error }) => { if (error) console.error('sync deleteArticle:', error); });
+      syncQuery(sb().from('articles').delete().eq('id', id), 'sync deleteArticle:');
     }
   },
 }));

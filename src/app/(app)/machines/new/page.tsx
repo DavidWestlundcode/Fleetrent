@@ -159,7 +159,7 @@ export default function NewMachinePage() {
       enginePower: form.enginePower || undefined,
       status: 'i_lager',
       images: [], documents: [],
-      qrCode: Math.random().toString(36).substring(2, 11),
+      qrCode: '',
       totalRevenue: 0, totalRentals: 0, totalRentalDays: 0, totalServiceCost: 0,
     });
     router.push(`/machines/${id}`);
