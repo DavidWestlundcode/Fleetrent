@@ -46,6 +46,7 @@ export default function EditOrderPage() {
     insuranceArticleId: '',
     transportArticleId: '',
     depositArticleId: '',
+    orderReference: '',
   });
   const [includeInsurance, setIncludeInsurance] = useState(false);
   const [rentalType, setRentalType] = useState<'short' | 'long'>('short');
@@ -73,6 +74,7 @@ export default function EditOrderPage() {
       insuranceArticleId: order.insuranceArticleId ?? '',
       transportArticleId: order.transportArticleId ?? '',
       depositArticleId: order.depositArticleId ?? '',
+      orderReference: order.orderReference ?? '',
     });
     setOpenEnded(order.openEnded === true);
     setIncludeInsurance(!!order.insuranceCost || !!order.insuranceMonthlyRate);
@@ -185,6 +187,7 @@ export default function EditOrderPage() {
       insuranceMonthlyRate: (includeInsurance && openEnded && selectedTemplate)
         ? selectedTemplate.insuranceMonthlyPrice
         : undefined,
+      orderReference: form.orderReference,
     });
     router.push(`/orders/${order.id}`);
   };
@@ -402,6 +405,10 @@ export default function EditOrderPage() {
               <div className="space-y-4">
                 <Field label="Tillbehör (kommaseparerade)">
                   <input value={form.accessories} onChange={(e) => set('accessories', e.target.value)} className={inputClass} placeholder="T.ex. Sidoskift, Slirskydd" />
+                </Field>
+                <Field label="Ordermärkning">
+                  <input value={form.orderReference} onChange={(e) => set('orderReference', e.target.value)} className={inputClass} placeholder="T.ex. PO-12345 eller kundreferens" />
+                  <p className="mt-1 text-[11px] text-slate-400">Kundens egna ordernummer eller referens</p>
                 </Field>
                 <Field label="Kundanteckningar">
                   <textarea value={form.customerNotes} onChange={(e) => set('customerNotes', e.target.value)} className={`${inputClass} resize-none`} rows={2} />

@@ -115,6 +115,7 @@ export interface Order {
   deposit: number;
   totalPrice: number;
   status: OrderStatus;
+  orderReference: string;
   internalNotes: string;
   customerNotes: string;
   accessories: string[];

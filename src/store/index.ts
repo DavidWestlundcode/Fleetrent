@@ -170,6 +170,7 @@ function fromDbOrder(r: DbRow): Order {
     deposit: (r.deposit as number) ?? 0,
     totalPrice: (r.total_price as number) ?? 0,
     status: r.status as OrderStatus,
+    orderReference: (r.order_reference as string) ?? '',
     internalNotes: (r.internal_notes as string) ?? '',
     customerNotes: (r.customer_notes as string) ?? '',
     accessories: (r.accessories as string[]) ?? [],
@@ -208,6 +209,7 @@ function toDbOrder(o: Order, orgId: string): DbRow {
     deposit: o.deposit,
     total_price: o.totalPrice,
     status: o.status,
+    order_reference: o.orderReference,
     internal_notes: o.internalNotes,
     customer_notes: o.customerNotes,
     accessories: o.accessories,
@@ -416,6 +418,7 @@ interface AppStore {
     depositArticleId?: string;
     openEnded?: boolean;
     insuranceMonthlyRate?: number;
+    orderReference?: string;
   }) => void;
   deleteOrder: (id: string) => void;
   returnMachine: (orderId: string, data: {

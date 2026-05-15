@@ -383,6 +383,12 @@ export default function OrderDetailPage() {
                   <span className="text-slate-500">Ordernummer</span>
                   <span className="font-medium">{order.orderNumber}</span>
                 </div>
+                {order.orderReference && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500">Ordermärkning</span>
+                    <span className="font-medium font-mono text-xs">{order.orderReference}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-500">Skapad av</span>
                   <span className="font-medium">{order.createdBy ? getMemberName(order.createdBy) : '–'}</span>
