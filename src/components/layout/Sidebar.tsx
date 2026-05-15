@@ -3,9 +3,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
-  LayoutDashboard, Truck, Users, FileText, Tag, Package, BarChart3, Settings, LogOut, Zap,
+  LayoutDashboard, Truck, Users, FileText, Tag, Package, BarChart3, Settings, LogOut, Zap, X,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { useMobileNav } from '@/components/layout/MobileNav';
 import type { User } from '@supabase/supabase-js';
 
 const navItems = [
@@ -22,6 +23,7 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
+  const { isOpen, close } = useMobileNav();
 
   useEffect(() => {
     const supabase = createClient();
@@ -38,17 +40,33 @@ export default function Sidebar() {
   const initials = displayName.charAt(0).toUpperCase() || '?';
 
   return (
-    <aside className="flex flex-col w-[232px] min-h-screen bg-[#0B1120] shrink-0 border-r border-white/[0.06]">
-      {/* Logo */}
-      <Link
-        href="/"
-        className="flex items-center gap-2.5 px-5 h-[56px] border-b border-white/[0.06] hover:bg-white/[0.03] transition-colors shrink-0"
-      >
-        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-600 shrink-0">
-          <Zap className="w-3.5 h-3.5 text-white" />
-        </div>
-        <span className="text-[14px] font-semibold text-white tracking-tight">FleetRent</span>
-      </Link>
+    <aside className={`
+      flex flex-col w-[232px] bg-[#0B1120] border-r border-white/[0.06] shrink-0
+      fixed inset-y-0 left-0 z-50 h-full
+      transition-transform duration-200 ease-in-out
+      md:static md:translate-x-0
+      ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+    `}>
+      {/* Logo + mobile close */}
+      <div className="flex items-center justify-between px-5 h-[56px] border-b border-white/[0.06] shrink-0">
+        <Link
+          href="/"
+          onClick={close}
+          className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
+        >
+          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-600 shrink-0">
+            <Zap className="w-3.5 h-3.5 text-white" />
+          </div>
+          <span className="text-[14px] font-semibold text-white tracking-tight">FleetRent</span>
+        </Link>
+        <button
+          onClick={close}
+          className="md:hidden p-1 rounded-lg text-slate-500 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+          aria-label="Stäng meny"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
 
       {/* Navigation */}
       <nav className="flex-1 py-3 px-2.5 space-y-px overflow-y-auto">
@@ -58,6 +76,7 @@ export default function Sidebar() {
             <Link
               key={href}
               href={href}
+              onClick={close}
               className={`relative flex items-center gap-2.5 px-3 py-[7px] rounded-lg text-[13px] font-medium transition-all duration-150 cursor-pointer group ${
                 isActive
                   ? 'text-white bg-white/[0.09]'

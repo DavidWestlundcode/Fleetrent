@@ -57,7 +57,7 @@ export default function OrdersPage() {
         }
       />
 
-      <div className="flex-1 p-6 space-y-4">
+      <div className="flex-1 p-3 sm:p-6 space-y-4">
         {/* Status Tabs */}
         <div className="flex items-center gap-1.5 flex-wrap">
           {(['all', 'aktiv', 'reserverad', 'forsenad', 'klar_for_fakturering', 'avslutad', 'annullerad'] as const).map((s) => (
@@ -92,7 +92,8 @@ export default function OrdersPage() {
 
         {/* Table */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[750px]">
             <thead>
               <tr className="border-b border-slate-100">
                 <th className="text-left px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Ordernr</th>
@@ -165,6 +166,7 @@ export default function OrdersPage() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>

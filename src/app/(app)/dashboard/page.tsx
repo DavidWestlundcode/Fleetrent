@@ -112,7 +112,7 @@ export default function DashboardPage() {
         }
       />
 
-      <div className="flex-1 p-6 space-y-5">
+      <div className="flex-1 p-3 sm:p-6 space-y-5">
         {/* Alerts */}
         {(stats.overdueOrders > 0 || stats.onService > 0 || stats.damaged > 0) && (
           <div className="bg-red-50 border border-red-200/80 rounded-2xl p-4">

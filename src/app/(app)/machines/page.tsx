@@ -177,7 +177,7 @@ export default function MachinesPage() {
         }
       />
 
-      <div className="flex-1 p-6 space-y-4">
+      <div className="flex-1 p-3 sm:p-6 space-y-4">
         {/* AI Search */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4">
           <div className="flex items-center gap-2 mb-3">
@@ -299,7 +299,8 @@ export default function MachinesPage() {
         {/* Table View */}
         {viewMode === 'table' && (
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[700px]">
               <thead>
                 <tr className="border-b border-slate-100">
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Maskin</th>
@@ -345,6 +346,7 @@ export default function MachinesPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
 

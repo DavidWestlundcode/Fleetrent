@@ -41,7 +41,7 @@ export default function CustomersPage() {
         }
       />
 
-      <div className="flex-1 p-6 space-y-4">
+      <div className="flex-1 p-3 sm:p-6 space-y-4">
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
           <input
