@@ -123,6 +123,7 @@ function fromDbCustomer(r: DbRow): Customer {
     creditLimit: (r.credit_limit as number) ?? 0,
     totalSpent: (r.total_spent as number) ?? 0,
     activeOrders: (r.active_orders as number) ?? 0,
+    fortnoxCustomerNumber: (r.fortnox_customer_number as string) || undefined,
     createdAt: r.created_at as string,
   };
 }
@@ -142,6 +143,7 @@ function toDbCustomer(c: Customer, orgId: string): DbRow {
     credit_limit: c.creditLimit,
     total_spent: c.totalSpent,
     active_orders: c.activeOrders,
+    fortnox_customer_number: c.fortnoxCustomerNumber ?? null,
     created_at: c.createdAt,
   };
 }
@@ -186,6 +188,8 @@ function fromDbOrder(r: DbRow): Order {
     depositArticleId: r.deposit_article_id as string | undefined,
     openEnded: (r.open_ended as boolean) ?? false,
     insuranceMonthlyRate: r.insurance_monthly_rate != null ? (r.insurance_monthly_rate as number) : undefined,
+    sentToAccounting: (r.sent_to_accounting as boolean) ?? false,
+    fortnoxOrderNumber: (r.fortnox_order_number as string) || undefined,
     createdAt: r.created_at as string,
     createdBy: (r.created_by as string) ?? '',
   };
@@ -224,6 +228,8 @@ function toDbOrder(o: Order, orgId: string): DbRow {
     deposit_article_id: o.depositArticleId ?? null,
     open_ended: o.openEnded ?? false,
     insurance_monthly_rate: o.insuranceMonthlyRate ?? null,
+    sent_to_accounting: o.sentToAccounting ?? false,
+    fortnox_order_number: o.fortnoxOrderNumber ?? null,
     created_by: o.createdBy || null,
     created_at: o.createdAt,
   };
@@ -679,6 +685,8 @@ export const useStore = create<AppStore>()((set, get) => ({
       if (updates.returnNotes !== undefined) dbUpdates.return_notes = updates.returnNotes;
       if (updates.returnOperatingHours !== undefined) dbUpdates.return_operating_hours = updates.returnOperatingHours;
       if (updates.returnImages !== undefined) dbUpdates.return_images = updates.returnImages;
+      if (updates.sentToAccounting !== undefined) dbUpdates.sent_to_accounting = updates.sentToAccounting;
+      if (updates.fortnoxOrderNumber !== undefined) dbUpdates.fortnox_order_number = updates.fortnoxOrderNumber;
       if (Object.keys(dbUpdates).length > 0) {
         syncQuery(sb().from('orders').update(dbUpdates).eq('id', id), 'sync updateOrder:');
       }

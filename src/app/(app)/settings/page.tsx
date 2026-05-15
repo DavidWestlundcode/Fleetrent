@@ -1,8 +1,10 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { Save, User, Building2, Bell, Globe, Mail, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Save, User, Building2, Bell, Globe, Mail, Loader2, CheckCircle2, XCircle, Link2, Link2Off, ExternalLink } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { createClient } from '@/lib/supabase/client';
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 const inputClass = 'w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white';
@@ -16,7 +18,113 @@ const TABS = [
 
 type Tab = (typeof TABS)[number]['id'];
 
-export default function SettingsPage() {
+function FortnoxCard() {
+  const searchParams = useSearchParams();
+  const [status, setStatus] = useState<'loading' | 'connected' | 'disconnected'>('loading');
+  const [connectedAt, setConnectedAt] = useState<string | null>(null);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+  const loadStatus = useCallback(async () => {
+    const res = await fetch('/api/fortnox/status');
+    const data = await res.json();
+    setStatus(data.connected ? 'connected' : 'disconnected');
+    setConnectedAt(data.connectedAt);
+  }, []);
+
+  useEffect(() => {
+    loadStatus();
+    const success = searchParams.get('success');
+    const error = searchParams.get('error');
+    if (success === 'fortnox_connected') setFeedback({ type: 'success', msg: 'Fortnox ansluten!' });
+    if (error === 'fortnox_denied') setFeedback({ type: 'error', msg: 'Åtkomst nekad av Fortnox.' });
+    if (error === 'token_exchange') setFeedback({ type: 'error', msg: 'Kunde inte hämta token från Fortnox.' });
+    if (error === 'fortnox_not_configured') setFeedback({ type: 'error', msg: 'FORTNOX_CLIENT_ID saknas i miljövariabler.' });
+  }, [loadStatus, searchParams]);
+
+  const handleDisconnect = async () => {
+    if (!confirm('Koppla bort Fortnox-integrationen?')) return;
+    setDisconnecting(true);
+    await fetch('/api/fortnox/disconnect', { method: 'POST' });
+    setStatus('disconnected');
+    setConnectedAt(null);
+    setDisconnecting(false);
+    setFeedback({ type: 'success', msg: 'Fortnox frånkopplat.' });
+  };
+
+  return (
+    <div className="border border-slate-200 rounded-xl p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-[#00a651]/10 flex items-center justify-center shrink-0">
+            <span className="text-[#00a651] font-bold text-sm">FX</span>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-800">Fortnox</p>
+            <p className="text-xs text-slate-500">Skapa ordrar automatiskt i Fortnox vid fakturering</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {status === 'loading' && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+          {status === 'connected' && (
+            <>
+              <span className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Ansluten
+              </span>
+              <button
+                onClick={handleDisconnect}
+                disabled={disconnecting}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <Link2Off className="w-3.5 h-3.5" />
+                {disconnecting ? 'Kopplar bort...' : 'Koppla bort'}
+              </button>
+            </>
+          )}
+          {status === 'disconnected' && (
+            <a
+              href="/api/fortnox/auth"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-[#00a651] rounded-lg hover:bg-[#009046] transition-colors cursor-pointer"
+            >
+              <Link2 className="w-3.5 h-3.5" />
+              Anslut Fortnox
+            </a>
+          )}
+        </div>
+      </div>
+
+      {status === 'connected' && connectedAt && (
+        <p className="mt-3 text-xs text-slate-400">
+          Ansluten {new Date(connectedAt).toLocaleDateString('sv-SE', { dateStyle: 'long' })}
+        </p>
+      )}
+
+      {status === 'disconnected' && (
+        <div className="mt-3 p-3 bg-slate-50 rounded-lg text-xs text-slate-500 space-y-1">
+          <p>För att ansluta behöver du:</p>
+          <ol className="list-decimal ml-4 space-y-0.5">
+            <li>Skapa en integration på <a href="https://developer.fortnox.se" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline inline-flex items-center gap-0.5">developer.fortnox.se <ExternalLink className="w-2.5 h-2.5" /></a></li>
+            <li>Lägg till <code className="bg-slate-200 px-1 rounded">FORTNOX_CLIENT_ID</code> och <code className="bg-slate-200 px-1 rounded">FORTNOX_CLIENT_SECRET</code> i Vercel</li>
+            <li>Klicka "Anslut Fortnox" ovan</li>
+          </ol>
+        </div>
+      )}
+
+      {feedback && (
+        <div className={`mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
+          feedback.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+        }`}>
+          {feedback.type === 'success' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+          {feedback.msg}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SettingsInner() {
   const [activeTab, setActiveTab] = useState<Tab>('company');
   const [saved, setSaved] = useState(false);
   const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
@@ -24,9 +132,12 @@ export default function SettingsPage() {
   const [inviteStatus, setInviteStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [inviteError, setInviteError] = useState('');
 
+  const searchParams = useSearchParams();
+
   useEffect(() => {
     createClient().auth.getUser().then(({ data }) => setCurrentUser(data.user));
-  }, []);
+    if (searchParams.get('tab') === 'integrations') setActiveTab('integrations');
+  }, [searchParams]);
 
   const handleSave = () => {
     setSaved(true);
@@ -205,19 +316,21 @@ export default function SettingsPage() {
                 <h2 className="font-semibold text-slate-900 mb-1">Integrationer</h2>
                 <p className="text-sm text-slate-500 mb-6">Anslut FleetRent till externa system</p>
                 <div className="space-y-4">
+                  <Suspense fallback={<div className="h-20 bg-slate-50 rounded-xl animate-pulse" />}>
+                    <FortnoxCard />
+                  </Suspense>
                   {[
-                    { name: 'Fortnox', desc: 'Automatisk fakturaexport och synkronisering', status: 'Kommer snart' },
-                    { name: 'Visma', desc: 'Bokföring och fakturahantering', status: 'Kommer snart' },
-                    { name: 'SMS-tjänst', desc: 'Automatiska SMS-påminnelser till kunder', status: 'Kommer snart' },
-                    { name: 'GPS/IoT', desc: 'Realtidsspårning av maskinernas position', status: 'Kommande' },
-                    { name: 'Digital signering', desc: 'Elektronisk signering av hyresavtal', status: 'Kommande' },
+                    { name: 'Visma', desc: 'Bokföring och fakturahantering' },
+                    { name: 'SMS-tjänst', desc: 'Automatiska SMS-påminnelser till kunder' },
+                    { name: 'GPS/IoT', desc: 'Realtidsspårning av maskinernas position' },
+                    { name: 'Digital signering', desc: 'Elektronisk signering av hyresavtal' },
                   ].map((integration) => (
-                    <div key={integration.name} className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
+                    <div key={integration.name} className="flex items-center justify-between p-5 border border-slate-200 rounded-xl opacity-50">
                       <div>
                         <p className="text-sm font-semibold text-slate-800">{integration.name}</p>
                         <p className="text-xs text-slate-500">{integration.desc}</p>
                       </div>
-                      <span className="text-xs px-2.5 py-1 bg-slate-100 text-slate-500 rounded-full">{integration.status}</span>
+                      <span className="text-xs px-2.5 py-1 bg-slate-100 text-slate-500 rounded-full">Kommer snart</span>
                     </div>
                   ))}
                 </div>
@@ -227,5 +340,13 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={null}>
+      <SettingsInner />
+    </Suspense>
   );
 }

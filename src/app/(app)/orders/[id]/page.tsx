@@ -1,7 +1,8 @@
 'use client';
 import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Clock, Truck, Building2, Calendar, Package, CheckCircle2, Trash2, Pencil } from 'lucide-react';
+import { ArrowLeft, Clock, Truck, Building2, Calendar, CheckCircle2, Trash2, Pencil, Send, Loader2, ExternalLink } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { MachineStatusBadge, OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
@@ -13,6 +14,8 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const { orders, machines, customers, articles, members, updateOrder, deleteOrder } = useStore();
   const getMemberName = (userId: string) => members.find((m) => m.id === userId)?.fullName ?? 'Okänd användare';
+  const [sendingToFortnox, setSendingToFortnox] = useState(false);
+  const [fortnoxError, setFortnoxError] = useState<string | null>(null);
 
   const order = orders.find((o) => o.id === id);
   if (!order) {
@@ -47,6 +50,39 @@ export default function OrderDetailPage() {
     }
   };
 
+  const handleSendToFortnox = async () => {
+    setSendingToFortnox(true);
+    setFortnoxError(null);
+    try {
+      const res = await fetch('/api/fortnox/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.error === 'Fortnox inte ansluten') {
+          setFortnoxError('Fortnox är inte ansluten. Gå till Inställningar → Integrationer för att ansluta.');
+        } else {
+          setFortnoxError(data.error ?? 'Något gick fel');
+        }
+        return;
+      }
+      updateOrder(order.id, {
+        sentToAccounting: true,
+        fortnoxOrderNumber: data.fortnoxOrderNumber,
+      });
+    } finally {
+      setSendingToFortnox(false);
+    }
+  };
+
+  const handleMarkSentManually = () => {
+    if (confirm('Markera order som skickad till bokföringsprogrammet manuellt?')) {
+      updateOrder(order.id, { sentToAccounting: true });
+    }
+  };
+
   return (
     <div className="flex flex-col flex-1 overflow-auto">
       <Header
@@ -71,10 +107,28 @@ export default function OrderDetailPage() {
                 </button>
               </>
             )}
-            {order.status === 'klar_for_fakturering' && (
+            {order.status === 'klar_for_fakturering' && !order.sentToAccounting && (
+              <button
+                onClick={handleSendToFortnox}
+                disabled={sendingToFortnox}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-violet-600 rounded-lg hover:bg-violet-700 transition-colors disabled:opacity-60"
+              >
+                {sendingToFortnox ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                Skicka till bokföringsprogrammet
+              </button>
+            )}
+            {order.status === 'klar_for_fakturering' && !order.sentToAccounting && (
+              <button
+                onClick={handleMarkSentManually}
+                className="px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+              >
+                Markera skickad manuellt
+              </button>
+            )}
+            {order.status === 'klar_for_fakturering' && order.sentToAccounting && (
               <button
                 onClick={() => updateOrder(order.id, { status: 'avslutad' })}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-violet-600 rounded-lg hover:bg-violet-700 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 Markera fakturerad
@@ -102,6 +156,29 @@ export default function OrderDetailPage() {
         <Link href="/orders" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700">
           <ArrowLeft className="w-4 h-4" /> Tillbaka till order
         </Link>
+
+        {fortnoxError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+            <div className="w-5 h-5 rounded-full bg-red-200 flex items-center justify-center shrink-0 mt-0.5">
+              <span className="text-red-700 text-xs font-bold">!</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-red-800">Kunde inte skicka till Fortnox</p>
+              <p className="text-sm text-red-700">{fortnoxError}</p>
+              {fortnoxError.includes('Inställningar') && (
+                <Link href="/settings?tab=integrations" className="mt-1 inline-flex items-center gap-1 text-sm text-red-700 underline">
+                  Gå till integrationer <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+              )}
+              <button
+                onClick={handleMarkSentManually}
+                className="mt-2 text-sm text-red-700 underline block"
+              >
+                Markera som skickad manuellt istället
+              </button>
+            </div>
+          </div>
+        )}
 
         {isOverdue && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
@@ -387,6 +464,18 @@ export default function OrderDetailPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500">Ordermärkning</span>
                     <span className="font-medium font-mono text-xs">{order.orderReference}</span>
+                  </div>
+                )}
+                {order.fortnoxOrderNumber && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500">Fortnox-order</span>
+                    <span className="font-medium font-mono text-xs text-[#00a651]">#{order.fortnoxOrderNumber}</span>
+                  </div>
+                )}
+                {order.sentToAccounting && !order.fortnoxOrderNumber && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500">Bokföring</span>
+                    <span className="text-xs text-emerald-600">Skickad manuellt</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">

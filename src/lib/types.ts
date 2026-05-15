@@ -88,6 +88,7 @@ export interface Customer {
   creditLimit: number;
   totalSpent: number;
   activeOrders: number;
+  fortnoxCustomerNumber?: string;
   createdAt: string;
 }
 
@@ -131,6 +132,8 @@ export interface Order {
   depositArticleId?: string;
   openEnded?: boolean;
   insuranceMonthlyRate?: number;
+  sentToAccounting?: boolean;
+  fortnoxOrderNumber?: string;
   createdAt: string;
   createdBy: string;
 }
