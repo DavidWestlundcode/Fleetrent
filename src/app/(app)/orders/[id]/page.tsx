@@ -11,7 +11,8 @@ import { ARTICLE_UNIT_LABELS } from '@/lib/types';
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { orders, machines, customers, articles, updateOrder, deleteOrder } = useStore();
+  const { orders, machines, customers, articles, members, updateOrder, deleteOrder } = useStore();
+  const getMemberName = (userId: string) => members.find((m) => m.id === userId)?.fullName ?? 'Okänd användare';
 
   const order = orders.find((o) => o.id === id);
   if (!order) {
@@ -308,7 +309,10 @@ export default function OrderDetailPage() {
                     </div>
                     <div className="flex-1 pb-3">
                       <p className="text-sm font-medium text-slate-800">{event.description}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{formatDateTime(event.timestamp)}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {formatDateTime(event.timestamp)}
+                        {event.userId && <span className="ml-1.5">· {getMemberName(event.userId)}</span>}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -368,6 +372,25 @@ export default function OrderDetailPage() {
                     <span className="font-medium text-amber-600">Löpande</span>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Created by */}
+            <div className="bg-white rounded-xl border border-slate-200 p-5">
+              <h3 className="font-semibold text-slate-900 mb-3">Orderinfo</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Ordernummer</span>
+                  <span className="font-medium">{order.orderNumber}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Skapad av</span>
+                  <span className="font-medium">{order.createdBy ? getMemberName(order.createdBy) : '–'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Skapad</span>
+                  <span className="font-medium">{formatDate(order.createdAt)}</span>
+                </div>
               </div>
             </div>
 

@@ -374,8 +374,10 @@ interface AppStore {
   templates: PriceTemplate[];
   serviceRecords: ServiceRecord[];
   articles: Article[];
+  members: { id: string; fullName: string }[];
   organizationId: string | null;
   userId: string | null;
+  userName: string | null;
   loading: boolean;
   initialized: boolean;
 
@@ -443,8 +445,10 @@ const EMPTY_STATE = {
   templates: [] as PriceTemplate[],
   serviceRecords: [] as ServiceRecord[],
   articles: [] as Article[],
+  members: [] as { id: string; fullName: string }[],
   organizationId: null as string | null,
   userId: null as string | null,
+  userName: null as string | null,
   loading: false,
   initialized: false,
 };
@@ -492,7 +496,7 @@ export const useStore = create<AppStore>()((set, get) => ({
         return;
       }
 
-      const [machinesRes, customersRes, ordersRes, templatesRes, articlesRes, serviceRes] =
+      const [machinesRes, customersRes, ordersRes, templatesRes, articlesRes, serviceRes, membersRes] =
         await Promise.all([
           sb().from('machines').select('*').eq('organization_id', orgId),
           sb().from('customers').select('*').eq('organization_id', orgId),
@@ -500,11 +504,21 @@ export const useStore = create<AppStore>()((set, get) => ({
           sb().from('templates').select('*').eq('organization_id', orgId),
           sb().from('articles').select('*').eq('organization_id', orgId),
           sb().from('service_records').select('*').eq('organization_id', orgId),
+          sb().from('profiles').select('id, full_name').eq('organization_id', orgId),
         ]);
+
+      const members = (membersRes.data ?? []).map((r) => ({
+        id: r.id as string,
+        fullName: (r.full_name as string) || 'Okänd användare',
+      }));
+
+      const currentMember = members.find((m) => m.id === user.id);
 
       set({
         organizationId: orgId,
         userId: user.id,
+        userName: currentMember?.fullName ?? null,
+        members,
         machines: (machinesRes.data ?? []).map((r) => fromDbMachine(r as DbRow)),
         customers: (customersRes.data ?? []).map((r) => fromDbCustomer(r as DbRow)),
         orders: (ordersRes.data ?? []).map((r) => fromDbOrder(r as DbRow)),
@@ -603,15 +617,16 @@ export const useStore = create<AppStore>()((set, get) => ({
     const id = crypto.randomUUID();
     const orderNumber = generateOrderNumber();
     const now = new Date().toISOString();
-    const { organizationId, userId } = get();
+    const { organizationId, userId, userName } = get();
     const eventId = crypto.randomUUID();
+    const byName = userName ? ` av ${userName}` : '';
 
     const newOrder: Order = {
       ...orderData,
       id,
       orderNumber,
       returnImages: [],
-      events: [{ id: eventId, type: 'skapad', description: 'Order skapad', timestamp: now, userId: userId ?? '' }],
+      events: [{ id: eventId, type: 'skapad', description: `Order skapad${byName}`, timestamp: now, userId: userId ?? '' }],
       createdAt: now,
       createdBy: userId ?? '',
     };
@@ -774,11 +789,16 @@ export const useStore = create<AppStore>()((set, get) => ({
 
   returnMachine: (orderId, data) => {
     const now = new Date().toISOString();
-    const { organizationId, userId } = get();
+    const { organizationId, userId, userName } = get();
     const order = get().orders.find((o) => o.id === orderId);
     if (!order) return;
     const newMachineStatus = data.sendToService ? 'service' : 'i_lager';
     const eventId = crypto.randomUUID();
+    const finalPrice = data.finalTotalPrice !== undefined ? data.finalTotalPrice : order.totalPrice;
+    const byName = userName ? ` av ${userName}` : '';
+
+    const startDate = new Date(order.startDate);
+    const rentalDays = Math.max(1, Math.round((Date.now() - startDate.getTime()) / 86400000));
 
     set((s) => ({
       orders: s.orders.map((o) =>
@@ -796,7 +816,7 @@ export const useStore = create<AppStore>()((set, get) => ({
                 {
                   id: eventId,
                   type: 'retur',
-                  description: `Maskin återlämnad. Skick: ${data.returnCondition}.`,
+                  description: `Maskin återlämnad${byName}. Skick: ${data.returnCondition}.`,
                   timestamp: now,
                   userId: userId ?? '',
                 },
@@ -805,18 +825,36 @@ export const useStore = create<AppStore>()((set, get) => ({
           : o
       ),
       machines: s.machines.map((m) =>
-        m.id === order.machineId ? { ...m, status: newMachineStatus as Machine['status'], updatedAt: now } : m
+        m.id === order.machineId
+          ? {
+              ...m,
+              status: newMachineStatus as Machine['status'],
+              updatedAt: now,
+              totalRevenue: m.totalRevenue + finalPrice,
+              totalRentals: m.totalRentals + 1,
+              totalRentalDays: m.totalRentalDays + rentalDays,
+            }
+          : m
       ),
       customers: s.customers.map((c) =>
-        c.id === order.customerId ? { ...c, activeOrders: Math.max(0, c.activeOrders - 1) } : c
+        c.id === order.customerId
+          ? { ...c, activeOrders: Math.max(0, c.activeOrders - 1), totalSpent: c.totalSpent + finalPrice }
+          : c
       ),
     }));
 
     if (organizationId) {
       const client = sb();
+      const updatedMachine = get().machines.find((m) => m.id === order.machineId);
       const updatedCust = get().customers.find((c) => c.id === order.customerId);
       const ops: Promise<{ error: unknown }>[] = [
-        client.from('machines').update({ status: newMachineStatus, updated_at: now }).eq('id', order.machineId) as unknown as Promise<{ error: unknown }>,
+        client.from('machines').update({
+          status: newMachineStatus,
+          updated_at: now,
+          total_revenue: updatedMachine?.totalRevenue,
+          total_rentals: updatedMachine?.totalRentals,
+          total_rental_days: updatedMachine?.totalRentalDays,
+        }).eq('id', order.machineId) as unknown as Promise<{ error: unknown }>,
         client.from('order_events').insert({
           id: eventId, order_id: orderId, organization_id: organizationId,
           type: 'retur', description: `Maskin återlämnad. Skick: ${data.returnCondition}.`,
@@ -832,7 +870,10 @@ export const useStore = create<AppStore>()((set, get) => ({
         }).eq('id', orderId) as unknown as Promise<{ error: unknown }>,
       ];
       if (updatedCust) {
-        ops.push(client.from('customers').update({ active_orders: updatedCust.activeOrders }).eq('id', order.customerId) as unknown as Promise<{ error: unknown }>);
+        ops.push(client.from('customers').update({
+          active_orders: updatedCust.activeOrders,
+          total_spent: updatedCust.totalSpent,
+        }).eq('id', order.customerId) as unknown as Promise<{ error: unknown }>);
       }
       Promise.all(ops).then((results) => {
         results.forEach((r, i) => { if (r.error) console.error(`sync returnMachine[${i}]:`, r.error); });

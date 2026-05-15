@@ -406,7 +406,7 @@ export default function LandingPage() {
             <Link href="/login" className="text-[13px] font-medium text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">
               Logga in
             </Link>
-            <Link href="/login" className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-700 text-white text-[13px] font-semibold rounded-xl transition-colors shadow-sm">
+            <Link href="/kom-igang" className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-700 text-white text-[13px] font-semibold rounded-xl transition-colors shadow-sm">
               Kom igång gratis
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
@@ -453,8 +453,8 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-12">
-            <Link href="/login" className="flex items-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all text-[14px] shadow-xl shadow-blue-900/40 hover:shadow-blue-700/30 hover:-translate-y-0.5">
-              Starta gratis – inget kreditkort
+            <Link href="/kom-igang" className="flex items-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all text-[14px] shadow-xl shadow-blue-900/40 hover:shadow-blue-700/30 hover:-translate-y-0.5">
+              Kom igång – kontakta oss
               <ArrowRight className="w-4 h-4" />
             </Link>
             <a href="#how-it-works" className="flex items-center gap-2 px-6 py-3.5 bg-white/[0.06] hover:bg-white/[0.1] text-white font-medium rounded-xl border border-white/10 transition-all text-[14px] hover:-translate-y-0.5">
@@ -812,8 +812,8 @@ export default function LandingPage() {
 
           {/* Bottom CTA */}
           <AnimateIn className="mt-14 text-center">
-            <Link href="/login" className="inline-flex items-center gap-2 px-7 py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all text-[14px] shadow-xl shadow-blue-900/40 hover:-translate-y-0.5">
-              Prova AI-analysen gratis
+            <Link href="/kom-igang" className="inline-flex items-center gap-2 px-7 py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all text-[14px] shadow-xl shadow-blue-900/40 hover:-translate-y-0.5">
+              Kom igång med FleetRent
               <ArrowRight className="w-4 h-4" />
             </Link>
           </AnimateIn>
@@ -980,8 +980,8 @@ export default function LandingPage() {
             Gå med hundratals maskinföretag som redan hanterar sin flotta med FleetRent. Gratis att komma igång, inga kortuppgifter krävs.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/login" className="flex items-center gap-2 px-7 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-[15px] shadow-xl shadow-blue-900/40 hover:-translate-y-0.5">
-              Skapa gratis konto
+            <Link href="/kom-igang" className="flex items-center gap-2 px-7 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-[15px] shadow-xl shadow-blue-900/40 hover:-translate-y-0.5">
+              Kom igång med FleetRent
               <ArrowRight className="w-4 h-4" />
             </Link>
             <a href="mailto:info@fleetrent.se" className="flex items-center gap-2 px-7 py-4 bg-white/[0.06] hover:bg-white/[0.1] text-white font-medium rounded-xl border border-white/10 transition-all text-[15px]">
