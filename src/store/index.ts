@@ -466,12 +466,25 @@ export const useStore = create<AppStore>()((set, get) => ({
         .eq('id', user.id)
         .single();
 
-      if (!profile?.organization_id) {
+      let orgId: string | null = profile?.organization_id as string ?? null;
+
+      if (!orgId) {
+        // Profile missing or has no org — auto-create via server route
+        try {
+          const res = await fetch('/api/ensure-org', { method: 'POST' });
+          if (res.ok) {
+            const data = await res.json();
+            orgId = data.organization_id ?? null;
+          }
+        } catch {
+          // Schema not yet applied — swallow and show empty state
+        }
+      }
+
+      if (!orgId) {
         set({ loading: false, initialized: true });
         return;
       }
-
-      const orgId = profile.organization_id as string;
 
       const [machinesRes, customersRes, ordersRes, templatesRes, articlesRes, serviceRes] =
         await Promise.all([
