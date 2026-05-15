@@ -528,7 +528,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     set((s) => ({ machines: [...s.machines, newMachine] }));
     const { organizationId } = get();
     if (organizationId) {
-      sb().from('machines').insert(toDbMachine(newMachine, organizationId))
+      (sb().from('machines').insert(toDbMachine(newMachine, organizationId)) as unknown as Promise<{ error: unknown }>)
         .then(({ error }) => { if (error) console.error('sync addMachine:', error); });
     }
     return id;
