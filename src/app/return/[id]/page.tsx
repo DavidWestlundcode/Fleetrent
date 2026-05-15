@@ -21,7 +21,7 @@ function ReturnPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromOrder = searchParams.get('from') === 'order';
-  const { orders, machines, customers, returnMachine } = useStore();
+  const { orders, machines, customers, returnMachine, initialized } = useStore();
 
   const order = orders.find((o) => o.id === id);
   const machine = order ? machines.find((m) => m.id === order.machineId) : null;
@@ -32,6 +32,8 @@ function ReturnPageInner() {
   const [notes, setNotes] = useState('');
   const [operatingHours, setOperatingHours] = useState(machine?.operatingHours ?? 0);
   const [submitted, setSubmitted] = useState(false);
+
+  if (!initialized) return null;
 
   if (!order || !machine) {
     return (

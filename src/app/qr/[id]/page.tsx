@@ -11,9 +11,12 @@ const QRCodeSVG = dynamic(() => import('qrcode.react').then((m) => m.QRCodeSVG),
 
 export default function QRPage() {
   const { id } = useParams<{ id: string }>();
-  const { machines, orders, customers } = useStore();
+  const { machines, orders, customers, initialized } = useStore();
 
   const machine = machines.find((m) => m.id === id);
+
+  if (!initialized) return null;
+
   if (!machine) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
