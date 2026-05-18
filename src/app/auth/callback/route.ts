@@ -47,7 +47,11 @@ export async function GET(request: NextRequest) {
       // Invited user — join existing organization
       await admin
         .from('profiles')
-        .update({ organization_id: organizationId, role: 'member' })
+        .update({
+          organization_id: organizationId,
+          role: 'member',
+          full_name: user.user_metadata?.full_name ?? null,
+        })
         .eq('id', user.id);
     } else if (companyName) {
       // New signup — create organization and set user as admin
