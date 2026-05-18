@@ -40,6 +40,7 @@ export default function OmOssPage() {
       <div className="not-prose mt-10 p-6 bg-slate-50 rounded-xl border border-slate-200">
         <p className="text-sm font-semibold text-slate-900 mb-1">DSE ENTERPRISE AB</p>
         <p className="text-sm text-slate-500">Sverige</p>
+        <p className="text-sm text-slate-500">Org.nr: 559510-0248</p>
         <p className="text-sm text-slate-500 mt-3">
           Frågor?{' '}
           <a href="mailto:info@fleetrent.se" className="text-blue-600 hover:underline">info@fleetrent.se</a>
