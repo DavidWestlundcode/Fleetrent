@@ -5,6 +5,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
   const code = searchParams.get('code');
+  const state = searchParams.get('state');
   const error = searchParams.get('error');
 
   if (error || !code) {
@@ -14,6 +15,11 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.redirect(`${origin}/login`);
+
+  // Validate state to prevent CSRF
+  if (!state || state !== user.id) {
+    return NextResponse.redirect(`${origin}/settings?tab=integrations&error=fortnox_denied`);
+  }
 
   const { data: profile } = await supabase
     .from('profiles')

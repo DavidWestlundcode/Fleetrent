@@ -590,7 +590,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     set((s) => ({ machines: s.machines.filter((m) => m.id !== id) }));
     const { organizationId } = get();
     if (organizationId) {
-      syncQuery(sb().from('machines').delete().eq('id', id), 'sync deleteMachine:');
+      syncQuery(sb().from('machines').delete().eq('id', id).eq('organization_id', organizationId), 'sync deleteMachine:');
     }
   },
 
@@ -624,7 +624,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     set((s) => ({ customers: s.customers.filter((c) => c.id !== id) }));
     const { organizationId } = get();
     if (organizationId) {
-      syncQuery(sb().from('customers').delete().eq('id', id), 'sync deleteCustomer:');
+      syncQuery(sb().from('customers').delete().eq('id', id).eq('organization_id', organizationId), 'sync deleteCustomer:');
     }
   },
 
@@ -817,7 +817,7 @@ export const useStore = create<AppStore>()((set, get) => ({
       const updatedMachine = get().machines.find((m) => m.id === order.machineId);
       const updatedCust = get().customers.find((c) => c.id === order.customerId);
       const ops: Promise<{ error: unknown }>[] = [
-        client.from('orders').delete().eq('id', id) as unknown as Promise<{ error: unknown }>,
+        client.from('orders').delete().eq('id', id).eq('organization_id', organizationId) as unknown as Promise<{ error: unknown }>,
       ];
       if (updatedMachine) {
         const machineUpdates: Record<string, unknown> = {
@@ -965,7 +965,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     set((s) => ({ templates: s.templates.filter((t) => t.id !== id) }));
     const { organizationId } = get();
     if (organizationId) {
-      syncQuery(sb().from('templates').delete().eq('id', id), 'sync deleteTemplate:');
+      syncQuery(sb().from('templates').delete().eq('id', id).eq('organization_id', organizationId), 'sync deleteTemplate:');
     }
   },
 
@@ -1025,7 +1025,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     set((s) => ({ articles: s.articles.filter((a) => a.id !== id) }));
     const { organizationId } = get();
     if (organizationId) {
-      syncQuery(sb().from('articles').delete().eq('id', id), 'sync deleteArticle:');
+      syncQuery(sb().from('articles').delete().eq('id', id).eq('organization_id', organizationId), 'sync deleteArticle:');
     }
   },
 }));

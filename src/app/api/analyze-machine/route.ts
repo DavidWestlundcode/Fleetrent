@@ -1,7 +1,12 @@
 import OpenAI from 'openai';
+import { createClient } from '@/lib/supabase/server';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 });
+
   if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json({ error: 'API-nyckel för AI saknas.' }, { status: 503 });
   }
@@ -62,7 +67,6 @@ Regler:
     return NextResponse.json(data);
   } catch (err) {
     console.error('analyze-machine error:', err);
-    const msg = err instanceof Error ? err.message : 'Analys misslyckades';
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: 'Analys misslyckades' }, { status: 500 });
   }
 }

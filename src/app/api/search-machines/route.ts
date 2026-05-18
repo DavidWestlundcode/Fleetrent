@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { createClient } from '@/lib/supabase/server';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export interface SearchCriteria {
@@ -61,6 +62,10 @@ Returnera ENBART ett JSON-objekt (ingen markdown, inga kommentarer):
 }`;
 
 export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 });
+
   if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json({ error: 'API-nyckel saknas.' }, { status: 503 });
   }
