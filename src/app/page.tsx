@@ -4,7 +4,7 @@ import {
   ArrowRight, Shield, Clock, TrendingUp, Bell, Search,
   LayoutDashboard, FileText, Tag, Star, Activity, ChevronRight,
   Camera, Sparkles, X, Check, Brain, ArrowUpRight, Database,
-  Target, RefreshCw, Cpu,
+  Target, RefreshCw, Cpu, Monitor, Upload,
 } from 'lucide-react';
 import { AnimateIn, CountUp } from '@/components/ui/AnimateIn';
 
@@ -588,12 +588,21 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <AnimateIn className="text-center" direction="scale">
-              <p className="text-[32px] font-bold tracking-tight text-blue-400 leading-tight">AI-drivna<br />flöden</p>
-              <p className="text-[12px] text-slate-500 mt-2">Automatisera uthyrning och administration</p>
+              <div className="flex items-center justify-center mb-1">
+                <div className="relative inline-flex items-center justify-center w-[52px] h-[52px] text-blue-400">
+                  <Monitor className="w-10 h-10" strokeWidth={1.5} />
+                  <Upload className="absolute bottom-0 right-0 w-4 h-4 text-blue-300 animate-bounce" strokeWidth={2} />
+                </div>
+              </div>
+              <p className="text-[14px] font-semibold text-white mt-1">AI-drivna flöden</p>
+              <p className="text-[12px] text-slate-500 mt-0.5">Automatisera uthyrning och administration</p>
             </AnimateIn>
             <AnimateIn className="text-center" direction="scale">
-              <p className="text-[32px] font-bold tracking-tight text-emerald-400 leading-tight">Full<br />kontroll</p>
-              <p className="text-[12px] text-slate-500 mt-2">Se status på alla maskiner i realtid</p>
+              <p className="text-[40px] font-bold tracking-tight text-emerald-400">
+                <CountUp end={100} suffix="%" />
+              </p>
+              <p className="text-[14px] font-semibold text-white mt-1">Full kontroll</p>
+              <p className="text-[12px] text-slate-500 mt-0.5">Se status på alla maskiner i realtid</p>
             </AnimateIn>
             {[
               { end: 1, suffix: ' dag', label: 'Onboarding-tid', sub: 'Från konto till full drift', color: 'text-violet-400' },
