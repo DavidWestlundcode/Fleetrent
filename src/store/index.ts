@@ -770,31 +770,65 @@ export const useStore = create<AppStore>()((set, get) => ({
     const order = get().orders.find((o) => o.id === id);
     if (!order) return;
     const now = new Date().toISOString();
+
+    // Machine was still out on rent — needs to be released
     const releasesMachine = order.status === 'aktiv' || order.status === 'reserverad';
+
+    // Revenue stats were recorded when machine was physically returned
+    const hasRevenue = !!order.actualReturnDate;
+
+    // Reconstruct the rental days that were added when the machine was returned
+    const rentalDaysToReverse = hasRevenue
+      ? Math.max(1, Math.round(
+          (new Date(order.actualReturnDate!).getTime() - new Date(order.startDate).getTime()) / 86400000
+        ))
+      : 0;
+
     set((s) => ({
       orders: s.orders.filter((o) => o.id !== id),
-      machines: releasesMachine
-        ? s.machines.map((m) =>
-            m.id === order.machineId ? { ...m, status: 'i_lager' as const, updatedAt: now } : m
-          )
-        : s.machines,
-      customers: releasesMachine
-        ? s.customers.map((c) =>
-            c.id === order.customerId ? { ...c, activeOrders: Math.max(0, c.activeOrders - 1) } : c
-          )
-        : s.customers,
+      machines: s.machines.map((m) => {
+        if (m.id !== order.machineId) return m;
+        return {
+          ...m,
+          ...(releasesMachine ? { status: 'i_lager' as const } : {}),
+          updatedAt: now,
+          totalRevenue: hasRevenue ? Math.max(0, m.totalRevenue - order.totalPrice) : m.totalRevenue,
+          totalRentals: hasRevenue ? Math.max(0, m.totalRentals - 1) : m.totalRentals,
+          totalRentalDays: hasRevenue ? Math.max(0, m.totalRentalDays - rentalDaysToReverse) : m.totalRentalDays,
+        };
+      }),
+      customers: s.customers.map((c) => {
+        if (c.id !== order.customerId) return c;
+        return {
+          ...c,
+          activeOrders: releasesMachine ? Math.max(0, c.activeOrders - 1) : c.activeOrders,
+          totalSpent: hasRevenue ? Math.max(0, c.totalSpent - order.totalPrice) : c.totalSpent,
+        };
+      }),
     }));
+
     if (organizationId) {
       const client = sb();
+      const updatedMachine = get().machines.find((m) => m.id === order.machineId);
+      const updatedCust = get().customers.find((c) => c.id === order.customerId);
       const ops: Promise<{ error: unknown }>[] = [
         client.from('orders').delete().eq('id', id) as unknown as Promise<{ error: unknown }>,
       ];
-      if (releasesMachine) {
-        ops.push(client.from('machines').update({ status: 'i_lager', updated_at: now }).eq('id', order.machineId) as unknown as Promise<{ error: unknown }>);
-        const updatedCust = get().customers.find((c) => c.id === order.customerId);
-        if (updatedCust) {
-          ops.push(client.from('customers').update({ active_orders: updatedCust.activeOrders }).eq('id', order.customerId) as unknown as Promise<{ error: unknown }>);
-        }
+      if (updatedMachine) {
+        const machineUpdates: Record<string, unknown> = {
+          updated_at: now,
+          total_revenue: updatedMachine.totalRevenue,
+          total_rentals: updatedMachine.totalRentals,
+          total_rental_days: updatedMachine.totalRentalDays,
+        };
+        if (releasesMachine) machineUpdates.status = 'i_lager';
+        ops.push(client.from('machines').update(machineUpdates).eq('id', order.machineId) as unknown as Promise<{ error: unknown }>);
+      }
+      if (updatedCust && (releasesMachine || hasRevenue)) {
+        ops.push(client.from('customers').update({
+          active_orders: updatedCust.activeOrders,
+          total_spent: updatedCust.totalSpent,
+        }).eq('id', order.customerId) as unknown as Promise<{ error: unknown }>);
       }
       Promise.all(ops).then((results) => {
         results.forEach((r, i) => { if (r.error) console.error(`sync deleteOrder[${i}]:`, r.error); });
