@@ -898,44 +898,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Testimonials ── */}
-      <section id="testimonials" className="py-28 px-6">
-        <div className="max-w-6xl mx-auto">
-          <AnimateIn className="text-center mb-16">
-            <p className="text-[12px] font-semibold text-blue-600 uppercase tracking-widest mb-3">Kundberättelser</p>
-            <h2 className="text-[40px] font-bold text-slate-900 tracking-tight mb-4">Vad säger våra kunder?</h2>
-            <p className="text-[16px] text-slate-500 max-w-xl mx-auto">
-              Maskinföretag runt om i Sverige berättar om skillnaden FleetRent gjort.
-            </p>
-          </AnimateIn>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {TESTIMONIALS.map(({ name, title, text, initials, color }, i) => (
-              <AnimateIn key={name} delay={i * 100} direction="up">
-                <div className="bg-white rounded-2xl border border-slate-200 p-7 hover:shadow-xl hover:border-slate-300 hover:-translate-y-1 transition-all duration-300 h-full flex flex-col">
-                  <div className="flex gap-1 mb-5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                  <p className="text-[14px] text-slate-700 leading-relaxed mb-6 font-medium flex-1">
-                    &ldquo;{text}&rdquo;
-                  </p>
-                  <div className="flex items-center gap-3 pt-5 border-t border-slate-100">
-                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${color} flex items-center justify-center text-white text-[12px] font-bold shrink-0`}>
-                      {initials}
-                    </div>
-                    <div>
-                      <p className="text-[13px] font-semibold text-slate-800">{name}</p>
-                      <p className="text-[12px] text-slate-400">{title}</p>
-                    </div>
-                  </div>
-                </div>
-              </AnimateIn>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ── FAQ ── */}
       <section className="py-24 px-6 border-t border-slate-100 bg-slate-50">
