@@ -979,7 +979,7 @@ export default function LandingPage() {
             Redo att modernisera<br />din uthyrning?
           </h2>
           <p className="text-[16px] text-slate-400 mb-10 max-w-md mx-auto leading-relaxed">
-            Gå med hundratals maskinföretag som redan hanterar sin flotta med FleetRent. Gratis att komma igång, inga kortuppgifter krävs.
+            Digitalisera hela uthyrningsprocessen med FleetRent — från order och hyresavtal till returhantering och fakturaunderlag.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/kom-igang" className="flex items-center gap-2 px-7 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-[15px] shadow-xl shadow-blue-900/40 hover:-translate-y-0.5">
@@ -990,7 +990,7 @@ export default function LandingPage() {
               Kontakta oss
             </a>
           </div>
-          <p className="text-[12px] text-slate-600 mt-6">Ingen bindningstid · Starta gratis · Uppgradera när du vill</p>
+          <p className="text-[12px] text-slate-600 mt-6">Ingen bindningstid · AI drivet · Full kontroll på intäkterna</p>
         </AnimateIn>
       </section>
 
