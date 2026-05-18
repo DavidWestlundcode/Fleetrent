@@ -587,9 +587,15 @@ export default function LandingPage() {
       <section className="py-20 bg-[#060D1A] border-b border-white/[0.05]">
         <div className="max-w-5xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <AnimateIn className="text-center" direction="scale">
+              <p className="text-[32px] font-bold tracking-tight text-blue-400 leading-tight">AI-drivna<br />flöden</p>
+              <p className="text-[12px] text-slate-500 mt-2">Automatisera uthyrning och administration</p>
+            </AnimateIn>
+            <AnimateIn className="text-center" direction="scale">
+              <p className="text-[32px] font-bold tracking-tight text-emerald-400 leading-tight">Full<br />kontroll</p>
+              <p className="text-[12px] text-slate-500 mt-2">Se status på alla maskiner i realtid</p>
+            </AnimateIn>
             {[
-              { end: 500, suffix: '+', label: 'Maskiner hanterade', sub: 'I aktiva FleetRent-konton', color: 'text-blue-400' },
-              { end: 98, suffix: '%', label: 'Kundnöjdhet', sub: 'Baserat på användarundersökning', color: 'text-emerald-400' },
               { end: 1, suffix: ' dag', label: 'Onboarding-tid', sub: 'Från konto till full drift', color: 'text-violet-400' },
               { end: 40, suffix: '%', label: 'Minskad admin', sub: 'Genomsnitt för våra kunder', color: 'text-amber-400' },
             ].map(({ end, suffix, label, sub, color }) => (
