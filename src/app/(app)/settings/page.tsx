@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Save, User, Building2, Bell, Globe, Mail, Loader2, CheckCircle2, XCircle, Link2, Link2Off, ExternalLink } from 'lucide-react';
+import { Save, User, Building2, Bell, Globe, Mail, Loader2, CheckCircle2, XCircle, Link2, Link2Off } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
@@ -101,16 +101,6 @@ function FortnoxCard() {
         </p>
       )}
 
-      {status === 'disconnected' && (
-        <div className="mt-3 p-3 bg-slate-50 rounded-lg text-xs text-slate-500 space-y-1">
-          <p>För att ansluta behöver du:</p>
-          <ol className="list-decimal ml-4 space-y-0.5">
-            <li>Skapa en integration på <a href="https://developer.fortnox.se" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline inline-flex items-center gap-0.5">developer.fortnox.se <ExternalLink className="w-2.5 h-2.5" /></a></li>
-            <li>Lägg till <code className="bg-slate-200 px-1 rounded">FORTNOX_CLIENT_ID</code> och <code className="bg-slate-200 px-1 rounded">FORTNOX_CLIENT_SECRET</code> i Vercel</li>
-            <li>Klicka "Anslut Fortnox" ovan</li>
-          </ol>
-        </div>
-      )}
 
       {feedback && (
         <div className={`mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
