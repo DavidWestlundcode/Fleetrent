@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
     const endDate = (orderRow.actual_return_date as string) || (orderRow.planned_return_date as string) || startDate;
     const days = Math.max(1, Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000));
 
-    const orderRows = [
+    const orderRows: { Description: string; DeliveredQuantity: number; Price: number; Unit: string }[] = [
       {
         Description: `Hyra – ${days} dagar`,
         DeliveredQuantity: days,
@@ -164,6 +164,26 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Extra articles — fetch names from articles table, send as free-text rows (no ArticleNumber)
+    const extraArticles = (orderRow.order_articles as { articleId: string; quantity: number; unitPrice: number }[]) ?? [];
+    if (extraArticles.length > 0) {
+      const articleIds = extraArticles.map((a) => a.articleId);
+      const { data: articleRows } = await admin
+        .from('articles')
+        .select('id, name, unit')
+        .in('id', articleIds);
+
+      for (const extra of extraArticles) {
+        const art = articleRows?.find((a) => a.id === extra.articleId);
+        orderRows.push({
+          Description: art?.name ?? 'Artikel',
+          DeliveredQuantity: extra.quantity,
+          Price: extra.unitPrice,
+          Unit: (art?.unit as string) ?? 'st',
+        });
+      }
+    }
+
     const fortnoxRes = await fetch(`${FORTNOX_API}/orders`, {
       method: 'POST',
       headers: {
@@ -184,8 +204,9 @@ export async function POST(request: NextRequest) {
 
     if (!fortnoxRes.ok) {
       const errBody = await fortnoxRes.json().catch(() => ({}));
+      const errMsg = errBody?.ErrorInformation?.message ?? errBody?.message ?? JSON.stringify(errBody);
       console.error('Fortnox create order error:', errBody);
-      return NextResponse.json({ error: 'Kunde inte skapa order i Fortnox' }, { status: 500 });
+      return NextResponse.json({ error: `Fortnox: ${errMsg}` }, { status: 500 });
     }
 
     const fortnoxJson = await fortnoxRes.json();
