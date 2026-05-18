@@ -144,7 +144,12 @@ export async function POST(request: NextRequest) {
 
     // Build order rows
     const startDate = orderRow.start_date as string;
-    const endDate = (orderRow.actual_return_date as string) || (orderRow.planned_return_date as string) || startDate;
+    // For fixed-term orders use planned_return_date (matches agreed billing period).
+    // For open-ended orders (no planned date) fall back to actual_return_date.
+    const isOpenEnded = !orderRow.planned_return_date;
+    const endDate = isOpenEnded
+      ? ((orderRow.actual_return_date as string) || startDate)
+      : (orderRow.planned_return_date as string);
     const days = Math.max(1, Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000));
 
     const orderRows: { Description: string; DeliveredQuantity: number; Price: number; Unit: string }[] = [
