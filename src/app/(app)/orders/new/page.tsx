@@ -2,7 +2,8 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity } from 'lucide-react';
+import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity, Plus, Trash2 } from 'lucide-react';
+import type { OrderArticle } from '@/lib/types';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
 import { formatCurrency, daysBetween, getMatchingTemplate, calcBreakdown } from '@/lib/utils';
@@ -53,6 +54,10 @@ function NewOrderForm() {
   const [rentalType, setRentalType] = useState<'short' | 'long'>('short');
   const [autoMatchedTemplate, setAutoMatchedTemplate] = useState<string | null>(null);
   const [openEnded, setOpenEnded] = useState(false);
+  const [orderArticles, setOrderArticles] = useState<OrderArticle[]>([]);
+  const [newArticleId, setNewArticleId] = useState('');
+  const [newArticleQty, setNewArticleQty] = useState(1);
+  const [newArticlePrice, setNewArticlePrice] = useState(0);
 
   const set = (field: string, value: string | number) => setForm((p) => ({ ...p, [field]: value }));
 
@@ -122,9 +127,10 @@ function NewOrderForm() {
     ? insuranceMonths * selectedTemplate.insuranceMonthlyPrice
     : 0;
 
+  const extraArticlesTotal = orderArticles.reduce((sum, r) => sum + r.quantity * r.unitPrice, 0);
   const totalPrice = openEnded
-    ? form.transportCost + form.deposit
-    : calculatedPrice + form.transportCost + insuranceCost;
+    ? form.transportCost + form.deposit + extraArticlesTotal
+    : calculatedPrice + form.transportCost + insuranceCost + extraArticlesTotal;
 
   const availableMachines = machines.filter((m) => {
     if (m.status !== 'i_lager' && m.id !== form.machineId) return false;
@@ -168,6 +174,7 @@ function NewOrderForm() {
       insuranceMonthlyRate: (includeInsurance && openEnded && selectedTemplate)
         ? selectedTemplate.insuranceMonthlyPrice
         : undefined,
+      orderArticles,
     });
     router.push(`/orders/${id}`);
   };
@@ -374,6 +381,91 @@ function NewOrderForm() {
               )}
             </div>
 
+            {/* Extra articles */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+              <h2 className="text-[14px] font-semibold text-slate-900 mb-4">Artiklar</h2>
+
+              {orderArticles.length > 0 && (
+                <div className="mb-4 border border-slate-200 rounded-xl overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-100">
+                        <th className="text-left px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Artikel</th>
+                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-16">Antal</th>
+                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-24">À-pris</th>
+                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-24">Totalt</th>
+                        <th className="w-8" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {orderArticles.map((row, i) => {
+                        const art = articles.find((a) => a.id === row.articleId);
+                        return (
+                          <tr key={i} className="hover:bg-slate-50/60">
+                            <td className="px-3 py-2.5 text-[13px] text-slate-700">
+                              <span className="text-slate-400 font-mono text-[11px] mr-1.5">{art?.articleNumber}</span>
+                              {art?.name}
+                            </td>
+                            <td className="px-3 py-2.5 text-[13px] text-right text-slate-700">{row.quantity} {art?.unit}</td>
+                            <td className="px-3 py-2.5 text-[13px] text-right text-slate-700">{formatCurrency(row.unitPrice)}</td>
+                            <td className="px-3 py-2.5 text-[13px] text-right font-medium text-slate-800">{formatCurrency(row.quantity * row.unitPrice)}</td>
+                            <td className="px-3 py-2.5 text-right">
+                              <button type="button" onClick={() => setOrderArticles((p) => p.filter((_, idx) => idx !== i))} className="text-slate-300 hover:text-red-500 transition-colors cursor-pointer">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Add row */}
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Välj artikel</label>
+                  <select
+                    value={newArticleId}
+                    onChange={(e) => {
+                      const art = articles.find((a) => a.id === e.target.value);
+                      setNewArticleId(e.target.value);
+                      setNewArticlePrice(art?.defaultPrice ?? 0);
+                    }}
+                    className={inputClass}
+                  >
+                    <option value="">Välj artikel...</option>
+                    {articles.filter((a) => a.isActive).map((a) => (
+                      <option key={a.id} value={a.id}>{a.articleNumber} – {a.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="w-20">
+                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Antal</label>
+                  <input type="number" min={1} value={newArticleQty} onChange={(e) => setNewArticleQty(Number(e.target.value))} className={inputClass} />
+                </div>
+                <div className="w-28">
+                  <label className="block text-xs font-medium text-slate-600 mb-1.5">À-pris (kr)</label>
+                  <input type="number" min={0} value={newArticlePrice} onChange={(e) => setNewArticlePrice(Number(e.target.value))} className={inputClass} />
+                </div>
+                <button
+                  type="button"
+                  disabled={!newArticleId}
+                  onClick={() => {
+                    if (!newArticleId) return;
+                    setOrderArticles((p) => [...p, { articleId: newArticleId, quantity: newArticleQty, unitPrice: newArticlePrice }]);
+                    setNewArticleId('');
+                    setNewArticleQty(1);
+                    setNewArticlePrice(0);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-[13px] font-medium rounded-xl hover:bg-blue-700 disabled:opacity-40 transition-colors cursor-pointer shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Lägg till
+                </button>
+              </div>
+            </div>
+
             {/* Notes */}
             <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
               <h2 className="text-[14px] font-semibold text-slate-900 mb-4">Anteckningar och tillbehör</h2>
@@ -492,6 +584,12 @@ function NewOrderForm() {
                     </>
                   );
                 })()}
+                {extraArticlesTotal > 0 && (
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-slate-500">Artiklar ({orderArticles.length} st)</span>
+                    <span className="font-medium">{formatCurrency(extraArticlesTotal)}</span>
+                  </div>
+                )}
                 <div className="pt-2 border-t border-slate-100 flex justify-between items-baseline">
                   <span className="text-[13px] font-semibold text-slate-800">
                     {openEnded ? 'Delpris (ex. hyra)' : 'Totalt'}

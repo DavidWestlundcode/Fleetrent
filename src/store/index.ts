@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import type {
   Machine, Customer, Order, PriceTemplate, ServiceRecord, Article,
   MachineCategory, MachineStatus, FuelType, OrderStatus, ReturnCondition,
-  ServiceType, ServiceStatus, ArticleType, ArticleUnit,
+  ServiceType, ServiceStatus, ArticleType, ArticleUnit, OrderArticle,
 } from '@/lib/types';
 import { generateOrderNumber } from '@/lib/utils';
 
@@ -190,6 +190,7 @@ function fromDbOrder(r: DbRow): Order {
     insuranceMonthlyRate: r.insurance_monthly_rate != null ? (r.insurance_monthly_rate as number) : undefined,
     sentToAccounting: (r.sent_to_accounting as boolean) ?? false,
     fortnoxOrderNumber: (r.fortnox_order_number as string) || undefined,
+    orderArticles: (r.order_articles as OrderArticle[]) ?? [],
     createdAt: r.created_at as string,
     createdBy: (r.created_by as string) ?? '',
   };
@@ -230,6 +231,7 @@ function toDbOrder(o: Order, orgId: string): DbRow {
     insurance_monthly_rate: o.insuranceMonthlyRate ?? null,
     sent_to_accounting: o.sentToAccounting ?? false,
     fortnox_order_number: o.fortnoxOrderNumber ?? null,
+    order_articles: o.orderArticles ?? [],
     created_by: o.createdBy || null,
     created_at: o.createdAt,
   };
@@ -687,6 +689,7 @@ export const useStore = create<AppStore>()((set, get) => ({
       if (updates.returnImages !== undefined) dbUpdates.return_images = updates.returnImages;
       if (updates.sentToAccounting !== undefined) dbUpdates.sent_to_accounting = updates.sentToAccounting;
       if (updates.fortnoxOrderNumber !== undefined) dbUpdates.fortnox_order_number = updates.fortnoxOrderNumber;
+      if (updates.orderArticles !== undefined) dbUpdates.order_articles = updates.orderArticles;
       if (Object.keys(dbUpdates).length > 0) {
         syncQuery(sb().from('orders').update(dbUpdates).eq('id', id), 'sync updateOrder:');
       }

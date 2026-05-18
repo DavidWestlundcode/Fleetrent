@@ -17,6 +17,12 @@ export type ReturnCondition = 'bra' | 'skadat' | 'kraver_service' | 'kraver_kont
 export type ArticleType = 'hyra' | 'försäkring' | 'transport' | 'deposition' | 'service' | 'övrigt';
 export type ArticleUnit = 'dag' | 'vecka' | 'månad' | 'st' | 'tim';
 
+export interface OrderArticle {
+  articleId: string;
+  quantity: number;
+  unitPrice: number;
+}
+
 export interface Article {
   id: string;
   articleNumber: string;
@@ -134,6 +140,7 @@ export interface Order {
   insuranceMonthlyRate?: number;
   sentToAccounting?: boolean;
   fortnoxOrderNumber?: string;
+  orderArticles: OrderArticle[];
   createdAt: string;
   createdBy: string;
 }

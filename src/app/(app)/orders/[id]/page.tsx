@@ -302,7 +302,7 @@ export default function OrderDetailPage() {
             )}
 
             {/* Articles Table */}
-            {(order.rentalArticleId || order.insuranceArticleId || order.transportArticleId || order.depositArticleId) && (() => {
+            {(order.rentalArticleId || order.insuranceArticleId || order.transportArticleId || order.depositArticleId || order.orderArticles?.length > 0) && (() => {
               const totalDays = order.actualReturnDate
                 ? daysBetween(order.startDate, order.actualReturnDate)
                 : order.plannedReturnDate
@@ -351,6 +351,7 @@ export default function OrderDetailPage() {
                         <th className="text-left px-5 py-2.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Beskrivning</th>
                         <th className="text-right px-5 py-2.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Antal</th>
                         <th className="text-left px-5 py-2.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Enhet</th>
+                        <th className="text-right px-5 py-2.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Pris</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -364,8 +365,22 @@ export default function OrderDetailPage() {
                               : row.antal}
                           </td>
                           <td className="px-5 py-3 text-[13px] text-slate-500">{ARTICLE_UNIT_LABELS[row.art.unit]}</td>
+                          <td className="px-5 py-3 text-[13px] text-right text-slate-500">–</td>
                         </tr>
                       ))}
+                      {(order.orderArticles ?? []).map((row, i) => {
+                        const art = articles.find((a) => a.id === row.articleId);
+                        if (!art) return null;
+                        return (
+                          <tr key={`extra-${i}`} className="hover:bg-slate-50/60 transition-colors">
+                            <td className="px-5 py-3 font-mono text-[13px] text-slate-700">{art.articleNumber}</td>
+                            <td className="px-5 py-3 text-[13px] text-slate-800">{art.name}</td>
+                            <td className="px-5 py-3 text-[13px] text-right font-medium text-slate-700">{row.quantity}</td>
+                            <td className="px-5 py-3 text-[13px] text-slate-500">{ARTICLE_UNIT_LABELS[art.unit]}</td>
+                            <td className="px-5 py-3 text-[13px] text-right font-medium text-slate-700">{formatCurrency(row.quantity * row.unitPrice)}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
