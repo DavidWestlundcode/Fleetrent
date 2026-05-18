@@ -507,19 +507,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Social proof ── */}
-      <section className="py-14 bg-white border-b border-slate-100">
-        <div className="max-w-5xl mx-auto px-6 text-center">
-          <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-widest mb-8">
-            Används av maskinföretag i hela Sverige
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14">
-            {['Eriksson Maskinuthyrning', 'NordMark Hyrmaskiner', 'Lindström Anläggningsmaskiner', 'Svensson & Co', 'JP Anläggning'].map((name) => (
-              <div key={name} className="text-[13px] font-bold text-slate-300 tracking-tight whitespace-nowrap">{name}</div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ── Problem → Solution ── */}
       <section className="py-28 px-6 bg-slate-50 border-b border-slate-200 overflow-hidden">
