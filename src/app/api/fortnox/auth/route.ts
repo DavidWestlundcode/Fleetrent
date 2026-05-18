@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
-    scope: 'order companyinformation',
+    scope: 'order companyinformation customer',
     state: user.id,
     access_type: 'offline',
     response_type: 'code',
