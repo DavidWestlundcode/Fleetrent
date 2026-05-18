@@ -189,6 +189,7 @@ function fromDbOrder(r: DbRow): Order {
     transportArticleId: r.transport_article_id as string | undefined,
     depositArticleId: r.deposit_article_id as string | undefined,
     openEnded: (r.open_ended as boolean) ?? false,
+    chargeWeekends: (r.charge_weekends as boolean) ?? false,
     insuranceMonthlyRate: r.insurance_monthly_rate != null ? (r.insurance_monthly_rate as number) : undefined,
     sentToAccounting: (r.sent_to_accounting as boolean) ?? false,
     fortnoxOrderNumber: (r.fortnox_order_number as string) || undefined,
@@ -230,6 +231,7 @@ function toDbOrder(o: Order, orgId: string): DbRow {
     transport_article_id: o.transportArticleId ?? null,
     deposit_article_id: o.depositArticleId ?? null,
     open_ended: o.openEnded ?? false,
+    charge_weekends: o.chargeWeekends ?? false,
     insurance_monthly_rate: o.insuranceMonthlyRate ?? null,
     sent_to_accounting: o.sentToAccounting ?? false,
     fortnox_order_number: o.fortnoxOrderNumber ?? null,
@@ -427,6 +429,7 @@ interface AppStore {
     transportArticleId?: string;
     depositArticleId?: string;
     openEnded?: boolean;
+    chargeWeekends?: boolean;
     insuranceMonthlyRate?: number;
     orderReference?: string;
     orderArticles?: OrderArticle[];

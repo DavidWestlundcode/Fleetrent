@@ -2,11 +2,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity, Plus, Trash2, Search } from 'lucide-react';
+import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity, Plus, Trash2, Search, CalendarOff } from 'lucide-react';
 import type { OrderArticle } from '@/lib/types';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
-import { formatCurrency, daysBetween, getMatchingTemplate, calcBreakdown } from '@/lib/utils';
+import { formatCurrency, daysBetween, getMatchingTemplate, calcBreakdown, countBusinessDays } from '@/lib/utils';
 import { MachineStatusBadge } from '@/components/ui/StatusBadge';
 
 const inputClass = 'w-full px-3 py-2 text-[13px] bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:bg-white transition-all';
@@ -52,6 +52,7 @@ export default function EditOrderPage() {
   const [includeInsurance, setIncludeInsurance] = useState(false);
   const [rentalType, setRentalType] = useState<'short' | 'long'>('short');
   const [openEnded, setOpenEnded] = useState(false);
+  const [chargeWeekends, setChargeWeekends] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [orderArticles, setOrderArticles] = useState<OrderArticle[]>([]);
   const [newArticleId, setNewArticleId] = useState('');
@@ -84,6 +85,7 @@ export default function EditOrderPage() {
       orderReference: order.orderReference ?? '',
     });
     setOpenEnded(order.openEnded === true);
+    setChargeWeekends(order.chargeWeekends === true);
     setIncludeInsurance(!!order.insuranceCost || !!order.insuranceMonthlyRate);
     setOrderArticles(order.orderArticles ?? []);
     setInitialized(true);
@@ -158,9 +160,12 @@ export default function EditOrderPage() {
   }
 
   const days = rentalDays();
-  const priceBreakdown = calcBreakdown(days, form.dailyPrice, form.weeklyPrice, form.monthlyPrice);
+  const billableDays = (!openEnded && form.startDate && form.plannedReturnDate && days > 0)
+    ? (chargeWeekends ? days : countBusinessDays(form.startDate, form.plannedReturnDate))
+    : days;
+  const priceBreakdown = calcBreakdown(billableDays, form.dailyPrice, form.weeklyPrice, form.monthlyPrice);
   const calculatedPrice = priceBreakdown.total;
-  const insuranceMonths = days > 0 ? Math.ceil(days / 30) : 0;
+  const insuranceMonths = billableDays > 0 ? Math.ceil(billableDays / 30) : 0;
   const insuranceCost = !openEnded && includeInsurance && selectedTemplate
     ? insuranceMonths * selectedTemplate.insuranceMonthlyPrice
     : 0;
@@ -193,6 +198,7 @@ export default function EditOrderPage() {
       transportArticleId: form.transportArticleId || undefined,
       depositArticleId: form.depositArticleId || undefined,
       openEnded: openEnded || undefined,
+      chargeWeekends: chargeWeekends || undefined,
       insuranceMonthlyRate: (includeInsurance && openEnded && selectedTemplate)
         ? selectedTemplate.insuranceMonthlyPrice
         : undefined,
@@ -338,7 +344,7 @@ export default function EditOrderPage() {
                   )}
                 </Field>
               </div>
-              <div className="mt-3 flex items-center gap-4">
+              <div className="mt-3 flex flex-wrap items-center gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -348,9 +354,26 @@ export default function EditOrderPage() {
                   />
                   <span className="text-[13px] text-slate-600 font-medium">Inget slutdatum</span>
                 </label>
+                {!openEnded && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={chargeWeekends}
+                      onChange={(e) => setChargeWeekends(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    />
+                    <span className="text-[13px] text-slate-600 font-medium flex items-center gap-1.5">
+                      <CalendarOff className="w-3.5 h-3.5 text-slate-400" />
+                      Räkna med helgdagar
+                    </span>
+                  </label>
+                )}
                 {!openEnded && days > 0 && (
                   <span className="text-[13px] text-slate-600 bg-blue-50 px-3 py-1.5 rounded-xl">
-                    Hyresperiod: <strong>{days} dagar</strong>
+                    {billableDays !== days
+                      ? <><strong>{billableDays} fakturerbara dagar</strong> ({days} kalenderdagar)</>
+                      : <><strong>{days} dagar</strong></>
+                    }
                   </span>
                 )}
                 {openEnded && (
@@ -585,7 +608,9 @@ export default function EditOrderPage() {
                 <div>
                   <p className="text-[10px] text-slate-400 uppercase tracking-wide">Hyresperiod</p>
                   <p className="text-[13px] font-medium text-slate-800 mt-0.5">
-                    {openEnded ? 'Löpande' : days > 0 ? `${days} dagar` : '–'}
+                    {openEnded ? 'Löpande' : days > 0
+                      ? (billableDays !== days ? `${billableDays} fakturerbara dagar (${days} kal.)` : `${days} dagar`)
+                      : '–'}
                   </p>
                 </div>
               </div>
@@ -600,7 +625,7 @@ export default function EditOrderPage() {
                     <>
                       <div>
                         <div className="flex justify-between text-[13px]">
-                          <span className="text-slate-500">Hyra {openEnded ? '(löpande)' : `(${days} dagar)`}</span>
+                          <span className="text-slate-500">Hyra {openEnded ? '(löpande)' : days > 0 ? `(${billableDays} dagar)` : ''}</span>
                           <span className={`font-medium ${openEnded ? 'text-slate-400 text-[12px]' : ''}`}>
                             {openEnded ? 'Beräknas vid retur' : formatCurrency(calculatedPrice)}
                           </span>

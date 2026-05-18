@@ -2,11 +2,11 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity, Plus, Trash2, Search, FileSignature } from 'lucide-react';
+import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity, Plus, Trash2, Search, FileSignature, CalendarOff } from 'lucide-react';
 import type { OrderArticle } from '@/lib/types';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
-import { formatCurrency, daysBetween, getMatchingTemplate, calcBreakdown } from '@/lib/utils';
+import { formatCurrency, daysBetween, getMatchingTemplate, calcBreakdown, countBusinessDays } from '@/lib/utils';
 import { MachineStatusBadge } from '@/components/ui/StatusBadge';
 
 const inputClass = 'w-full px-3 py-2 text-[13px] bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:bg-white transition-all';
@@ -54,6 +54,7 @@ function NewOrderForm() {
   const [rentalType, setRentalType] = useState<'short' | 'long'>('short');
   const [autoMatchedTemplate, setAutoMatchedTemplate] = useState<string | null>(null);
   const [openEnded, setOpenEnded] = useState(false);
+  const [chargeWeekends, setChargeWeekends] = useState(false);
   const [orderArticles, setOrderArticles] = useState<OrderArticle[]>([]);
   const [newArticleId, setNewArticleId] = useState('');
   const [newArticleQty, setNewArticleQty] = useState(1);
@@ -121,10 +122,13 @@ function NewOrderForm() {
   }
 
   const days = rentalDays();
-  const priceBreakdown = calcBreakdown(days, form.dailyPrice, form.weeklyPrice, form.monthlyPrice);
+  const billableDays = (!openEnded && form.startDate && form.plannedReturnDate && days > 0)
+    ? (chargeWeekends ? days : countBusinessDays(form.startDate, form.plannedReturnDate))
+    : days;
+  const priceBreakdown = calcBreakdown(billableDays, form.dailyPrice, form.weeklyPrice, form.monthlyPrice);
   const calculatedPrice = priceBreakdown.total;
 
-  const insuranceMonths = days > 0 ? Math.ceil(days / 30) : 0;
+  const insuranceMonths = billableDays > 0 ? Math.ceil(billableDays / 30) : 0;
   const insuranceCost = !openEnded && includeInsurance && selectedTemplate
     ? insuranceMonths * selectedTemplate.insuranceMonthlyPrice
     : 0;
@@ -173,6 +177,7 @@ function NewOrderForm() {
       transportArticleId: form.transportArticleId || undefined,
       depositArticleId: form.depositArticleId || undefined,
       openEnded: openEnded || undefined,
+      chargeWeekends: chargeWeekends || undefined,
       insuranceMonthlyRate: (includeInsurance && openEnded && selectedTemplate)
         ? selectedTemplate.insuranceMonthlyPrice
         : undefined,
@@ -311,7 +316,7 @@ function NewOrderForm() {
                   )}
                 </Field>
               </div>
-              <div className="mt-3 flex items-center gap-4">
+              <div className="mt-3 flex flex-wrap items-center gap-3">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -321,9 +326,26 @@ function NewOrderForm() {
                   />
                   <span className="text-[13px] text-slate-600 font-medium">Inget slutdatum</span>
                 </label>
+                {!openEnded && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={chargeWeekends}
+                      onChange={(e) => setChargeWeekends(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    />
+                    <span className="text-[13px] text-slate-600 font-medium flex items-center gap-1.5">
+                      <CalendarOff className="w-3.5 h-3.5 text-slate-400" />
+                      Räkna med helgdagar
+                    </span>
+                  </label>
+                )}
                 {!openEnded && days > 0 && (
                   <span className="text-[13px] text-slate-600 bg-blue-50 px-3 py-1.5 rounded-xl">
-                    Hyresperiod: <strong>{days} dagar</strong>
+                    {chargeWeekends || billableDays === days
+                      ? <><strong>{days}</strong> dagar</>
+                      : <><strong>{billableDays}</strong> fakturerbara dagar <span className="text-slate-400">({days} kalenderdagar)</span></>
+                    }
                   </span>
                 )}
                 {openEnded && (
@@ -583,8 +605,11 @@ function NewOrderForm() {
                 <div>
                   <p className="text-[10px] text-slate-400 uppercase tracking-wide">Hyresperiod</p>
                   <p className="text-[13px] font-medium text-slate-800 mt-0.5">
-                    {openEnded ? 'Löpande' : days > 0 ? `${days} dagar` : '–'}
+                    {openEnded ? 'Löpande' : billableDays > 0 ? `${billableDays} fakturerbara dagar` : '–'}
                   </p>
+                  {!openEnded && !chargeWeekends && days > 0 && billableDays !== days && (
+                    <p className="text-[11px] text-slate-400 mt-0.5">{days} kalenderdagar</p>
+                  )}
                 </div>
               </div>
 
@@ -598,7 +623,7 @@ function NewOrderForm() {
                     <>
                       <div>
                         <div className="flex justify-between text-[13px]">
-                          <span className="text-slate-500">Hyra {openEnded ? '(löpande)' : `(${days} dagar)`}</span>
+                          <span className="text-slate-500">Hyra {openEnded ? '(löpande)' : `(${billableDays} dagar)`}</span>
                           <span className={`font-medium ${openEnded ? 'text-slate-400 text-[12px]' : ''}`}>
                             {openEnded ? 'Beräknas vid retur' : formatCurrency(calculatedPrice)}
                           </span>
@@ -662,14 +687,14 @@ function NewOrderForm() {
                 )}
               </div>
 
-              {!openEnded && days > 0 && form.dailyPrice > 0 && (
+              {!openEnded && billableDays > 0 && form.dailyPrice > 0 && (
                 <div className="mt-3 p-3 bg-slate-50 rounded-xl text-[11px] text-slate-500">
                   Beräknat som:{' '}
                   {[
                     priceBreakdown.months > 0 && `${priceBreakdown.months} mån à ${formatCurrency(form.monthlyPrice)}`,
                     priceBreakdown.weeks > 0 && `${priceBreakdown.weeks} veckor à ${formatCurrency(form.weeklyPrice)}`,
                     priceBreakdown.days > 0 && `${priceBreakdown.days} dagar à ${formatCurrency(form.dailyPrice)}`,
-                  ].filter(Boolean).join(' + ') || `${days} dagar à ${formatCurrency(form.dailyPrice)}`}
+                  ].filter(Boolean).join(' + ') || `${billableDays} dagar à ${formatCurrency(form.dailyPrice)}`}
                 </div>
               )}
             </div>

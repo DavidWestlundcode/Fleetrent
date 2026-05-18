@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { countBusinessDays } from '@/lib/utils';
 import { NextResponse, type NextRequest } from 'next/server';
 
 const FORTNOX_API = 'https://api.fortnox.se/3';
@@ -150,7 +151,11 @@ export async function POST(request: NextRequest) {
     const endDate = isOpenEnded
       ? ((orderRow.actual_return_date as string) || startDate)
       : (orderRow.planned_return_date as string);
-    const days = Math.max(1, Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000));
+    const calendarDays = Math.max(1, Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000));
+    const chargeWeekends = (orderRow.charge_weekends as boolean) ?? false;
+    const days = (!isOpenEnded && !chargeWeekends)
+      ? countBusinessDays(startDate, endDate)
+      : calendarDays;
 
     const orderRows: { Description: string; DeliveredQuantity: number; Price: number; Unit: string }[] = [
       {

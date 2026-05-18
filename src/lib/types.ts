@@ -144,6 +144,7 @@ export interface Order {
   transportArticleId?: string;
   depositArticleId?: string;
   openEnded?: boolean;
+  chargeWeekends?: boolean;
   insuranceMonthlyRate?: number;
   sentToAccounting?: boolean;
   fortnoxOrderNumber?: string;
