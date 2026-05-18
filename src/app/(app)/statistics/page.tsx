@@ -22,7 +22,22 @@ export default function StatisticsPage() {
     const avgOccupancy = machines.length > 0
       ? Math.round((machines.filter((m) => m.status === 'uthyrd' || m.status === 'reserverad').length / machines.length) * 100) : 0;
     const totalRentals = orders.filter((o) => o.status === 'avslutad').length;
-    return { totalRevenue, totalMachineCosts, netResult, avgOccupancy, totalRentals };
+
+    // Year-over-year revenue comparison (exclude cancelled orders)
+    const currentYear = new Date().getFullYear();
+    const prevYear = currentYear - 1;
+    const activeOrders = orders.filter((o) => o.status !== 'annullerad');
+    const thisYearRevenue = activeOrders
+      .filter((o) => new Date(o.startDate).getFullYear() === currentYear)
+      .reduce((s, o) => s + o.totalPrice, 0);
+    const prevYearRevenue = activeOrders
+      .filter((o) => new Date(o.startDate).getFullYear() === prevYear)
+      .reduce((s, o) => s + o.totalPrice, 0);
+    const revenueTrendPct = prevYearRevenue > 0
+      ? Math.round(((thisYearRevenue - prevYearRevenue) / prevYearRevenue) * 100)
+      : null;
+
+    return { totalRevenue, totalMachineCosts, netResult, avgOccupancy, totalRentals, revenueTrendPct };
   }, [machines, orders]);
 
   const revenueByMonth = useMemo(() => getMonthlyRevenueData(orders), [orders]);
@@ -76,30 +91,36 @@ export default function StatisticsPage() {
       <div className="flex-1 p-6 space-y-5">
         {/* Top KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: 'Total intäkt', value: formatCurrency(stats.totalRevenue), icon: DollarSign, trend: '+12%', positive: true },
-            { label: 'Total kostnad', value: formatCurrency(stats.totalMachineCosts), icon: TrendingDown, trend: '-3%', positive: true },
-            { label: 'Nettoresultat', value: formatCurrency(stats.netResult), icon: TrendingUp, trend: stats.netResult > 0 ? '+8%' : '-', positive: stats.netResult > 0 },
-            { label: 'Beläggningsgrad', value: `${stats.avgOccupancy}%`, icon: Activity, trend: '', positive: true },
-          ].map(({ label, value, icon: Icon, trend, positive }) => (
-            <div key={label} className="relative bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-              <div className="absolute top-0 left-0 right-0 h-[3px] bg-blue-500" />
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
-                  <p className="text-[22px] font-bold text-slate-900 mt-1.5 tracking-tight">{value}</p>
-                  {trend && (
-                    <p className={`text-[11px] mt-1 font-semibold ${positive ? 'text-emerald-600' : 'text-red-500'}`}>
-                      {trend} vs föregående år
-                    </p>
-                  )}
-                </div>
-                <div className="p-2.5 bg-blue-50 rounded-xl">
-                  <Icon className="w-[18px] h-[18px] text-blue-600" />
+          {(() => {
+            const revenueTrend = stats.revenueTrendPct !== null
+              ? (stats.revenueTrendPct >= 0 ? `+${stats.revenueTrendPct}%` : `${stats.revenueTrendPct}%`)
+              : null;
+            const cards = [
+              { label: 'Total intäkt', value: formatCurrency(stats.totalRevenue), icon: DollarSign, trend: revenueTrend, positive: (stats.revenueTrendPct ?? 0) >= 0 },
+              { label: 'Total kostnad', value: formatCurrency(stats.totalMachineCosts), icon: TrendingDown, trend: null, positive: true },
+              { label: 'Nettoresultat', value: formatCurrency(stats.netResult), icon: TrendingUp, trend: null, positive: stats.netResult >= 0 },
+              { label: 'Beläggningsgrad', value: `${stats.avgOccupancy}%`, icon: Activity, trend: null, positive: true },
+            ];
+            return cards.map(({ label, value, icon: Icon, trend, positive }) => (
+              <div key={label} className="relative bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                <div className="absolute top-0 left-0 right-0 h-[3px] bg-blue-500" />
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
+                    <p className="text-[22px] font-bold text-slate-900 mt-1.5 tracking-tight">{value}</p>
+                    {trend && (
+                      <p className={`text-[11px] mt-1 font-semibold ${positive ? 'text-emerald-600' : 'text-red-500'}`}>
+                        {trend} vs föregående år
+                      </p>
+                    )}
+                  </div>
+                  <div className="p-2.5 bg-blue-50 rounded-xl">
+                    <Icon className="w-[18px] h-[18px] text-blue-600" />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ));
+          })()}
         </div>
 
         {/* Monthly Revenue + Category */}
