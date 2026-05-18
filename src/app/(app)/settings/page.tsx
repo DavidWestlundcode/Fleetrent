@@ -1,11 +1,12 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Save, User, Building2, Bell, Globe, Mail, Loader2, CheckCircle2, XCircle, Link2, Link2Off } from 'lucide-react';
+import { Save, User, Building2, Bell, Globe, Mail, Loader2, CheckCircle2, XCircle, Link2, Link2Off, Shield } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { useStore } from '@/store';
 
 const inputClass = 'w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white';
 
@@ -17,6 +18,12 @@ const TABS = [
 ] as const;
 
 type Tab = (typeof TABS)[number]['id'];
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Admin',
+  saljare: 'Säljare',
+  verkstad: 'Verkstad',
+};
 
 function FortnoxCard() {
   const searchParams = useSearchParams();
@@ -64,7 +71,6 @@ function FortnoxCard() {
             <p className="text-xs text-slate-500">Skapa ordrar automatiskt i Fortnox vid fakturering</p>
           </div>
         </div>
-
         <div className="flex items-center gap-2 shrink-0">
           {status === 'loading' && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
           {status === 'connected' && (
@@ -94,14 +100,11 @@ function FortnoxCard() {
           )}
         </div>
       </div>
-
       {status === 'connected' && connectedAt && (
         <p className="mt-3 text-xs text-slate-400">
           Ansluten {new Date(connectedAt).toLocaleDateString('sv-SE', { dateStyle: 'long' })}
         </p>
       )}
-
-
       {feedback && (
         <div className={`mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
           feedback.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
@@ -114,24 +117,127 @@ function FortnoxCard() {
   );
 }
 
+type OrgForm = {
+  name: string;
+  orgNumber: string;
+  email: string;
+  phone: string;
+  address: string;
+  postalCity: string;
+  standardTerms: string;
+};
+
+type Member = {
+  id: string;
+  fullName: string;
+  role: string;
+};
+
 function SettingsInner() {
   const [activeTab, setActiveTab] = useState<Tab>('company');
-  const [saved, setSaved] = useState(false);
   const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
+  const [orgId, setOrgId] = useState<string | null>(null);
+  const [orgLoading, setOrgLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [members, setMembers] = useState<Member[]>([]);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteStatus, setInviteStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [inviteError, setInviteError] = useState('');
 
+  const { userId } = useStore();
+
+  const [org, setOrg] = useState<OrgForm>({
+    name: '',
+    orgNumber: '',
+    email: '',
+    phone: '',
+    address: '',
+    postalCity: '',
+    standardTerms: '',
+  });
+
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    createClient().auth.getUser().then(({ data }) => setCurrentUser(data.user));
     if (searchParams.get('tab') === 'integrations') setActiveTab('integrations');
   }, [searchParams]);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  useEffect(() => {
+    const load = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+      if (!user) { setOrgLoading(false); return; }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
+
+      const oid = profile?.organization_id as string | null;
+      setOrgId(oid);
+
+      if (oid) {
+        const [orgRes, membersRes] = await Promise.all([
+          supabase.from('organizations').select('*').eq('id', oid).single(),
+          supabase.from('profiles').select('id, full_name, role').eq('organization_id', oid),
+        ]);
+
+        if (orgRes.data) {
+          const d = orgRes.data as Record<string, string>;
+          setOrg({
+            name: d.name ?? '',
+            orgNumber: d.org_number ?? '',
+            email: d.email ?? '',
+            phone: d.phone ?? '',
+            address: d.address ?? '',
+            postalCity: d.postal_city ?? '',
+            standardTerms: d.standard_terms ?? '',
+          });
+        }
+
+        setMembers(
+          (membersRes.data ?? []).map((r) => ({
+            id: r.id as string,
+            fullName: (r.full_name as string) || 'Okänd användare',
+            role: (r.role as string) || 'saljare',
+          }))
+        );
+      }
+
+      setOrgLoading(false);
+    };
+    load();
+  }, []);
+
+  const handleSave = async () => {
+    if (!orgId) return;
+    setSaving(true);
+    setSaveError('');
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('organizations')
+      .update({
+        name: org.name,
+        org_number: org.orgNumber,
+        email: org.email,
+        phone: org.phone,
+        address: org.address,
+        postal_city: org.postalCity,
+        standard_terms: org.standardTerms,
+      })
+      .eq('id', orgId);
+
+    setSaving(false);
+    if (error) {
+      setSaveError('Kunde inte spara. Försök igen.');
+    } else {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }
   };
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -155,6 +261,9 @@ function SettingsInner() {
     }
   };
 
+  const setField = (field: keyof OrgForm, value: string) =>
+    setOrg((p) => ({ ...p, [field]: value }));
+
   return (
     <div className="flex flex-col flex-1 overflow-auto">
       <Header title="Inställningar" />
@@ -168,7 +277,7 @@ function SettingsInner() {
                 <button
                   key={id}
                   onClick={() => setActiveTab(id)}
-                  className={`flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                     activeTab === id ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
@@ -181,62 +290,118 @@ function SettingsInner() {
 
           {/* Content */}
           <div className="flex-1 space-y-6">
+
+            {/* ---- FÖRETAGSINFORMATION ---- */}
             {activeTab === 'company' && (
               <div className="bg-white rounded-xl border border-slate-200 p-6">
                 <h2 className="font-semibold text-slate-900 mb-4">Företagsinformation</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { label: 'Företagsnamn', value: 'FleetRent Sverige AB', placeholder: '' },
-                    { label: 'Organisationsnummer', value: '556000-1234', placeholder: '' },
-                    { label: 'E-post', value: 'info@fleetrent.se', placeholder: '' },
-                    { label: 'Telefon', value: '08-123 45 67', placeholder: '' },
-                    { label: 'Adress', value: 'Industrivägen 1', placeholder: '' },
-                    { label: 'Postnummer och ort', value: '141 50 Huddinge', placeholder: '' },
-                  ].map(({ label, value, placeholder }) => (
-                    <div key={label}>
-                      <label className="block text-xs font-medium text-slate-600 mb-1.5">{label}</label>
-                      <input defaultValue={value} placeholder={placeholder} className={inputClass} />
+
+                {orgLoading ? (
+                  <div className="flex items-center gap-2 text-slate-400 text-sm">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Laddar...
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1.5">Företagsnamn</label>
+                        <input value={org.name} onChange={(e) => setField('name', e.target.value)} className={inputClass} placeholder="Ert företagsnamn" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1.5">Organisationsnummer</label>
+                        <input value={org.orgNumber} onChange={(e) => setField('orgNumber', e.target.value)} className={inputClass} placeholder="556000-0000" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1.5">E-post</label>
+                        <input type="email" value={org.email} onChange={(e) => setField('email', e.target.value)} className={inputClass} placeholder="info@ertforetag.se" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1.5">Telefon</label>
+                        <input value={org.phone} onChange={(e) => setField('phone', e.target.value)} className={inputClass} placeholder="08-123 45 67" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1.5">Adress</label>
+                        <input value={org.address} onChange={(e) => setField('address', e.target.value)} className={inputClass} placeholder="Industrivägen 1" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1.5">Postnummer och ort</label>
+                        <input value={org.postalCity} onChange={(e) => setField('postalCity', e.target.value)} className={inputClass} placeholder="141 50 Huddinge" />
+                      </div>
                     </div>
-                  ))}
-                </div>
-                <div className="mt-4">
-                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Standardvillkor</label>
-                  <textarea className={`${inputClass} resize-none`} rows={4} defaultValue="Hyrestagaren ansvarar för att maskinen hanteras på ett säkert och korrekt sätt. Eventuella skador på maskinen debiteras hyrestagaren. Hyrestiden räknas från leveransdatum till returdatum." />
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <button onClick={handleSave} className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-                    <Save className="w-4 h-4" />
-                    {saved ? 'Sparat!' : 'Spara ändringar'}
-                  </button>
-                </div>
+                    <div className="mt-4">
+                      <label className="block text-xs font-medium text-slate-600 mb-1.5">Standardvillkor</label>
+                      <textarea
+                        value={org.standardTerms}
+                        onChange={(e) => setField('standardTerms', e.target.value)}
+                        className={`${inputClass} resize-none`}
+                        rows={4}
+                        placeholder="Era standardvillkor för maskinuthyrning..."
+                      />
+                    </div>
+                    {saveError && (
+                      <div className="mt-3 flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2 rounded-lg">
+                        <XCircle className="w-4 h-4 shrink-0" /> {saveError}
+                      </div>
+                    )}
+                    <div className="mt-4 flex justify-end">
+                      <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors cursor-pointer"
+                      >
+                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        {saved ? 'Sparat!' : saving ? 'Sparar...' : 'Spara ändringar'}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
+            {/* ---- ANVÄNDARE ---- */}
             {activeTab === 'users' && (
               <div className="space-y-4">
-                {/* Current user */}
                 <div className="bg-white rounded-xl border border-slate-200 p-6">
                   <h2 className="font-semibold text-slate-900 mb-4">Teammedlemmar</h2>
-                  {currentUser && (
-                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold">
-                          {(currentUser.user_metadata?.full_name || currentUser.email || '?').charAt(0).toUpperCase()}
+                  {members.length === 0 ? (
+                    <p className="text-sm text-slate-400">Inga medlemmar hittades.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {members.map((m) => (
+                        <div key={m.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                              {m.fullName.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-slate-800">
+                                {m.fullName}
+                                {m.id === (userId ?? currentUser?.id) && (
+                                  <span className="ml-2 text-xs text-blue-600">(Du)</span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {m.role === 'admin' && (
+                              <Shield className="w-3.5 h-3.5 text-blue-500" />
+                            )}
+                            <span className={`text-xs px-2.5 py-1 rounded-full border ${
+                              m.role === 'admin'
+                                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                : m.role === 'verkstad'
+                                ? 'bg-orange-50 border-orange-200 text-orange-700'
+                                : 'bg-slate-50 border-slate-200 text-slate-600'
+                            }`}>
+                              {ROLE_LABELS[m.role] ?? m.role}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-slate-800">
-                            {currentUser.user_metadata?.full_name || currentUser.email}
-                            <span className="ml-2 text-xs text-blue-600">(Du)</span>
-                          </p>
-                          <p className="text-xs text-slate-500">{currentUser.email}</p>
-                        </div>
-                      </div>
-                      <span className="text-xs px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-700 rounded-full">Admin</span>
+                      ))}
                     </div>
                   )}
                 </div>
 
-                {/* Invite */}
                 <div className="bg-white rounded-xl border border-slate-200 p-6">
                   <h2 className="font-semibold text-slate-900 mb-1">Bjud in medarbetare</h2>
                   <p className="text-sm text-slate-500 mb-4">De får ett e-postmeddelande med en länk för att skapa sitt konto och ansluta till ditt företag.</p>
@@ -255,7 +420,7 @@ function SettingsInner() {
                     <button
                       type="submit"
                       disabled={inviteStatus === 'loading'}
-                      className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors cursor-pointer"
                     >
                       {inviteStatus === 'loading' ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                       Skicka inbjudan
@@ -275,6 +440,7 @@ function SettingsInner() {
               </div>
             )}
 
+            {/* ---- NOTISER ---- */}
             {activeTab === 'notifications' && (
               <div className="bg-white rounded-xl border border-slate-200 p-6">
                 <h2 className="font-semibold text-slate-900 mb-4">Notifikationer</h2>
@@ -301,6 +467,7 @@ function SettingsInner() {
               </div>
             )}
 
+            {/* ---- INTEGRATIONER ---- */}
             {activeTab === 'integrations' && (
               <div className="bg-white rounded-xl border border-slate-200 p-6">
                 <h2 className="font-semibold text-slate-900 mb-1">Integrationer</h2>
@@ -326,6 +493,7 @@ function SettingsInner() {
                 </div>
               </div>
             )}
+
           </div>
         </div>
       </div>
