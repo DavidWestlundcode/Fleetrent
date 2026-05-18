@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity } from 'lucide-react';
+import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity, Plus, Trash2, Search } from 'lucide-react';
+import type { OrderArticle } from '@/lib/types';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
 import { formatCurrency, daysBetween, getMatchingTemplate, calcBreakdown } from '@/lib/utils';
@@ -52,6 +53,12 @@ export default function EditOrderPage() {
   const [rentalType, setRentalType] = useState<'short' | 'long'>('short');
   const [openEnded, setOpenEnded] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [orderArticles, setOrderArticles] = useState<OrderArticle[]>([]);
+  const [newArticleId, setNewArticleId] = useState('');
+  const [newArticleQty, setNewArticleQty] = useState(1);
+  const [newArticlePrice, setNewArticlePrice] = useState(0);
+  const [articleSearch, setArticleSearch] = useState('');
+  const [showArticleDropdown, setShowArticleDropdown] = useState(false);
 
   // Pre-populate from existing order
   useEffect(() => {
@@ -78,6 +85,7 @@ export default function EditOrderPage() {
     });
     setOpenEnded(order.openEnded === true);
     setIncludeInsurance(!!order.insuranceCost || !!order.insuranceMonthlyRate);
+    setOrderArticles(order.orderArticles ?? []);
     setInitialized(true);
   }, [order, initialized]);
 
@@ -156,9 +164,10 @@ export default function EditOrderPage() {
   const insuranceCost = !openEnded && includeInsurance && selectedTemplate
     ? insuranceMonths * selectedTemplate.insuranceMonthlyPrice
     : 0;
+  const extraArticlesTotal = orderArticles.reduce((sum, r) => sum + r.quantity * r.unitPrice, 0);
   const totalPrice = openEnded
-    ? form.transportCost + form.deposit
-    : calculatedPrice + form.transportCost + insuranceCost;
+    ? form.transportCost + form.deposit + extraArticlesTotal
+    : calculatedPrice + form.transportCost + insuranceCost + extraArticlesTotal;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,6 +197,7 @@ export default function EditOrderPage() {
         ? selectedTemplate.insuranceMonthlyPrice
         : undefined,
       orderReference: form.orderReference,
+      orderArticles,
     });
     router.push(`/orders/${order.id}`);
   };
@@ -399,6 +409,131 @@ export default function EditOrderPage() {
               )}
             </div>
 
+            {/* Extra articles */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+              <h2 className="text-[14px] font-semibold text-slate-900 mb-4">Artiklar</h2>
+
+              {orderArticles.length > 0 && (
+                <div className="mb-4 border border-slate-200 rounded-xl overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-100">
+                        <th className="text-left px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Artikel</th>
+                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-16">Antal</th>
+                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-24">À-pris</th>
+                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-24">Totalt</th>
+                        <th className="w-8" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {orderArticles.map((row, i) => {
+                        const art = articles.find((a) => a.id === row.articleId);
+                        return (
+                          <tr key={i} className="hover:bg-slate-50/60">
+                            <td className="px-3 py-2.5 text-[13px] text-slate-700">
+                              <span className="text-slate-400 font-mono text-[11px] mr-1.5">{art?.articleNumber}</span>
+                              {art?.name}
+                            </td>
+                            <td className="px-3 py-2.5 text-[13px] text-right text-slate-700">{row.quantity} {art?.unit}</td>
+                            <td className="px-3 py-2.5 text-[13px] text-right text-slate-700">{formatCurrency(row.unitPrice)}</td>
+                            <td className="px-3 py-2.5 text-[13px] text-right font-medium text-slate-800">{formatCurrency(row.quantity * row.unitPrice)}</td>
+                            <td className="px-3 py-2.5 text-right">
+                              <button type="button" onClick={() => setOrderArticles((p) => p.filter((_, idx) => idx !== i))} className="text-slate-300 hover:text-red-500 transition-colors cursor-pointer">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Add row */}
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Lägg till artikel</p>
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1 relative">
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Sök artikel</label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={articleSearch}
+                        onChange={(e) => {
+                          setArticleSearch(e.target.value);
+                          setShowArticleDropdown(true);
+                          if (!e.target.value) { setNewArticleId(''); setNewArticlePrice(0); }
+                        }}
+                        onFocus={() => setShowArticleDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowArticleDropdown(false), 150)}
+                        placeholder="Sök på namn eller art.nr..."
+                        className={`${inputClass} pl-8`}
+                      />
+                    </div>
+                    {showArticleDropdown && articleSearch && (
+                      <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto">
+                        {articles
+                          .filter((a) => a.isActive && (
+                            a.name.toLowerCase().includes(articleSearch.toLowerCase()) ||
+                            a.articleNumber.toLowerCase().includes(articleSearch.toLowerCase())
+                          ))
+                          .map((a) => (
+                            <button
+                              key={a.id}
+                              type="button"
+                              onMouseDown={() => {
+                                setNewArticleId(a.id);
+                                setNewArticlePrice(a.defaultPrice);
+                                setArticleSearch(`${a.articleNumber} – ${a.name}`);
+                                setShowArticleDropdown(false);
+                              }}
+                              className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 text-left border-b border-slate-100 last:border-0 cursor-pointer"
+                            >
+                              <div>
+                                <span className="text-[12px] font-medium text-slate-800">{a.name}</span>
+                                <span className="ml-2 text-[11px] text-slate-400 font-mono">{a.articleNumber}</span>
+                              </div>
+                              <span className="text-[12px] text-slate-500 shrink-0 ml-3">{a.defaultPrice.toLocaleString('sv-SE')} kr/{a.unit}</span>
+                            </button>
+                          ))}
+                        {articles.filter((a) => a.isActive && (
+                          a.name.toLowerCase().includes(articleSearch.toLowerCase()) ||
+                          a.articleNumber.toLowerCase().includes(articleSearch.toLowerCase())
+                        )).length === 0 && (
+                          <p className="px-3 py-3 text-[12px] text-slate-400">Inga artiklar hittades</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="w-20">
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Antal</label>
+                    <input type="number" min={1} value={newArticleQty} onChange={(e) => setNewArticleQty(Number(e.target.value))} className={inputClass} />
+                  </div>
+                  <div className="w-28">
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">À-pris (kr)</label>
+                    <input type="number" min={0} value={newArticlePrice} onChange={(e) => setNewArticlePrice(Number(e.target.value))} className={inputClass} />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!newArticleId}
+                    onClick={() => {
+                      if (!newArticleId) return;
+                      setOrderArticles((p) => [...p, { articleId: newArticleId, quantity: newArticleQty, unitPrice: newArticlePrice }]);
+                      setNewArticleId('');
+                      setNewArticleQty(1);
+                      setNewArticlePrice(0);
+                      setArticleSearch('');
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-[13px] font-medium rounded-xl hover:bg-blue-700 disabled:opacity-40 transition-colors cursor-pointer shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Lägg till
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Notes */}
             <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
               <h2 className="text-[14px] font-semibold text-slate-900 mb-4">Anteckningar och tillbehör</h2>
@@ -504,6 +639,12 @@ export default function EditOrderPage() {
                     </>
                   );
                 })()}
+                {extraArticlesTotal > 0 && (
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-slate-500">Artiklar ({orderArticles.length} st)</span>
+                    <span className="font-medium">{formatCurrency(extraArticlesTotal)}</span>
+                  </div>
+                )}
                 <div className="pt-2 border-t border-slate-100 flex justify-between items-baseline">
                   <span className="text-[13px] font-semibold text-slate-800">
                     {openEnded ? 'Delpris (ex. hyra)' : 'Totalt'}

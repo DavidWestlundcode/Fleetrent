@@ -427,6 +427,7 @@ interface AppStore {
     openEnded?: boolean;
     insuranceMonthlyRate?: number;
     orderReference?: string;
+    orderArticles?: OrderArticle[];
   }) => void;
   deleteOrder: (id: string) => void;
   returnMachine: (orderId: string, data: {
