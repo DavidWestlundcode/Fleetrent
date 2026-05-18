@@ -2,7 +2,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity, Plus, Trash2, Search } from 'lucide-react';
+import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity, Plus, Trash2, Search, FileSignature } from 'lucide-react';
 import type { OrderArticle } from '@/lib/types';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
@@ -533,6 +533,24 @@ function NewOrderForm() {
               <button type="submit" className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-[13px] font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-sm">
                 <Save className="w-4 h-4" /> Skapa order
               </button>
+            </div>
+
+            {/* Coming soon: e-signing */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm opacity-60">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center shrink-0">
+                    <FileSignature className="w-4 h-4 text-violet-400" />
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-medium text-slate-700">Skicka avtal för signering</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Låt kunden signera hyresavtalet digitalt direkt från ordern</p>
+                  </div>
+                </div>
+                <span className="shrink-0 ml-4 px-2.5 py-1 text-[11px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full">
+                  Kommer snart
+                </span>
+              </div>
             </div>
           </div>
 
