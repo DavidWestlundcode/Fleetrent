@@ -55,11 +55,9 @@ async function getValidToken(orgId: string): Promise<string | null> {
 async function ensureFortnoxCustomer(
   token: string,
   customer: { companyName: string; orgNumber: string; email: string; phone: string; invoiceAddress: string; fortnoxCustomerNumber?: string }
-): Promise<string> {
-  // Return existing number if we already have it
-  if (customer.fortnoxCustomerNumber) return customer.fortnoxCustomerNumber;
+): Promise<{ customerNumber: string | null; error?: string }> {
+  if (customer.fortnoxCustomerNumber) return { customerNumber: customer.fortnoxCustomerNumber };
 
-  // Create customer in Fortnox
   const res = await fetch(`${FORTNOX_API}/customers`, {
     method: 'POST',
     headers: {
@@ -69,16 +67,24 @@ async function ensureFortnoxCustomer(
     body: JSON.stringify({
       Customer: {
         Name: customer.companyName,
-        OrganisationNumber: customer.orgNumber,
-        Email: customer.email,
-        Phone1: customer.phone,
-        Address1: customer.invoiceAddress,
+        OrganisationNumber: customer.orgNumber || undefined,
+        Email: customer.email || undefined,
+        Phone1: customer.phone || undefined,
+        Address1: customer.invoiceAddress || undefined,
       },
     }),
   });
 
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = err?.ErrorInformation?.message ?? err?.message ?? `HTTP ${res.status}`;
+    console.error('Fortnox create customer error:', err);
+    return { customerNumber: null, error: `Kunde inte skapa kund i Fortnox: ${msg}` };
+  }
+
   const json = await res.json();
-  return json.Customer?.CustomerNumber ?? '';
+  const customerNumber = json.Customer?.CustomerNumber ?? null;
+  return { customerNumber };
 }
 
 export async function POST(request: NextRequest) {
@@ -115,7 +121,7 @@ export async function POST(request: NextRequest) {
     if (!orderRow) return NextResponse.json({ error: 'Order hittades inte' }, { status: 404 });
 
     const customerRow = orderRow.customers as Record<string, unknown>;
-    const fortnoxCustomerNumber = await ensureFortnoxCustomer(token, {
+    const { customerNumber: fortnoxCustomerNumber, error: customerError } = await ensureFortnoxCustomer(token, {
       companyName: customerRow.company_name as string,
       orgNumber: (customerRow.org_number as string) ?? '',
       email: (customerRow.email as string) ?? '',
@@ -124,8 +130,12 @@ export async function POST(request: NextRequest) {
       fortnoxCustomerNumber: (customerRow.fortnox_customer_number as string) || undefined,
     });
 
+    if (!fortnoxCustomerNumber) {
+      return NextResponse.json({ error: customerError ?? 'Kunde inte hämta kundnummer från Fortnox' }, { status: 500 });
+    }
+
     // Save Fortnox customer number back to customer record
-    if (fortnoxCustomerNumber && !customerRow.fortnox_customer_number) {
+    if (!customerRow.fortnox_customer_number) {
       await admin
         .from('customers')
         .update({ fortnox_customer_number: fortnoxCustomerNumber })

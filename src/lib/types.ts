@@ -23,6 +23,12 @@ export interface OrderArticle {
   unitPrice: number;
 }
 
+export interface ContactPerson {
+  name: string;
+  phone: string;
+  email: string;
+}
+
 export interface Article {
   id: string;
   articleNumber: string;
@@ -95,6 +101,7 @@ export interface Customer {
   totalSpent: number;
   activeOrders: number;
   fortnoxCustomerNumber?: string;
+  contacts: ContactPerson[];
   createdAt: string;
 }
 

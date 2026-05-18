@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import type {
   Machine, Customer, Order, PriceTemplate, ServiceRecord, Article,
   MachineCategory, MachineStatus, FuelType, OrderStatus, ReturnCondition,
-  ServiceType, ServiceStatus, ArticleType, ArticleUnit, OrderArticle,
+  ServiceType, ServiceStatus, ArticleType, ArticleUnit, OrderArticle, ContactPerson,
 } from '@/lib/types';
 import { generateOrderNumber } from '@/lib/utils';
 
@@ -124,6 +124,7 @@ function fromDbCustomer(r: DbRow): Customer {
     totalSpent: (r.total_spent as number) ?? 0,
     activeOrders: (r.active_orders as number) ?? 0,
     fortnoxCustomerNumber: (r.fortnox_customer_number as string) || undefined,
+    contacts: (r.contacts as ContactPerson[]) ?? [],
     createdAt: r.created_at as string,
   };
 }
@@ -144,6 +145,7 @@ function toDbCustomer(c: Customer, orgId: string): DbRow {
     total_spent: c.totalSpent,
     active_orders: c.activeOrders,
     fortnox_customer_number: c.fortnoxCustomerNumber ?? null,
+    contacts: c.contacts ?? [],
     created_at: c.createdAt,
   };
 }
