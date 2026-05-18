@@ -111,10 +111,10 @@ export async function POST(request: NextRequest) {
 
     const admin = createAdminClient();
 
-    // Fetch order with customer
+    // Fetch order with customer and machine
     const { data: orderRow } = await admin
       .from('orders')
-      .select('*, customers(*)')
+      .select('*, customers(*), machines(name, brand, model, internal_code, serial_number)')
       .eq('id', orderId)
       .eq('organization_id', orgId)
       .single();
@@ -157,9 +157,22 @@ export async function POST(request: NextRequest) {
       ? countBusinessDays(startDate, endDate)
       : calendarDays;
 
+    const machineRow = orderRow.machines as Record<string, unknown> | null;
+    const machineParts = machineRow ? [
+      machineRow.brand,
+      machineRow.model,
+      machineRow.name,
+      machineRow.internal_code ? `(${machineRow.internal_code})` : null,
+      machineRow.serial_number ? `S/N: ${machineRow.serial_number}` : null,
+    ].filter(Boolean).join(' ') : null;
+
+    const rentalDescription = machineParts
+      ? `Hyra – ${machineParts} – ${days} dagar`
+      : `Hyra – ${days} dagar`;
+
     const orderRows: { Description: string; DeliveredQuantity: number; Price: number; Unit: string }[] = [
       {
-        Description: `Hyra – ${days} dagar`,
+        Description: rentalDescription,
         DeliveredQuantity: days,
         Price: (orderRow.daily_price as number) ?? 0,
         Unit: 'dag',
