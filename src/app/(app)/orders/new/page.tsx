@@ -2,7 +2,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity, Plus, Trash2, Search } from 'lucide-react';
 import type { OrderArticle } from '@/lib/types';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
@@ -58,6 +58,8 @@ function NewOrderForm() {
   const [newArticleId, setNewArticleId] = useState('');
   const [newArticleQty, setNewArticleQty] = useState(1);
   const [newArticlePrice, setNewArticlePrice] = useState(0);
+  const [articleSearch, setArticleSearch] = useState('');
+  const [showArticleDropdown, setShowArticleDropdown] = useState(false);
 
   const set = (field: string, value: string | number) => setForm((p) => ({ ...p, [field]: value }));
 
@@ -423,46 +425,87 @@ function NewOrderForm() {
               )}
 
               {/* Add row */}
-              <div className="flex gap-2 items-end">
-                <div className="flex-1">
-                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Välj artikel</label>
-                  <select
-                    value={newArticleId}
-                    onChange={(e) => {
-                      const art = articles.find((a) => a.id === e.target.value);
-                      setNewArticleId(e.target.value);
-                      setNewArticlePrice(art?.defaultPrice ?? 0);
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Lägg till artikel</p>
+                <div className="flex gap-2 items-end">
+                  {/* Searchable article picker */}
+                  <div className="flex-1 relative">
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Sök artikel</label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={articleSearch}
+                        onChange={(e) => {
+                          setArticleSearch(e.target.value);
+                          setShowArticleDropdown(true);
+                          if (!e.target.value) { setNewArticleId(''); setNewArticlePrice(0); }
+                        }}
+                        onFocus={() => setShowArticleDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowArticleDropdown(false), 150)}
+                        placeholder="Sök på namn eller art.nr..."
+                        className={`${inputClass} pl-8`}
+                      />
+                    </div>
+                    {showArticleDropdown && articleSearch && (
+                      <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto">
+                        {articles
+                          .filter((a) => a.isActive && (
+                            a.name.toLowerCase().includes(articleSearch.toLowerCase()) ||
+                            a.articleNumber.toLowerCase().includes(articleSearch.toLowerCase())
+                          ))
+                          .map((a) => (
+                            <button
+                              key={a.id}
+                              type="button"
+                              onMouseDown={() => {
+                                setNewArticleId(a.id);
+                                setNewArticlePrice(a.defaultPrice);
+                                setArticleSearch(`${a.articleNumber} – ${a.name}`);
+                                setShowArticleDropdown(false);
+                              }}
+                              className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 text-left border-b border-slate-100 last:border-0 cursor-pointer"
+                            >
+                              <div>
+                                <span className="text-[12px] font-medium text-slate-800">{a.name}</span>
+                                <span className="ml-2 text-[11px] text-slate-400 font-mono">{a.articleNumber}</span>
+                              </div>
+                              <span className="text-[12px] text-slate-500 shrink-0 ml-3">{a.defaultPrice.toLocaleString('sv-SE')} kr/{a.unit}</span>
+                            </button>
+                          ))}
+                        {articles.filter((a) => a.isActive && (
+                          a.name.toLowerCase().includes(articleSearch.toLowerCase()) ||
+                          a.articleNumber.toLowerCase().includes(articleSearch.toLowerCase())
+                        )).length === 0 && (
+                          <p className="px-3 py-3 text-[12px] text-slate-400">Inga artiklar hittades</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="w-20">
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Antal</label>
+                    <input type="number" min={1} value={newArticleQty} onChange={(e) => setNewArticleQty(Number(e.target.value))} className={inputClass} />
+                  </div>
+                  <div className="w-28">
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">À-pris (kr)</label>
+                    <input type="number" min={0} value={newArticlePrice} onChange={(e) => setNewArticlePrice(Number(e.target.value))} className={inputClass} />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!newArticleId}
+                    onClick={() => {
+                      if (!newArticleId) return;
+                      setOrderArticles((p) => [...p, { articleId: newArticleId, quantity: newArticleQty, unitPrice: newArticlePrice }]);
+                      setNewArticleId('');
+                      setNewArticleQty(1);
+                      setNewArticlePrice(0);
+                      setArticleSearch('');
                     }}
-                    className={inputClass}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-[13px] font-medium rounded-xl hover:bg-blue-700 disabled:opacity-40 transition-colors cursor-pointer shrink-0"
                   >
-                    <option value="">Välj artikel...</option>
-                    {articles.filter((a) => a.isActive).map((a) => (
-                      <option key={a.id} value={a.id}>{a.articleNumber} – {a.name}</option>
-                    ))}
-                  </select>
+                    <Plus className="w-3.5 h-3.5" /> Lägg till
+                  </button>
                 </div>
-                <div className="w-20">
-                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Antal</label>
-                  <input type="number" min={1} value={newArticleQty} onChange={(e) => setNewArticleQty(Number(e.target.value))} className={inputClass} />
-                </div>
-                <div className="w-28">
-                  <label className="block text-xs font-medium text-slate-600 mb-1.5">À-pris (kr)</label>
-                  <input type="number" min={0} value={newArticlePrice} onChange={(e) => setNewArticlePrice(Number(e.target.value))} className={inputClass} />
-                </div>
-                <button
-                  type="button"
-                  disabled={!newArticleId}
-                  onClick={() => {
-                    if (!newArticleId) return;
-                    setOrderArticles((p) => [...p, { articleId: newArticleId, quantity: newArticleQty, unitPrice: newArticlePrice }]);
-                    setNewArticleId('');
-                    setNewArticleQty(1);
-                    setNewArticlePrice(0);
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-[13px] font-medium rounded-xl hover:bg-blue-700 disabled:opacity-40 transition-colors cursor-pointer shrink-0"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Lägg till
-                </button>
               </div>
             </div>
 
