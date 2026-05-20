@@ -422,19 +422,44 @@ export default function OrderDetailPage() {
                   { label: 'Dagspris', value: formatCurrency(order.dailyPrice) + '/dag' },
                   { label: 'Veckopris', value: formatCurrency(order.weeklyPrice) + '/vecka' },
                   { label: 'Månadspris', value: formatCurrency(order.monthlyPrice) + '/mån' },
-                  { label: 'Transport', value: formatCurrency(order.transportCost) },
-                  ...(order.insuranceCost ? [{ label: 'Försäkring', value: formatCurrency(order.insuranceCost) }] : []),
-                  { label: 'Deposition', value: formatCurrency(order.deposit) },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex justify-between text-sm">
                     <span className="text-slate-500">{label}</span>
                     <span className="font-medium">{value}</span>
                   </div>
                 ))}
-                {(order.discountPercent ?? 0) > 0 && (
+                {order.transportCost > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-emerald-600">Rabatt ({order.discountPercent}%)</span>
-                    <span className="font-medium text-emerald-600">−{formatCurrency(order.totalPrice / (1 - (order.discountPercent ?? 0) / 100) * ((order.discountPercent ?? 0) / 100))}</span>
+                    <span className="text-slate-500">Transport</span>
+                    <div className="text-right">
+                      <span className="font-medium">{formatCurrency(order.transportCost)}</span>
+                      {(order.transportDiscount ?? 0) > 0 && (
+                        <span className="ml-1.5 text-[11px] font-medium text-emerald-600">-{order.transportDiscount}%</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {order.insuranceCost && order.insuranceCost > 0 ? (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500">Försäkring</span>
+                    <div className="text-right">
+                      <span className="font-medium">{formatCurrency(order.insuranceCost)}</span>
+                      {(order.insuranceDiscount ?? 0) > 0 && (
+                        <span className="ml-1.5 text-[11px] font-medium text-emerald-600">-{order.insuranceDiscount}%</span>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+                {order.deposit > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500">Deposition</span>
+                    <span className="font-medium">{formatCurrency(order.deposit)}</span>
+                  </div>
+                )}
+                {(order.rentalDiscount ?? 0) > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-emerald-600">Rabatt hyra</span>
+                    <span className="font-medium text-emerald-600">-{order.rentalDiscount}%</span>
                   </div>
                 )}
                 <div className="pt-2 border-t border-slate-100 flex justify-between">

@@ -21,6 +21,7 @@ export interface OrderArticle {
   articleId: string;
   quantity: number;
   unitPrice: number;
+  discountPercent?: number;
 }
 
 export interface ContactPerson {
@@ -147,6 +148,9 @@ export interface Order {
   chargeWeekends?: boolean;
   insuranceMonthlyRate?: number;
   discountPercent?: number;
+  rentalDiscount?: number;
+  transportDiscount?: number;
+  insuranceDiscount?: number;
   sentToAccounting?: boolean;
   fortnoxOrderNumber?: string;
   orderArticles: OrderArticle[];

@@ -170,7 +170,9 @@ export async function POST(request: NextRequest) {
       ? `Hyra – ${machineParts} – ${days} dagar`
       : `Hyra – ${days} dagar`;
 
-    const discountPercent = (orderRow.discount_percent as number) ?? 0;
+    const rentalDiscount = (orderRow.rental_discount as number) ?? 0;
+    const transportDiscount = (orderRow.transport_discount as number) ?? 0;
+    const insuranceDiscount = (orderRow.insurance_discount as number) ?? 0;
     type FortnoxRow = { Description: string; DeliveredQuantity: number; Price: number; Unit: string; Discount?: number };
     const orderRows: FortnoxRow[] = [
       {
@@ -178,7 +180,7 @@ export async function POST(request: NextRequest) {
         DeliveredQuantity: days,
         Price: (orderRow.daily_price as number) ?? 0,
         Unit: 'dag',
-        ...(discountPercent > 0 ? { Discount: discountPercent } : {}),
+        ...(rentalDiscount > 0 ? { Discount: rentalDiscount } : {}),
       },
     ];
 
@@ -188,7 +190,7 @@ export async function POST(request: NextRequest) {
         DeliveredQuantity: 1,
         Price: orderRow.transport_cost as number,
         Unit: 'st',
-        ...(discountPercent > 0 ? { Discount: discountPercent } : {}),
+        ...(transportDiscount > 0 ? { Discount: transportDiscount } : {}),
       });
     }
 
@@ -198,12 +200,12 @@ export async function POST(request: NextRequest) {
         DeliveredQuantity: 1,
         Price: orderRow.insurance_cost as number,
         Unit: 'st',
-        ...(discountPercent > 0 ? { Discount: discountPercent } : {}),
+        ...(insuranceDiscount > 0 ? { Discount: insuranceDiscount } : {}),
       });
     }
 
     // Extra articles — fetch names from articles table, send as free-text rows (no ArticleNumber)
-    const extraArticles = (orderRow.order_articles as { articleId: string; quantity: number; unitPrice: number }[]) ?? [];
+    const extraArticles = (orderRow.order_articles as { articleId: string; quantity: number; unitPrice: number; discountPercent?: number }[]) ?? [];
     if (extraArticles.length > 0) {
       const articleIds = extraArticles.map((a) => a.articleId);
       const { data: articleRows } = await admin
@@ -213,12 +215,13 @@ export async function POST(request: NextRequest) {
 
       for (const extra of extraArticles) {
         const art = articleRows?.find((a) => a.id === extra.articleId);
+        const artDiscount = extra.discountPercent ?? 0;
         orderRows.push({
           Description: art?.name ?? 'Artikel',
           DeliveredQuantity: extra.quantity,
           Price: extra.unitPrice,
           Unit: (art?.unit as string) ?? 'st',
-          ...(discountPercent > 0 ? { Discount: discountPercent } : {}),
+          ...(artDiscount > 0 ? { Discount: artDiscount } : {}),
         });
       }
     }

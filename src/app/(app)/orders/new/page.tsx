@@ -22,6 +22,22 @@ function Field({ label, children, required }: { label: string; children: React.R
   );
 }
 
+function DiscountInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="relative w-[60px] shrink-0">
+      <input
+        type="number" min={0} max={100} step={0.1}
+        value={value || ''}
+        onChange={(e) => onChange(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+        className="w-full px-2 py-1 pr-5 text-[12px] text-right bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400/30 focus:border-blue-400 transition-all"
+        placeholder="0"
+        title="Rabatt %"
+      />
+      <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none">%</span>
+    </div>
+  );
+}
+
 function NewOrderForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -49,7 +65,6 @@ function NewOrderForm() {
     insuranceArticleId: '',
     transportArticleId: '',
     depositArticleId: '',
-    discountPercent: 0,
   });
   const [includeInsurance, setIncludeInsurance] = useState(false);
   const [rentalType, setRentalType] = useState<'short' | 'long'>('short');
@@ -60,8 +75,14 @@ function NewOrderForm() {
   const [newArticleId, setNewArticleId] = useState('');
   const [newArticleQty, setNewArticleQty] = useState(1);
   const [newArticlePrice, setNewArticlePrice] = useState(0);
+  const [newArticleDiscount, setNewArticleDiscount] = useState(0);
   const [articleSearch, setArticleSearch] = useState('');
   const [showArticleDropdown, setShowArticleDropdown] = useState(false);
+
+  // Per-row discounts
+  const [rentalDiscount, setRentalDiscount] = useState(0);
+  const [transportDiscount, setTransportDiscount] = useState(0);
+  const [insuranceDiscount, setInsuranceDiscount] = useState(0);
 
   const set = (field: string, value: string | number) => setForm((p) => ({ ...p, [field]: value }));
 
@@ -94,6 +115,10 @@ function NewOrderForm() {
       transportArticleId: template.transportArticleId ?? '',
       depositArticleId: template.depositArticleId ?? '',
     }));
+    // Apply per-price discounts from template
+    setRentalDiscount(isLong ? (template.longTermDailyDiscount ?? 0) : (template.dailyPriceDiscount ?? 0));
+    setTransportDiscount(template.transportDiscount ?? 0);
+    setInsuranceDiscount(template.insuranceDailyDiscount ?? 0);
   };
 
   useEffect(() => {
@@ -134,12 +159,15 @@ function NewOrderForm() {
     ? insuranceMonths * selectedTemplate.insuranceMonthlyPrice
     : 0;
 
-  const extraArticlesTotal = orderArticles.reduce((sum, r) => sum + r.quantity * r.unitPrice, 0);
-  const subtotal = openEnded
-    ? form.transportCost + form.deposit + extraArticlesTotal
-    : calculatedPrice + form.transportCost + insuranceCost + extraArticlesTotal;
-  const discountAmount = form.discountPercent > 0 ? subtotal * (form.discountPercent / 100) : 0;
-  const totalPrice = subtotal - discountAmount;
+  // Per-row totals after discounts
+  const rentalTotal = openEnded ? 0 : calculatedPrice * (1 - rentalDiscount / 100);
+  const transportTotal = form.transportCost * (1 - transportDiscount / 100);
+  const insuranceTotal = (includeInsurance && !openEnded) ? insuranceCost * (1 - insuranceDiscount / 100) : 0;
+  const extraArticlesTotal = orderArticles.reduce((sum, r) => {
+    const d = r.discountPercent ?? 0;
+    return sum + r.quantity * r.unitPrice * (1 - d / 100);
+  }, 0);
+  const totalPrice = rentalTotal + transportTotal + insuranceTotal + form.deposit + (openEnded ? extraArticlesTotal : extraArticlesTotal);
 
   const availableMachines = machines.filter((m) => {
     if (m.status !== 'i_lager' && m.id !== form.machineId) return false;
@@ -185,7 +213,9 @@ function NewOrderForm() {
         ? selectedTemplate.insuranceMonthlyPrice
         : undefined,
       orderArticles,
-      discountPercent: form.discountPercent || undefined,
+      rentalDiscount: rentalDiscount || undefined,
+      transportDiscount: transportDiscount || undefined,
+      insuranceDiscount: insuranceDiscount || undefined,
     });
     router.push(`/orders/${id}`);
   };
@@ -419,15 +449,18 @@ function NewOrderForm() {
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-100">
                         <th className="text-left px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Artikel</th>
-                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-16">Antal</th>
-                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-24">À-pris</th>
-                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-24">Totalt</th>
+                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-14">Antal</th>
+                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-20">À-pris</th>
+                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-16">Rabatt</th>
+                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-20">Totalt</th>
                         <th className="w-8" />
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {orderArticles.map((row, i) => {
                         const art = articles.find((a) => a.id === row.articleId);
+                        const d = row.discountPercent ?? 0;
+                        const lineTotal = row.quantity * row.unitPrice * (1 - d / 100);
                         return (
                           <tr key={i} className="hover:bg-slate-50/60">
                             <td className="px-3 py-2.5 text-[13px] text-slate-700">
@@ -436,7 +469,13 @@ function NewOrderForm() {
                             </td>
                             <td className="px-3 py-2.5 text-[13px] text-right text-slate-700">{row.quantity} {art?.unit}</td>
                             <td className="px-3 py-2.5 text-[13px] text-right text-slate-700">{formatCurrency(row.unitPrice)}</td>
-                            <td className="px-3 py-2.5 text-[13px] text-right font-medium text-slate-800">{formatCurrency(row.quantity * row.unitPrice)}</td>
+                            <td className="px-3 py-2.5 text-right">
+                              {d > 0
+                                ? <span className="text-[12px] font-medium text-emerald-600">{d}%</span>
+                                : <span className="text-[12px] text-slate-300">–</span>
+                              }
+                            </td>
+                            <td className="px-3 py-2.5 text-[13px] text-right font-medium text-slate-800">{formatCurrency(lineTotal)}</td>
                             <td className="px-3 py-2.5 text-right">
                               <button type="button" onClick={() => setOrderArticles((p) => p.filter((_, idx) => idx !== i))} className="text-slate-300 hover:text-red-500 transition-colors cursor-pointer">
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -453,9 +492,9 @@ function NewOrderForm() {
               {/* Add row */}
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                 <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Lägg till artikel</p>
-                <div className="flex gap-2 items-end">
+                <div className="flex gap-2 items-end flex-wrap">
                   {/* Searchable article picker */}
-                  <div className="flex-1 relative">
+                  <div className="flex-1 min-w-[180px] relative">
                     <label className="block text-xs font-medium text-slate-600 mb-1.5">Sök artikel</label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
@@ -508,23 +547,42 @@ function NewOrderForm() {
                       </div>
                     )}
                   </div>
-                  <div className="w-20">
+                  <div className="w-16">
                     <label className="block text-xs font-medium text-slate-600 mb-1.5">Antal</label>
                     <input type="number" min={1} value={newArticleQty} onChange={(e) => setNewArticleQty(Number(e.target.value))} className={inputClass} />
                   </div>
-                  <div className="w-28">
+                  <div className="w-24">
                     <label className="block text-xs font-medium text-slate-600 mb-1.5">À-pris (kr)</label>
                     <input type="number" min={0} value={newArticlePrice} onChange={(e) => setNewArticlePrice(Number(e.target.value))} className={inputClass} />
+                  </div>
+                  <div className="w-20">
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Rabatt (%)</label>
+                    <div className="relative">
+                      <input
+                        type="number" min={0} max={100} step={0.1}
+                        value={newArticleDiscount || ''}
+                        onChange={(e) => setNewArticleDiscount(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+                        className={`${inputClass} pr-7`}
+                        placeholder="0"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none">%</span>
+                    </div>
                   </div>
                   <button
                     type="button"
                     disabled={!newArticleId}
                     onClick={() => {
                       if (!newArticleId) return;
-                      setOrderArticles((p) => [...p, { articleId: newArticleId, quantity: newArticleQty, unitPrice: newArticlePrice }]);
+                      setOrderArticles((p) => [...p, {
+                        articleId: newArticleId,
+                        quantity: newArticleQty,
+                        unitPrice: newArticlePrice,
+                        ...(newArticleDiscount > 0 ? { discountPercent: newArticleDiscount } : {}),
+                      }]);
                       setNewArticleId('');
                       setNewArticleQty(1);
                       setNewArticlePrice(0);
+                      setNewArticleDiscount(0);
                       setArticleSearch('');
                     }}
                     className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-[13px] font-medium rounded-xl hover:bg-blue-700 disabled:opacity-40 transition-colors cursor-pointer shrink-0"
@@ -617,89 +675,104 @@ function NewOrderForm() {
                 </div>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
-                {(() => {
-                  const rentalArt = form.rentalArticleId ? articles.find(a => a.id === form.rentalArticleId) : null;
-                  const insArt = form.insuranceArticleId ? articles.find(a => a.id === form.insuranceArticleId) : null;
-                  const transArt = form.transportArticleId ? articles.find(a => a.id === form.transportArticleId) : null;
-                  const depArt = form.depositArticleId ? articles.find(a => a.id === form.depositArticleId) : null;
-                  return (
-                    <>
-                      <div>
-                        <div className="flex justify-between text-[13px]">
-                          <span className="text-slate-500">Hyra {openEnded ? '(löpande)' : `(${billableDays} dagar)`}</span>
-                          <span className={`font-medium ${openEnded ? 'text-slate-400 text-[12px]' : ''}`}>
-                            {openEnded ? 'Beräknas vid retur' : formatCurrency(calculatedPrice)}
-                          </span>
-                        </div>
-                        {rentalArt && (
-                          <p className="text-[11px] text-blue-500 mt-0.5">#{rentalArt.articleNumber} {rentalArt.name}</p>
-                        )}
-                      </div>
-                      {form.transportCost > 0 && (
-                        <div>
-                          <div className="flex justify-between text-[13px]">
-                            <span className="text-slate-500">Transport</span>
-                            <span className="font-medium">{formatCurrency(form.transportCost)}</span>
-                          </div>
-                          {transArt && (
-                            <p className="text-[11px] text-blue-500 mt-0.5">#{transArt.articleNumber} {transArt.name}</p>
-                          )}
-                        </div>
-                      )}
-                      {includeInsurance && (
-                        <div>
-                          <div className="flex justify-between text-[13px]">
-                            <span className="flex items-center gap-1 text-slate-500"><Shield className="w-3 h-3 text-blue-400" />Försäkring</span>
-                            <span className={`font-medium ${openEnded ? 'text-slate-400 text-[12px]' : ''}`}>
-                              {openEnded ? 'Beräknas vid retur' : formatCurrency(insuranceCost)}
-                            </span>
-                          </div>
-                          {insArt && (
-                            <p className="text-[11px] text-blue-500 mt-0.5">#{insArt.articleNumber} {insArt.name}</p>
-                          )}
-                        </div>
-                      )}
-                      {form.deposit > 0 && (
-                        <div>
-                          <div className="flex justify-between text-[13px]">
-                            <span className="text-slate-500">Deposition</span>
-                            <span className="font-medium">{formatCurrency(form.deposit)}</span>
-                          </div>
-                          {depArt && (
-                            <p className="text-[11px] text-blue-500 mt-0.5">#{depArt.articleNumber} {depArt.name}</p>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
-                {extraArticlesTotal > 0 && (
-                  <div className="flex justify-between text-[13px]">
-                    <span className="text-slate-500">Artiklar ({orderArticles.length} st)</span>
-                    <span className="font-medium">{formatCurrency(extraArticlesTotal)}</span>
+              {/* Price rows with per-row discount inputs */}
+              <div className="mt-4 pt-4 border-t border-slate-100 space-y-2.5">
+                <div className="flex items-center justify-between gap-2 text-[10px] text-slate-400 uppercase tracking-wider pb-0.5">
+                  <span>Post</span>
+                  <div className="flex items-center gap-2">
+                    <span className="w-[60px] text-right">Rabatt</span>
+                    <span className="w-[72px] text-right">Belopp</span>
                   </div>
-                )}
-                {/* Discount field */}
-                <div className="flex items-center justify-between gap-3 pt-1">
-                  <label className="text-[13px] text-slate-500 shrink-0">Rabatt (%)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={0.1}
-                    value={form.discountPercent || ''}
-                    onChange={(e) => set('discountPercent', Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
-                    className="w-24 px-2 py-1 text-[13px] text-right bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
-                    placeholder="0"
-                  />
                 </div>
-                {discountAmount > 0 && (
-                  <div className="flex justify-between text-[13px]">
-                    <span className="text-emerald-600">Rabatt ({form.discountPercent}%)</span>
-                    <span className="font-medium text-emerald-600">−{formatCurrency(discountAmount)}</span>
+
+                {/* Rental row */}
+                <div className="space-y-0.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[13px] text-slate-500 flex-1 min-w-0 truncate">
+                      Hyra {openEnded ? '(löpande)' : billableDays > 0 ? `(${billableDays} d)` : ''}
+                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <DiscountInput value={rentalDiscount} onChange={setRentalDiscount} />
+                      <span className={`text-[13px] font-medium w-[72px] text-right ${openEnded ? 'text-slate-400' : ''}`}>
+                        {openEnded ? <span className="text-[11px]">vid retur</span> : formatCurrency(rentalTotal)}
+                      </span>
+                    </div>
+                  </div>
+                  {rentalDiscount > 0 && !openEnded && (
+                    <div className="flex justify-end">
+                      <span className="text-[11px] text-slate-400 line-through">{formatCurrency(calculatedPrice)}</span>
+                    </div>
+                  )}
+                  {(() => {
+                    const rentalArt = form.rentalArticleId ? articles.find(a => a.id === form.rentalArticleId) : null;
+                    return rentalArt ? <p className="text-[11px] text-blue-500">#{rentalArt.articleNumber} {rentalArt.name}</p> : null;
+                  })()}
+                </div>
+
+                {/* Transport row */}
+                {form.transportCost > 0 && (
+                  <div className="space-y-0.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[13px] text-slate-500 flex-1">Transport</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <DiscountInput value={transportDiscount} onChange={setTransportDiscount} />
+                        <span className="text-[13px] font-medium w-[72px] text-right">{formatCurrency(transportTotal)}</span>
+                      </div>
+                    </div>
+                    {transportDiscount > 0 && (
+                      <div className="flex justify-end">
+                        <span className="text-[11px] text-slate-400 line-through">{formatCurrency(form.transportCost)}</span>
+                      </div>
+                    )}
+                    {(() => {
+                      const transArt = form.transportArticleId ? articles.find(a => a.id === form.transportArticleId) : null;
+                      return transArt ? <p className="text-[11px] text-blue-500">#{transArt.articleNumber} {transArt.name}</p> : null;
+                    })()}
                   </div>
                 )}
+
+                {/* Insurance row */}
+                {includeInsurance && (
+                  <div className="space-y-0.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[13px] text-slate-500 flex-1 flex items-center gap-1">
+                        <Shield className="w-3 h-3 text-blue-400 shrink-0" />Försäkring
+                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <DiscountInput value={insuranceDiscount} onChange={setInsuranceDiscount} />
+                        <span className={`text-[13px] font-medium w-[72px] text-right ${openEnded ? 'text-slate-400' : ''}`}>
+                          {openEnded ? <span className="text-[11px]">vid retur</span> : formatCurrency(insuranceTotal)}
+                        </span>
+                      </div>
+                    </div>
+                    {insuranceDiscount > 0 && !openEnded && (
+                      <div className="flex justify-end">
+                        <span className="text-[11px] text-slate-400 line-through">{formatCurrency(insuranceCost)}</span>
+                      </div>
+                    )}
+                    {(() => {
+                      const insArt = form.insuranceArticleId ? articles.find(a => a.id === form.insuranceArticleId) : null;
+                      return insArt ? <p className="text-[11px] text-blue-500">#{insArt.articleNumber} {insArt.name}</p> : null;
+                    })()}
+                  </div>
+                )}
+
+                {/* Deposit */}
+                {form.deposit > 0 && (
+                  <div className="flex justify-between items-center text-[13px]">
+                    <span className="text-slate-500">Deposition</span>
+                    <span className="font-medium w-[72px] text-right ml-[68px]">{formatCurrency(form.deposit)}</span>
+                  </div>
+                )}
+
+                {/* Extra articles */}
+                {orderArticles.length > 0 && (
+                  <div className="flex justify-between text-[13px] items-center">
+                    <span className="text-slate-500">Artiklar ({orderArticles.length} st)</span>
+                    <span className="font-medium w-[72px] text-right ml-[68px]">{formatCurrency(extraArticlesTotal)}</span>
+                  </div>
+                )}
+
                 <div className="pt-2 border-t border-slate-100 flex justify-between items-baseline">
                   <span className="text-[13px] font-semibold text-slate-800">
                     {openEnded ? 'Delpris (ex. hyra)' : 'Totalt'}
