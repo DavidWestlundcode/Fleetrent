@@ -22,6 +22,38 @@ function Field({ label, children, required }: { label: string; children: React.R
   );
 }
 
+function PriceWithDiscount({ label, price, discount, onPriceChange, onDiscountChange }: {
+  label: string;
+  price: number;
+  discount: number;
+  onPriceChange: (v: number) => void;
+  onDiscountChange: (v: number) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-slate-600 mb-1.5">{label}</label>
+      <div className="flex gap-1.5">
+        <div className="flex-1 relative">
+          <input
+            type="number" min={0} value={price}
+            onChange={(e) => onPriceChange(Number(e.target.value))}
+            className={`${inputClass} pr-7`} placeholder="0"
+          />
+          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none">kr</span>
+        </div>
+        <div className="w-[68px] relative">
+          <input
+            type="number" min={0} max={100} step={0.1}
+            value={discount || ''}
+            onChange={(e) => onDiscountChange(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+            className={`${inputClass} pr-6`} placeholder="0"
+          />
+          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none">%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function NewOrderForm() {
   const router = useRouter();
@@ -65,7 +97,9 @@ function NewOrderForm() {
   const [showArticleDropdown, setShowArticleDropdown] = useState(false);
 
   // Per-row discounts
-  const [rentalDiscount, setRentalDiscount] = useState(0);
+  const [dailyDiscount, setDailyDiscount] = useState(0);
+  const [weeklyDiscount, setWeeklyDiscount] = useState(0);
+  const [monthlyDiscount, setMonthlyDiscount] = useState(0);
   const [transportDiscount, setTransportDiscount] = useState(0);
   const [insuranceDiscount, setInsuranceDiscount] = useState(0);
 
@@ -101,7 +135,9 @@ function NewOrderForm() {
       depositArticleId: template.depositArticleId ?? '',
     }));
     // Apply per-price discounts from template
-    setRentalDiscount(isLong ? (template.longTermDailyDiscount ?? 0) : (template.dailyPriceDiscount ?? 0));
+    setDailyDiscount(isLong ? (template.longTermDailyDiscount ?? 0) : (template.dailyPriceDiscount ?? 0));
+    setWeeklyDiscount(isLong ? (template.longTermWeeklyDiscount ?? 0) : (template.weeklyPriceDiscount ?? 0));
+    setMonthlyDiscount(isLong ? (template.longTermMonthlyDiscount ?? 0) : (template.monthlyPriceDiscount ?? 0));
     setTransportDiscount(template.transportDiscount ?? 0);
     setInsuranceDiscount(template.insuranceDailyDiscount ?? 0);
   };
@@ -144,8 +180,12 @@ function NewOrderForm() {
     ? insuranceMonths * selectedTemplate.insuranceMonthlyPrice
     : 0;
 
-  // Per-row totals after discounts
-  const rentalTotal = openEnded ? 0 : calculatedPrice * (1 - rentalDiscount / 100);
+  // Per-row totals after discounts (each rate period uses its own discount)
+  const rentalTotal = openEnded ? 0 : (
+    priceBreakdown.months * form.monthlyPrice * (1 - monthlyDiscount / 100) +
+    priceBreakdown.weeks * form.weeklyPrice * (1 - weeklyDiscount / 100) +
+    priceBreakdown.days * form.dailyPrice * (1 - dailyDiscount / 100)
+  );
   const transportTotal = form.transportCost * (1 - transportDiscount / 100);
   const insuranceTotal = (includeInsurance && !openEnded) ? insuranceCost * (1 - insuranceDiscount / 100) : 0;
   const extraArticlesTotal = orderArticles.reduce((sum, r) => {
@@ -198,7 +238,7 @@ function NewOrderForm() {
         ? selectedTemplate.insuranceMonthlyPrice
         : undefined,
       orderArticles,
-      rentalDiscount: rentalDiscount || undefined,
+      rentalDiscount: dailyDiscount || undefined,
       transportDiscount: transportDiscount || undefined,
       insuranceDiscount: insuranceDiscount || undefined,
     });
@@ -377,44 +417,31 @@ function NewOrderForm() {
 
             {/* Pricing */}
             <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
-              <h2 className="text-[14px] font-semibold text-slate-900 mb-4">Prissättning</h2>
+              <h2 className="text-[14px] font-semibold text-slate-900 mb-1">Prissättning</h2>
+              <p className="text-[11px] text-slate-400 mb-4">Pris (kr) + Rabatt (%)</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Field label="Dagspris (kr)">
-                  <input type="number" value={form.dailyPrice} onChange={(e) => set('dailyPrice', Number(e.target.value))} className={inputClass} min={0} />
-                </Field>
-                <Field label="Veckopris (kr)">
-                  <input type="number" value={form.weeklyPrice} onChange={(e) => set('weeklyPrice', Number(e.target.value))} className={inputClass} min={0} />
-                </Field>
-                <Field label="Månadspris (kr)">
-                  <input type="number" value={form.monthlyPrice} onChange={(e) => set('monthlyPrice', Number(e.target.value))} className={inputClass} min={0} />
-                </Field>
+                <PriceWithDiscount
+                  label="Dagspris"
+                  price={form.dailyPrice} discount={dailyDiscount}
+                  onPriceChange={(v) => set('dailyPrice', v)} onDiscountChange={setDailyDiscount}
+                />
+                <PriceWithDiscount
+                  label="Veckopris"
+                  price={form.weeklyPrice} discount={weeklyDiscount}
+                  onPriceChange={(v) => set('weeklyPrice', v)} onDiscountChange={setWeeklyDiscount}
+                />
+                <PriceWithDiscount
+                  label="Månadspris"
+                  price={form.monthlyPrice} discount={monthlyDiscount}
+                  onPriceChange={(v) => set('monthlyPrice', v)} onDiscountChange={setMonthlyDiscount}
+                />
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                <Field label="Rabatt hyra (%)">
-                  <div className="relative">
-                    <input
-                      type="number" min={0} max={100} step={0.1}
-                      value={rentalDiscount || ''}
-                      onChange={(e) => setRentalDiscount(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
-                      className={`${inputClass} pr-7`} placeholder="0"
-                    />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none">%</span>
-                  </div>
-                </Field>
-                <Field label="Transportkostnad (kr)">
-                  <input type="number" value={form.transportCost} onChange={(e) => set('transportCost', Number(e.target.value))} className={inputClass} min={0} />
-                </Field>
-                <Field label="Rabatt transport (%)">
-                  <div className="relative">
-                    <input
-                      type="number" min={0} max={100} step={0.1}
-                      value={transportDiscount || ''}
-                      onChange={(e) => setTransportDiscount(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
-                      className={`${inputClass} pr-7`} placeholder="0"
-                    />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none">%</span>
-                  </div>
-                </Field>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <PriceWithDiscount
+                  label="Transport"
+                  price={form.transportCost} discount={transportDiscount}
+                  onPriceChange={(v) => set('transportCost', v)} onDiscountChange={setTransportDiscount}
+                />
                 <Field label="Deposition (kr)">
                   <input type="number" value={form.deposit} onChange={(e) => set('deposit', Number(e.target.value))} className={inputClass} min={0} />
                 </Field>
@@ -688,15 +715,17 @@ function NewOrderForm() {
                 {/* Rental row */}
                 <div>
                   <div className="flex justify-between text-[13px]">
-                    <span className="text-slate-500">
+                    <span className="text-slate-500 flex items-center gap-1 flex-wrap">
                       Hyra {openEnded ? '(löpande)' : billableDays > 0 ? `(${billableDays} dagar)` : ''}
-                      {rentalDiscount > 0 && <span className="ml-1.5 text-[11px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">-{rentalDiscount}%</span>}
+                      {dailyDiscount > 0 && <span className="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">-{dailyDiscount}% dag</span>}
+                      {weeklyDiscount > 0 && <span className="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">-{weeklyDiscount}% vec</span>}
+                      {monthlyDiscount > 0 && <span className="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">-{monthlyDiscount}% mån</span>}
                     </span>
-                    <span className={`font-medium ${openEnded ? 'text-slate-400 text-[12px]' : ''}`}>
+                    <span className={`font-medium shrink-0 ml-2 ${openEnded ? 'text-slate-400 text-[12px]' : ''}`}>
                       {openEnded ? 'Beräknas vid retur' : formatCurrency(rentalTotal)}
                     </span>
                   </div>
-                  {rentalDiscount > 0 && !openEnded && (
+                  {(dailyDiscount > 0 || weeklyDiscount > 0 || monthlyDiscount > 0) && !openEnded && (
                     <div className="flex justify-end">
                       <span className="text-[11px] text-slate-400 line-through">{formatCurrency(calculatedPrice)}</span>
                     </div>
