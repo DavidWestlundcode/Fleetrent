@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Building2, Mail, Phone, Hash } from 'lucide-react';
+import { PlanEditor } from './PlanEditor';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   active:    { label: 'Aktiv',     color: 'bg-emerald-100 text-emerald-700' },
@@ -32,7 +33,7 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ orgI
     { data: orders },
     { data: authData },
   ] = await Promise.all([
-    admin.from('organizations').select('*').eq('id', orgId).single(),
+    admin.from('organizations').select('*, plan, max_users, max_machines').eq('id', orgId).single(),
     admin.from('profiles').select('id, full_name, role, created_at').eq('organization_id', orgId).order('created_at'),
     admin.from('machines').select('id, name, brand, model, internal_code, status').eq('organization_id', orgId).order('created_at', { ascending: false }),
     admin.from('orders').select('id, rental_start, rental_end, status, created_at, customers(name), machines(name, brand, model)').eq('organization_id', orgId).order('created_at', { ascending: false }).limit(30),
@@ -83,6 +84,14 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ orgI
           Kund sedan {new Date(org.created_at).toLocaleDateString('sv-SE')} · ID: {org.id}
         </p>
       </div>
+
+      {/* Plan editor */}
+      <PlanEditor
+        orgId={org.id}
+        currentPlan={(org as Record<string, unknown>).plan as string ?? 'basic'}
+        currentMaxUsers={(org as Record<string, unknown>).max_users as number ?? 5}
+        currentMaxMachines={(org as Record<string, unknown>).max_machines as number ?? 15}
+      />
 
       {/* Users */}
       <Section title="Användare" count={profiles?.length ?? 0}>

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Plus, LayoutGrid, LayoutList, Truck, Sparkles, X, Loader2, Search } from 'lucide-react';
+import { Plus, LayoutGrid, LayoutList, Truck, Sparkles, X, Loader2, Search, Lock } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { MachineStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
@@ -82,7 +82,8 @@ function applyAICriteria(machines: Machine[], criteria: SearchCriteria): Machine
 }
 
 export default function MachinesPage() {
-  const { machines } = useStore();
+  const { machines, maxMachines } = useStore();
+  const atMachineLimit = machines.length >= maxMachines;
   const [statusFilter, setStatusFilter] = useState<MachineStatus | 'all'>('all');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
@@ -167,13 +168,29 @@ export default function MachinesPage() {
         title="Maskinflotta"
         subtitle={`${machines.length} maskiner registrerade`}
         actions={
-          <Link
-            href="/machines/new"
-            className="flex items-center gap-1.5 px-3.5 py-[7px] bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium rounded-xl shadow-sm transition-all"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Lägg till maskin
-          </Link>
+          <div className="flex items-center gap-2.5">
+            <span className={`text-[12px] font-medium ${atMachineLimit ? 'text-red-500' : 'text-slate-400'}`}>
+              {machines.length}/{maxMachines} maskiner
+            </span>
+            {atMachineLimit ? (
+              <button
+                disabled
+                title="Kontakta oss för att utöka din plan"
+                className="flex items-center gap-1.5 px-3.5 py-[7px] bg-slate-200 text-slate-400 text-[13px] font-medium rounded-xl cursor-not-allowed"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                Gräns nådd
+              </button>
+            ) : (
+              <Link
+                href="/machines/new"
+                className="flex items-center gap-1.5 px-3.5 py-[7px] bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium rounded-xl shadow-sm transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Lägg till maskin
+              </Link>
+            )}
+          </div>
         }
       />
 

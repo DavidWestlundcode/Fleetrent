@@ -392,6 +392,9 @@ interface AppStore {
   organizationId: string | null;
   userId: string | null;
   userName: string | null;
+  plan: string;
+  maxMachines: number;
+  maxUsers: number;
   loading: boolean;
   initialized: boolean;
 
@@ -466,6 +469,9 @@ const EMPTY_STATE = {
   organizationId: null as string | null,
   userId: null as string | null,
   userName: null as string | null,
+  plan: 'basic',
+  maxMachines: 15,
+  maxUsers: 5,
   loading: false,
   initialized: false,
 };
@@ -513,7 +519,7 @@ export const useStore = create<AppStore>()((set, get) => ({
         return;
       }
 
-      const [machinesRes, customersRes, ordersRes, templatesRes, articlesRes, serviceRes, membersRes] =
+      const [machinesRes, customersRes, ordersRes, templatesRes, articlesRes, serviceRes, membersRes, orgRes] =
         await Promise.all([
           sb().from('machines').select('*').eq('organization_id', orgId),
           sb().from('customers').select('*').eq('organization_id', orgId),
@@ -522,6 +528,7 @@ export const useStore = create<AppStore>()((set, get) => ({
           sb().from('articles').select('*').eq('organization_id', orgId),
           sb().from('service_records').select('*').eq('organization_id', orgId),
           sb().from('profiles').select('id, full_name').eq('organization_id', orgId),
+          sb().from('organizations').select('plan, max_machines, max_users').eq('id', orgId).single(),
         ]);
 
       const members = (membersRes.data ?? []).map((r) => ({
@@ -535,6 +542,9 @@ export const useStore = create<AppStore>()((set, get) => ({
         organizationId: orgId,
         userId: user.id,
         userName: currentMember?.fullName ?? null,
+        plan: (orgRes.data?.plan as string) ?? 'basic',
+        maxMachines: (orgRes.data?.max_machines as number) ?? 15,
+        maxUsers: (orgRes.data?.max_users as number) ?? 5,
         members,
         machines: (machinesRes.data ?? []).map((r) => fromDbMachine(r as DbRow)),
         customers: (customersRes.data ?? []).map((r) => fromDbCustomer(r as DbRow)),
