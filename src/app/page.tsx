@@ -392,7 +392,7 @@ export default function LandingPage() {
             {[
               { label: 'Funktioner', href: '#features' },
               { label: 'Hur det fungerar', href: '#how-it-works' },
-              { label: 'Kundberättelser', href: '#testimonials' },
+              { label: 'Priser', href: '/priser' },
             ].map(({ label, href }) => (
               <a key={label} href={href} className="px-3 py-1.5 text-[13px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors font-medium">
                 {label}
