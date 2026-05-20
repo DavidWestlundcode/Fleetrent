@@ -6,7 +6,7 @@ const BASIC_FEATURES = [
   'Hela plattformen inkluderad',
   '2 användare ingår',
   'Extra användare 199 kr/mån',
-  'Upp till 50 maskiner',
+  'Upp till 20 maskiner',
   'Uthyrningsorder & hyresavtal',
   'Prismallar & artikelregister',
   'Fortnox-integration',
