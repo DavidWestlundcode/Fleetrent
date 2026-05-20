@@ -2,7 +2,8 @@
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Zap, Lock, Mail, Eye, EyeOff, ArrowLeft, X, User, Building2, Phone, MessageSquare, CheckCircle2 } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, ArrowLeft, X, User, Building2, Phone, MessageSquare, CheckCircle2 } from 'lucide-react';
+import { Logo } from '@/components/ui/Logo';
 import { createClient } from '@/lib/supabase/client';
 
 function LoginPageInner() {
@@ -78,9 +79,7 @@ function LoginPageInner() {
         {/* Left panel */}
         <div className="hidden lg:flex lg:flex-1 flex-col justify-between p-12 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
+            <Logo size={36} />
             <span className="font-bold text-white text-xl">FleetOS</span>
           </Link>
 
@@ -116,9 +115,7 @@ function LoginPageInner() {
           <div className="w-full max-w-md">
             <div className="flex items-center justify-between mb-8 lg:hidden">
               <Link href="/" className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-white" />
-                </div>
+                <Logo size={32} />
                 <span className="font-bold text-slate-900">FleetOS</span>
               </Link>
             </div>

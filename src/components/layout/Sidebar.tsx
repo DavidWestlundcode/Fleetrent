@@ -3,8 +3,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
-  LayoutDashboard, Truck, Users, FileText, Tag, Package, BarChart3, Settings, LogOut, Zap, X,
+  LayoutDashboard, Truck, Users, FileText, Tag, Package, BarChart3, Settings, LogOut, X,
 } from 'lucide-react';
+import { Logo } from '@/components/ui/Logo';
 import { createClient } from '@/lib/supabase/client';
 import { useMobileNav } from '@/components/layout/MobileNav';
 import type { User } from '@supabase/supabase-js';
@@ -54,9 +55,7 @@ export default function Sidebar() {
           onClick={close}
           className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
         >
-          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-600 shrink-0">
-            <Zap className="w-3.5 h-3.5 text-white" />
-          </div>
+          <Logo size={28} />
           <span className="text-[14px] font-semibold text-white tracking-tight">FleetOS</span>
         </Link>
         <button

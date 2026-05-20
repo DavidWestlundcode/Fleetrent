@@ -1,7 +1,8 @@
 ﻿'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, Zap } from 'lucide-react';
+import { Lock } from 'lucide-react';
+import { Logo } from '@/components/ui/Logo';
 import { createClient } from '@/lib/supabase/client';
 
 export default function ResetPasswordPage() {
@@ -33,9 +34,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6">
       <div className="w-full max-w-md">
         <div className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <Zap className="w-4 h-4 text-white" />
-          </div>
+          <Logo size={32} />
           <span className="font-bold text-slate-900">FleetOS</span>
         </div>
         <h2 className="text-2xl font-bold text-slate-900 mb-1">Nytt lösenord</h2>

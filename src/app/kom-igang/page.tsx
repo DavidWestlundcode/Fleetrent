@@ -1,7 +1,8 @@
 ﻿'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { Zap, User, Building2, Mail, Phone, MessageSquare, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { User, Building2, Mail, Phone, MessageSquare, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Logo } from '@/components/ui/Logo';
 
 export default function KomIgangPage() {
   const [sent, setSent] = useState(false);
@@ -32,9 +33,7 @@ export default function KomIgangPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <header className="px-6 py-5 flex items-center justify-between max-w-5xl mx-auto w-full">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center">
-            <Zap className="w-5 h-5 text-white" />
-          </div>
+          <Logo size={36} />
           <span className="font-bold text-slate-900 text-xl">FleetOS</span>
         </Link>
         <Link href="/login" className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1.5">
