@@ -18,14 +18,61 @@ function Field({ label, children, hint }: { label: string; children: React.React
   );
 }
 
+function PriceField({
+  label, priceValue, discountValue, onPriceChange, onDiscountChange, placeholder,
+}: {
+  label: string;
+  priceValue: number;
+  discountValue: number;
+  onPriceChange: (v: number) => void;
+  onDiscountChange: (v: number) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-slate-600 mb-1.5">{label}</label>
+      <div className="flex gap-1.5">
+        <div className="flex-1 relative">
+          <input
+            type="number" min={0}
+            value={placeholder !== undefined ? (priceValue || '') : priceValue}
+            onChange={(e) => onPriceChange(e.target.value ? Number(e.target.value) : 0)}
+            className={`${inputClass} pr-7`}
+            placeholder={placeholder ?? '0'}
+          />
+          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none">kr</span>
+        </div>
+        <div className="w-[68px] relative">
+          <input
+            type="number" min={0} max={100} step={0.1}
+            value={discountValue || ''}
+            onChange={(e) => onDiscountChange(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+            className={`${inputClass} pr-6`}
+            placeholder="0"
+            title="Rabatt %"
+          />
+          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none">%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const emptyForm = {
   name: '', description: '', category: 'motviktstruck' as MachineCategory,
   capacityMin: 0, capacityMax: 0,
-  dailyPrice: 0, weeklyPrice: 0, monthlyPrice: 0,
-  longTermDailyPrice: 0, longTermWeeklyPrice: 0, longTermMonthlyPrice: 0,
-  insuranceDailyPrice: 0, insuranceWeeklyPrice: 0, insuranceMonthlyPrice: 0,
-  startFee: 0, transportCost: 0, deposit: 0, minRentalDays: 1,
-  discountPercent: 0,
+  dailyPrice: 0, dailyPriceDiscount: 0,
+  weeklyPrice: 0, weeklyPriceDiscount: 0,
+  monthlyPrice: 0, monthlyPriceDiscount: 0,
+  longTermDailyPrice: 0, longTermDailyDiscount: 0,
+  longTermWeeklyPrice: 0, longTermWeeklyDiscount: 0,
+  longTermMonthlyPrice: 0, longTermMonthlyDiscount: 0,
+  insuranceDailyPrice: 0, insuranceDailyDiscount: 0,
+  insuranceWeeklyPrice: 0, insuranceWeeklyDiscount: 0,
+  insuranceMonthlyPrice: 0, insuranceMonthlyDiscount: 0,
+  startFee: 0, startFeeDiscount: 0,
+  transportCost: 0, transportDiscount: 0,
+  deposit: 0, minRentalDays: 1,
   standardTerms: '', internalNote: '',
   rentalArticleId: '', insuranceArticleId: '', transportArticleId: '', depositArticleId: '',
 };
@@ -36,7 +83,6 @@ export default function TemplatesPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
 
-  // Refs ensure handleSubmit always reads the latest values regardless of render timing
   const editIdRef = useRef<string | null>(null);
   const formRef = useRef(emptyForm);
 
@@ -52,11 +98,18 @@ export default function TemplatesPage() {
     const next = {
       name: t.name, description: t.description, category: t.category,
       capacityMin: t.capacityMin, capacityMax: t.capacityMax,
-      dailyPrice: t.dailyPrice, weeklyPrice: t.weeklyPrice, monthlyPrice: t.monthlyPrice,
-      longTermDailyPrice: t.longTermDailyPrice ?? 0, longTermWeeklyPrice: t.longTermWeeklyPrice ?? 0, longTermMonthlyPrice: t.longTermMonthlyPrice ?? 0,
-      insuranceDailyPrice: t.insuranceDailyPrice, insuranceWeeklyPrice: t.insuranceWeeklyPrice, insuranceMonthlyPrice: t.insuranceMonthlyPrice,
-      startFee: t.startFee, transportCost: t.transportCost, deposit: t.deposit,
-      minRentalDays: t.minRentalDays, discountPercent: t.discountPercent ?? 0,
+      dailyPrice: t.dailyPrice, dailyPriceDiscount: t.dailyPriceDiscount ?? 0,
+      weeklyPrice: t.weeklyPrice, weeklyPriceDiscount: t.weeklyPriceDiscount ?? 0,
+      monthlyPrice: t.monthlyPrice, monthlyPriceDiscount: t.monthlyPriceDiscount ?? 0,
+      longTermDailyPrice: t.longTermDailyPrice ?? 0, longTermDailyDiscount: t.longTermDailyDiscount ?? 0,
+      longTermWeeklyPrice: t.longTermWeeklyPrice ?? 0, longTermWeeklyDiscount: t.longTermWeeklyDiscount ?? 0,
+      longTermMonthlyPrice: t.longTermMonthlyPrice ?? 0, longTermMonthlyDiscount: t.longTermMonthlyDiscount ?? 0,
+      insuranceDailyPrice: t.insuranceDailyPrice, insuranceDailyDiscount: t.insuranceDailyDiscount ?? 0,
+      insuranceWeeklyPrice: t.insuranceWeeklyPrice, insuranceWeeklyDiscount: t.insuranceWeeklyDiscount ?? 0,
+      insuranceMonthlyPrice: t.insuranceMonthlyPrice, insuranceMonthlyDiscount: t.insuranceMonthlyDiscount ?? 0,
+      startFee: t.startFee, startFeeDiscount: t.startFeeDiscount ?? 0,
+      transportCost: t.transportCost, transportDiscount: t.transportDiscount ?? 0,
+      deposit: t.deposit, minRentalDays: t.minRentalDays,
       standardTerms: t.standardTerms, internalNote: t.internalNote,
       rentalArticleId: t.rentalArticleId ?? '', insuranceArticleId: t.insuranceArticleId ?? '',
       transportArticleId: t.transportArticleId ?? '', depositArticleId: t.depositArticleId ?? '',
@@ -155,59 +208,86 @@ export default function TemplatesPage() {
 
               {/* Short-term prices */}
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock className="w-3.5 h-3.5 text-slate-500" />
-                  <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Korttidspriser</p>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-slate-500" />
+                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Korttidspriser</p>
+                  </div>
+                  <p className="text-[10px] text-slate-400">Pris (kr) + Rabatt (%)</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Field label="Dagspris (kr)">
-                    <input type="number" value={form.dailyPrice} onChange={(e) => set('dailyPrice', Number(e.target.value))} className={inputClass} min={0} />
-                  </Field>
-                  <Field label="Veckopris (kr)">
-                    <input type="number" value={form.weeklyPrice} onChange={(e) => set('weeklyPrice', Number(e.target.value))} className={inputClass} min={0} />
-                  </Field>
-                  <Field label="Månadspris (kr)">
-                    <input type="number" value={form.monthlyPrice} onChange={(e) => set('monthlyPrice', Number(e.target.value))} className={inputClass} min={0} />
-                  </Field>
+                  <PriceField
+                    label="Dagspris"
+                    priceValue={form.dailyPrice} discountValue={form.dailyPriceDiscount}
+                    onPriceChange={(v) => set('dailyPrice', v)} onDiscountChange={(v) => set('dailyPriceDiscount', v)}
+                  />
+                  <PriceField
+                    label="Veckopris"
+                    priceValue={form.weeklyPrice} discountValue={form.weeklyPriceDiscount}
+                    onPriceChange={(v) => set('weeklyPrice', v)} onDiscountChange={(v) => set('weeklyPriceDiscount', v)}
+                  />
+                  <PriceField
+                    label="Månadspris"
+                    priceValue={form.monthlyPrice} discountValue={form.monthlyPriceDiscount}
+                    onPriceChange={(v) => set('monthlyPrice', v)} onDiscountChange={(v) => set('monthlyPriceDiscount', v)}
+                  />
                 </div>
               </div>
 
               {/* Long-term prices */}
               <div className="p-4 bg-blue-50/60 rounded-xl border border-blue-100">
-                <div className="flex items-center gap-2 mb-3">
-                  <CalendarDays className="w-3.5 h-3.5 text-blue-500" />
-                  <p className="text-[11px] font-semibold text-blue-600 uppercase tracking-wider">Långtidspriser</p>
-                  <span className="text-[10px] text-blue-400 ml-1">— lämna tomt om ej aktuellt</span>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="w-3.5 h-3.5 text-blue-500" />
+                    <p className="text-[11px] font-semibold text-blue-600 uppercase tracking-wider">Långtidspriser</p>
+                    <span className="text-[10px] text-blue-400 ml-1">— lämna tomt om ej aktuellt</span>
+                  </div>
+                  <p className="text-[10px] text-blue-400">Pris (kr) + Rabatt (%)</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Field label="Dagspris lång (kr)">
-                    <input type="number" value={form.longTermDailyPrice || ''} onChange={(e) => set('longTermDailyPrice', e.target.value ? Number(e.target.value) : 0)} className={inputClass} min={0} placeholder="0" />
-                  </Field>
-                  <Field label="Veckopris lång (kr)">
-                    <input type="number" value={form.longTermWeeklyPrice || ''} onChange={(e) => set('longTermWeeklyPrice', e.target.value ? Number(e.target.value) : 0)} className={inputClass} min={0} placeholder="0" />
-                  </Field>
-                  <Field label="Månadspris lång (kr)">
-                    <input type="number" value={form.longTermMonthlyPrice || ''} onChange={(e) => set('longTermMonthlyPrice', e.target.value ? Number(e.target.value) : 0)} className={inputClass} min={0} placeholder="0" />
-                  </Field>
+                  <PriceField
+                    label="Dagspris lång" placeholder="0"
+                    priceValue={form.longTermDailyPrice} discountValue={form.longTermDailyDiscount}
+                    onPriceChange={(v) => set('longTermDailyPrice', v)} onDiscountChange={(v) => set('longTermDailyDiscount', v)}
+                  />
+                  <PriceField
+                    label="Veckopris lång" placeholder="0"
+                    priceValue={form.longTermWeeklyPrice} discountValue={form.longTermWeeklyDiscount}
+                    onPriceChange={(v) => set('longTermWeeklyPrice', v)} onDiscountChange={(v) => set('longTermWeeklyDiscount', v)}
+                  />
+                  <PriceField
+                    label="Månadspris lång" placeholder="0"
+                    priceValue={form.longTermMonthlyPrice} discountValue={form.longTermMonthlyDiscount}
+                    onPriceChange={(v) => set('longTermMonthlyPrice', v)} onDiscountChange={(v) => set('longTermMonthlyDiscount', v)}
+                  />
                 </div>
               </div>
 
               {/* Insurance prices */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Shield className="w-3.5 h-3.5 text-blue-500" />
-                  <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Försäkringspriser (tillval)</p>
+              <div className="p-4 bg-violet-50/40 rounded-xl border border-violet-100">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-3.5 h-3.5 text-violet-500" />
+                    <p className="text-[11px] font-semibold text-violet-600 uppercase tracking-wider">Försäkringspriser (tillval)</p>
+                  </div>
+                  <p className="text-[10px] text-violet-400">Pris (kr) + Rabatt (%)</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Field label="Försäkring dag (kr)">
-                    <input type="number" value={form.insuranceDailyPrice} onChange={(e) => set('insuranceDailyPrice', Number(e.target.value))} className={inputClass} min={0} />
-                  </Field>
-                  <Field label="Försäkring vecka (kr)">
-                    <input type="number" value={form.insuranceWeeklyPrice} onChange={(e) => set('insuranceWeeklyPrice', Number(e.target.value))} className={inputClass} min={0} />
-                  </Field>
-                  <Field label="Försäkring månad (kr)">
-                    <input type="number" value={form.insuranceMonthlyPrice} onChange={(e) => set('insuranceMonthlyPrice', Number(e.target.value))} className={inputClass} min={0} />
-                  </Field>
+                  <PriceField
+                    label="Försäkring dag"
+                    priceValue={form.insuranceDailyPrice} discountValue={form.insuranceDailyDiscount}
+                    onPriceChange={(v) => set('insuranceDailyPrice', v)} onDiscountChange={(v) => set('insuranceDailyDiscount', v)}
+                  />
+                  <PriceField
+                    label="Försäkring vecka"
+                    priceValue={form.insuranceWeeklyPrice} discountValue={form.insuranceWeeklyDiscount}
+                    onPriceChange={(v) => set('insuranceWeeklyPrice', v)} onDiscountChange={(v) => set('insuranceWeeklyDiscount', v)}
+                  />
+                  <PriceField
+                    label="Försäkring månad"
+                    priceValue={form.insuranceMonthlyPrice} discountValue={form.insuranceMonthlyDiscount}
+                    onPriceChange={(v) => set('insuranceMonthlyPrice', v)} onDiscountChange={(v) => set('insuranceMonthlyDiscount', v)}
+                  />
                 </div>
               </div>
 
@@ -215,12 +295,16 @@ export default function TemplatesPage() {
               <div>
                 <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Övriga avgifter</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Field label="Startavgift (kr)">
-                    <input type="number" value={form.startFee} onChange={(e) => set('startFee', Number(e.target.value))} className={inputClass} min={0} />
-                  </Field>
-                  <Field label="Transport (kr)">
-                    <input type="number" value={form.transportCost} onChange={(e) => set('transportCost', Number(e.target.value))} className={inputClass} min={0} />
-                  </Field>
+                  <PriceField
+                    label="Startavgift"
+                    priceValue={form.startFee} discountValue={form.startFeeDiscount}
+                    onPriceChange={(v) => set('startFee', v)} onDiscountChange={(v) => set('startFeeDiscount', v)}
+                  />
+                  <PriceField
+                    label="Transport"
+                    priceValue={form.transportCost} discountValue={form.transportDiscount}
+                    onPriceChange={(v) => set('transportCost', v)} onDiscountChange={(v) => set('transportDiscount', v)}
+                  />
                   <Field label="Deposition (kr)">
                     <input type="number" value={form.deposit} onChange={(e) => set('deposit', Number(e.target.value))} className={inputClass} min={0} />
                   </Field>
@@ -228,17 +312,6 @@ export default function TemplatesPage() {
                     <input type="number" value={form.minRentalDays} onChange={(e) => set('minRentalDays', Number(e.target.value))} className={inputClass} min={1} />
                   </Field>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-0">
-                <Field label="Standardrabatt (%)">
-                  <input
-                    type="number" min={0} max={100} step={0.1}
-                    value={form.discountPercent || ''}
-                    onChange={(e) => set('discountPercent', Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
-                    className={inputClass} placeholder="0"
-                  />
-                </Field>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -317,6 +390,17 @@ export default function TemplatesPage() {
             const matchCount = getMatchCount(template.id);
             const hasInsurance = template.insuranceDailyPrice > 0 || template.insuranceWeeklyPrice > 0 || template.insuranceMonthlyPrice > 0;
             const hasLongTerm = (template.longTermDailyPrice ?? 0) > 0 || (template.longTermWeeklyPrice ?? 0) > 0 || (template.longTermMonthlyPrice ?? 0) > 0;
+
+            const priceWithDiscount = (price: number, discount?: number) => {
+              if (!discount || discount <= 0) return formatCurrency(price);
+              return (
+                <span className="flex items-center gap-1">
+                  {formatCurrency(price)}
+                  <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">-{discount}%</span>
+                </span>
+              );
+            };
+
             return (
               <div key={template.id} className="bg-white rounded-2xl border border-slate-200/80 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 shadow-sm">
                 <div className="flex items-start justify-between mb-3.5">
@@ -340,7 +424,7 @@ export default function TemplatesPage() {
                 </div>
 
                 {/* Capacity badge */}
-                <div className="flex items-center gap-1.5 mb-3.5">
+                <div className="flex items-center gap-1.5 mb-3.5 flex-wrap">
                   <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 rounded-lg">
                     <Truck className="w-3 h-3 text-slate-500" />
                     <span className="text-[11px] font-medium text-slate-600">
@@ -377,39 +461,43 @@ export default function TemplatesPage() {
                 <div className="space-y-1.5">
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider pt-0.5">Korttid</p>
                   {[
-                    { label: 'Dagspris', value: `${formatCurrency(template.dailyPrice)}/dag` },
-                    { label: 'Veckopris', value: `${formatCurrency(template.weeklyPrice)}/vecka` },
-                    { label: 'Månadspris', value: `${formatCurrency(template.monthlyPrice)}/mån` },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="flex justify-between text-[12px]">
+                    { label: 'Dagspris', value: priceWithDiscount(template.dailyPrice, template.dailyPriceDiscount), suffix: '/dag' },
+                    { label: 'Veckopris', value: priceWithDiscount(template.weeklyPrice, template.weeklyPriceDiscount), suffix: '/vecka' },
+                    { label: 'Månadspris', value: priceWithDiscount(template.monthlyPrice, template.monthlyPriceDiscount), suffix: '/mån' },
+                  ].map(({ label, value, suffix }) => (
+                    <div key={label} className="flex justify-between items-center text-[12px]">
                       <span className="text-slate-400">{label}</span>
-                      <span className="font-medium text-slate-700">{value}</span>
+                      <span className="font-medium text-slate-700 flex items-center gap-1">{value}<span className="text-slate-400 font-normal">{suffix}</span></span>
                     </div>
                   ))}
                   {hasLongTerm && (
                     <>
                       <p className="text-[10px] font-semibold text-violet-400 uppercase tracking-wider pt-1.5">Långtid</p>
                       {[
-                        { label: 'Dagspris', value: `${formatCurrency(template.longTermDailyPrice ?? 0)}/dag` },
-                        { label: 'Veckopris', value: `${formatCurrency(template.longTermWeeklyPrice ?? 0)}/vecka` },
-                        { label: 'Månadspris', value: `${formatCurrency(template.longTermMonthlyPrice ?? 0)}/mån` },
-                      ].map(({ label, value }) => (
-                        <div key={`lt-${label}`} className="flex justify-between text-[12px]">
+                        { label: 'Dagspris', value: priceWithDiscount(template.longTermDailyPrice ?? 0, template.longTermDailyDiscount), suffix: '/dag' },
+                        { label: 'Veckopris', value: priceWithDiscount(template.longTermWeeklyPrice ?? 0, template.longTermWeeklyDiscount), suffix: '/vecka' },
+                        { label: 'Månadspris', value: priceWithDiscount(template.longTermMonthlyPrice ?? 0, template.longTermMonthlyDiscount), suffix: '/mån' },
+                      ].map(({ label, value, suffix }) => (
+                        <div key={`lt-${label}`} className="flex justify-between items-center text-[12px]">
                           <span className="text-violet-400">{label}</span>
-                          <span className="font-medium text-violet-700">{value}</span>
+                          <span className="font-medium text-violet-700 flex items-center gap-1">{value}<span className="text-violet-400 font-normal">{suffix}</span></span>
                         </div>
                       ))}
                     </>
                   )}
                   {[
-                    ...(hasInsurance ? [{ label: 'Försäkring/dag', value: `${formatCurrency(template.insuranceDailyPrice)}/dag` }] : []),
-                    { label: 'Transport', value: formatCurrency(template.transportCost) },
-                    { label: 'Deposition', value: formatCurrency(template.deposit) },
-                    { label: 'Min. period', value: `${template.minRentalDays} dag${template.minRentalDays !== 1 ? 'ar' : ''}` },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="flex justify-between text-[12px] pt-0.5">
+                    ...(hasInsurance ? [{
+                      label: 'Försäkring/dag',
+                      value: priceWithDiscount(template.insuranceDailyPrice, template.insuranceDailyDiscount),
+                      suffix: '/dag',
+                    }] : []),
+                    { label: 'Transport', value: priceWithDiscount(template.transportCost, template.transportDiscount), suffix: '' },
+                    { label: 'Deposition', value: formatCurrency(template.deposit), suffix: '' },
+                    { label: 'Min. period', value: `${template.minRentalDays} dag${template.minRentalDays !== 1 ? 'ar' : ''}`, suffix: '' },
+                  ].map(({ label, value, suffix }) => (
+                    <div key={label} className="flex justify-between items-center text-[12px] pt-0.5">
                       <span className="text-slate-400">{label}</span>
-                      <span className="font-medium text-slate-700">{value}</span>
+                      <span className="font-medium text-slate-700 flex items-center gap-1">{value}{suffix && <span className="text-slate-400 font-normal">{suffix}</span>}</span>
                     </div>
                   ))}
                 </div>
