@@ -17,7 +17,8 @@ const BASIC_FEATURES = [
 
 const PREMIUM_FEATURES = [
   'Allt i Basic',
-  'Obegränsat antal användare',
+  '5 användare ingår',
+  'Extra användare 199 kr/mån',
   'Obegränsat antal maskiner',
   'Prioriterad support',
 ];
@@ -140,7 +141,7 @@ export default function PriserPage() {
 
               <div className="mt-6 p-4 bg-blue-50 rounded-xl">
                 <p className="text-[12px] text-blue-700 leading-relaxed">
-                  Obegränsat antal användare och maskiner — oavsett hur mycket ni växer.
+                  <span className="font-semibold text-blue-900">Exempel:</span> 8 användare = 3 999 + (3 × 199) = <span className="font-semibold text-blue-900">4 596 kr/mån</span>
                 </p>
               </div>
             </div>
