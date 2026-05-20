@@ -17,13 +17,16 @@ export default function VillkorPage() {
       <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">4. Tillgänglighet</h2>
       <p className="mb-4">Vi strävar efter hög tillgänglighet men garanterar inte att tjänsten är tillgänglig utan avbrott. Planerat underhåll meddelas i förväg.</p>
 
-      <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">5. Uppsägning</h2>
+      <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">5. Priser och ändringar</h2>
+      <p className="mb-4">FleetOS förbehåller sig rätten att justera priser och tjänstens innehåll. Eventuella prisändringar meddelas minst 30 dagar innan de träder i kraft.</p>
+
+      <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">6. Uppsägning</h2>
       <p className="mb-4">Antingen part kan säga upp avtalet. Vid uppsägning avslutas åtkomsten till tjänsten och data raderas i enlighet med vår datalagringsPolicy.</p>
 
-      <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">6. Tillämplig lag</h2>
+      <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">7. Tillämplig lag</h2>
       <p className="mb-4">Dessa villkor regleras av svensk lag. Tvister ska i första hand lösas genom förhandling och i andra hand via allmän domstol med Stockholm som forum.</p>
 
-      <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">7. Kontakt</h2>
+      <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">8. Kontakt</h2>
       <p className="mb-4">Frågor om dessa villkor skickas till <a href="mailto:info@FleetOS.se" className="text-blue-600 hover:underline">info@FleetOS.se</a>.</p>
     </PublicLayout>
   );
