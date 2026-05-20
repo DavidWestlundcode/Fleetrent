@@ -170,12 +170,15 @@ export async function POST(request: NextRequest) {
       ? `Hyra – ${machineParts} – ${days} dagar`
       : `Hyra – ${days} dagar`;
 
-    const orderRows: { Description: string; DeliveredQuantity: number; Price: number; Unit: string }[] = [
+    const discountPercent = (orderRow.discount_percent as number) ?? 0;
+    type FortnoxRow = { Description: string; DeliveredQuantity: number; Price: number; Unit: string; Discount?: number };
+    const orderRows: FortnoxRow[] = [
       {
         Description: rentalDescription,
         DeliveredQuantity: days,
         Price: (orderRow.daily_price as number) ?? 0,
         Unit: 'dag',
+        ...(discountPercent > 0 ? { Discount: discountPercent } : {}),
       },
     ];
 
@@ -185,6 +188,7 @@ export async function POST(request: NextRequest) {
         DeliveredQuantity: 1,
         Price: orderRow.transport_cost as number,
         Unit: 'st',
+        ...(discountPercent > 0 ? { Discount: discountPercent } : {}),
       });
     }
 
@@ -194,6 +198,7 @@ export async function POST(request: NextRequest) {
         DeliveredQuantity: 1,
         Price: orderRow.insurance_cost as number,
         Unit: 'st',
+        ...(discountPercent > 0 ? { Discount: discountPercent } : {}),
       });
     }
 
@@ -213,6 +218,7 @@ export async function POST(request: NextRequest) {
           DeliveredQuantity: extra.quantity,
           Price: extra.unitPrice,
           Unit: (art?.unit as string) ?? 'st',
+          ...(discountPercent > 0 ? { Discount: discountPercent } : {}),
         });
       }
     }

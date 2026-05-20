@@ -49,6 +49,7 @@ function NewOrderForm() {
     insuranceArticleId: '',
     transportArticleId: '',
     depositArticleId: '',
+    discountPercent: 0,
   });
   const [includeInsurance, setIncludeInsurance] = useState(false);
   const [rentalType, setRentalType] = useState<'short' | 'long'>('short');
@@ -134,9 +135,11 @@ function NewOrderForm() {
     : 0;
 
   const extraArticlesTotal = orderArticles.reduce((sum, r) => sum + r.quantity * r.unitPrice, 0);
-  const totalPrice = openEnded
+  const subtotal = openEnded
     ? form.transportCost + form.deposit + extraArticlesTotal
     : calculatedPrice + form.transportCost + insuranceCost + extraArticlesTotal;
+  const discountAmount = form.discountPercent > 0 ? subtotal * (form.discountPercent / 100) : 0;
+  const totalPrice = subtotal - discountAmount;
 
   const availableMachines = machines.filter((m) => {
     if (m.status !== 'i_lager' && m.id !== form.machineId) return false;
@@ -182,6 +185,7 @@ function NewOrderForm() {
         ? selectedTemplate.insuranceMonthlyPrice
         : undefined,
       orderArticles,
+      discountPercent: form.discountPercent || undefined,
     });
     router.push(`/orders/${id}`);
   };
@@ -674,6 +678,26 @@ function NewOrderForm() {
                   <div className="flex justify-between text-[13px]">
                     <span className="text-slate-500">Artiklar ({orderArticles.length} st)</span>
                     <span className="font-medium">{formatCurrency(extraArticlesTotal)}</span>
+                  </div>
+                )}
+                {/* Discount field */}
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <label className="text-[13px] text-slate-500 shrink-0">Rabatt (%)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    value={form.discountPercent || ''}
+                    onChange={(e) => set('discountPercent', Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+                    className="w-24 px-2 py-1 text-[13px] text-right bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                    placeholder="0"
+                  />
+                </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-emerald-600">Rabatt ({form.discountPercent}%)</span>
+                    <span className="font-medium text-emerald-600">−{formatCurrency(discountAmount)}</span>
                   </div>
                 )}
                 <div className="pt-2 border-t border-slate-100 flex justify-between items-baseline">

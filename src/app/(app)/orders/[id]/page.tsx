@@ -431,6 +431,12 @@ export default function OrderDetailPage() {
                     <span className="font-medium">{value}</span>
                   </div>
                 ))}
+                {(order.discountPercent ?? 0) > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-emerald-600">Rabatt ({order.discountPercent}%)</span>
+                    <span className="font-medium text-emerald-600">−{formatCurrency(order.totalPrice / (1 - (order.discountPercent ?? 0) / 100) * ((order.discountPercent ?? 0) / 100))}</span>
+                  </div>
+                )}
                 <div className="pt-2 border-t border-slate-100 flex justify-between">
                   <span className="font-semibold text-slate-800">Totalt</span>
                   <span className="font-bold text-blue-600 text-lg">{formatCurrency(order.totalPrice)}</span>

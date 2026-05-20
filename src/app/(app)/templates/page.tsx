@@ -25,6 +25,7 @@ const emptyForm = {
   longTermDailyPrice: 0, longTermWeeklyPrice: 0, longTermMonthlyPrice: 0,
   insuranceDailyPrice: 0, insuranceWeeklyPrice: 0, insuranceMonthlyPrice: 0,
   startFee: 0, transportCost: 0, deposit: 0, minRentalDays: 1,
+  discountPercent: 0,
   standardTerms: '', internalNote: '',
   rentalArticleId: '', insuranceArticleId: '', transportArticleId: '', depositArticleId: '',
 };
@@ -55,7 +56,8 @@ export default function TemplatesPage() {
       longTermDailyPrice: t.longTermDailyPrice ?? 0, longTermWeeklyPrice: t.longTermWeeklyPrice ?? 0, longTermMonthlyPrice: t.longTermMonthlyPrice ?? 0,
       insuranceDailyPrice: t.insuranceDailyPrice, insuranceWeeklyPrice: t.insuranceWeeklyPrice, insuranceMonthlyPrice: t.insuranceMonthlyPrice,
       startFee: t.startFee, transportCost: t.transportCost, deposit: t.deposit,
-      minRentalDays: t.minRentalDays, standardTerms: t.standardTerms, internalNote: t.internalNote,
+      minRentalDays: t.minRentalDays, discountPercent: t.discountPercent ?? 0,
+      standardTerms: t.standardTerms, internalNote: t.internalNote,
       rentalArticleId: t.rentalArticleId ?? '', insuranceArticleId: t.insuranceArticleId ?? '',
       transportArticleId: t.transportArticleId ?? '', depositArticleId: t.depositArticleId ?? '',
     };
@@ -226,6 +228,17 @@ export default function TemplatesPage() {
                     <input type="number" value={form.minRentalDays} onChange={(e) => set('minRentalDays', Number(e.target.value))} className={inputClass} min={1} />
                   </Field>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-0">
+                <Field label="Standardrabatt (%)">
+                  <input
+                    type="number" min={0} max={100} step={0.1}
+                    value={form.discountPercent || ''}
+                    onChange={(e) => set('discountPercent', Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+                    className={inputClass} placeholder="0"
+                  />
+                </Field>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

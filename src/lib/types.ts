@@ -146,6 +146,7 @@ export interface Order {
   openEnded?: boolean;
   chargeWeekends?: boolean;
   insuranceMonthlyRate?: number;
+  discountPercent?: number;
   sentToAccounting?: boolean;
   fortnoxOrderNumber?: string;
   orderArticles: OrderArticle[];
@@ -175,6 +176,7 @@ export interface PriceTemplate {
   minRentalDays: number;
   standardTerms: string;
   internalNote: string;
+  discountPercent?: number;
   rentalArticleId?: string;
   insuranceArticleId?: string;
   transportArticleId?: string;
