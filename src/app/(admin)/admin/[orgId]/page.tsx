@@ -160,8 +160,11 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ orgI
           <tbody className="divide-y divide-slate-100">
             {orders?.map(o => {
               const st = STATUS_LABELS[o.status] ?? { label: o.status, color: 'bg-slate-100 text-slate-500' };
-              const machine = o.machines as { name: string; brand: string; model: string } | null;
-              const customer = o.customers as { name: string } | null;
+              type MachineRow = { name: string; brand: string; model: string };
+              const machineRaw = o.machines as MachineRow | MachineRow[] | null;
+              const machine = Array.isArray(machineRaw) ? machineRaw[0] ?? null : machineRaw;
+              const customerRaw = o.customers as { name: string } | { name: string }[] | null;
+              const customer = Array.isArray(customerRaw) ? customerRaw[0] ?? null : customerRaw;
               return (
                 <tr key={o.id} className="hover:bg-slate-50">
                   <td className="px-5 py-3 font-medium text-slate-900">{customer?.name || '—'}</td>
