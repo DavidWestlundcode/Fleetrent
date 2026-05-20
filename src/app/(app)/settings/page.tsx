@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { Save, User, Building2, Bell, Globe, Mail, Loader2, CheckCircle2, XCircle, Link2, Link2Off, Shield } from 'lucide-react';
 import Header from '@/components/layout/Header';
@@ -471,7 +471,7 @@ function SettingsInner() {
             {activeTab === 'integrations' && (
               <div className="bg-white rounded-xl border border-slate-200 p-6">
                 <h2 className="font-semibold text-slate-900 mb-1">Integrationer</h2>
-                <p className="text-sm text-slate-500 mb-6">Anslut FleetRent till externa system</p>
+                <p className="text-sm text-slate-500 mb-6">Anslut FleetOS till externa system</p>
                 <div className="space-y-4">
                   <Suspense fallback={<div className="h-20 bg-slate-50 rounded-xl animate-pulse" />}>
                     <FortnoxCard />

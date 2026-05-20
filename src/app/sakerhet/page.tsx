@@ -1,10 +1,10 @@
-import PublicLayout from '@/components/layout/PublicLayout';
+﻿import PublicLayout from '@/components/layout/PublicLayout';
 
 export default function SakerhetPage() {
   return (
     <PublicLayout title="Säkerhet">
       <p className="text-lg text-slate-500 mb-10">
-        Säkerhet är en grundprincip i hur vi bygger FleetRent — inte ett eftertanke.
+        Säkerhet är en grundprincip i hur vi bygger FleetOS — inte ett eftertanke.
       </p>
       <div className="not-prose space-y-4 mb-10">
         {[
@@ -13,7 +13,7 @@ export default function SakerhetPage() {
           { title: 'API-nycklar', desc: 'API-nycklar lagras aldrig i klientkod och exponeras aldrig i frontend.' },
           { title: 'Datalagring i EU', desc: 'All data lagras på servrar inom EU i enlighet med GDPR.' },
           { title: 'Regelbundna säkerhetsgranskningar', desc: 'Vi genomför löpande säkerhetstester av vår plattform.' },
-          { title: 'Ansvarsfull hantering', desc: 'Hittat en sårbarhet? Kontakta oss på security@fleetrent.se så hanterar vi det skyndsamt.' },
+          { title: 'Ansvarsfull hantering', desc: 'Hittat en sårbarhet? Kontakta oss på security@FleetOS.se så hanterar vi det skyndsamt.' },
         ].map(({ title, desc }) => (
           <div key={title} className="flex gap-4 p-5 bg-slate-50 rounded-xl border border-slate-200">
             <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
@@ -30,7 +30,7 @@ export default function SakerhetPage() {
       </div>
       <p className="text-sm text-slate-500">
         Säkerhetsrapporter skickas till{' '}
-        <a href="mailto:security@fleetrent.se" className="text-blue-600 hover:underline">security@fleetrent.se</a>.
+        <a href="mailto:security@FleetOS.se" className="text-blue-600 hover:underline">security@FleetOS.se</a>.
       </p>
     </PublicLayout>
   );

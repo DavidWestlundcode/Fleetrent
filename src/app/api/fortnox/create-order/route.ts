@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { countBusinessDays } from '@/lib/utils';
 import { NextResponse, type NextRequest } from 'next/server';
@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
           OrderDate: new Date().toISOString().split('T')[0],
           YourOrderNumber: orderRow.order_number,
           ExternalInvoiceReference1: (orderRow.order_reference as string) || '',
-          Comments: `FleetRent-order ${orderRow.order_number}`,
+          Comments: `FleetOS-order ${orderRow.order_number}`,
           OrderRows: orderRows,
         },
       }),

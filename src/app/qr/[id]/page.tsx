@@ -46,7 +46,7 @@ export default function QRPage() {
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             <Truck className="w-4 h-4 text-white" />
           </div>
-          <span className="text-white font-bold text-lg">FleetRent</span>
+          <span className="text-white font-bold text-lg">FleetOS</span>
         </div>
         <button
           onClick={() => window.print()}

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 import Link from 'next/link';
 import { Zap, User, Building2, Mail, Phone, MessageSquare, CheckCircle2, ArrowLeft } from 'lucide-react';
@@ -35,7 +35,7 @@ export default function KomIgangPage() {
           <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" />
           </div>
-          <span className="font-bold text-slate-900 text-xl">FleetRent</span>
+          <span className="font-bold text-slate-900 text-xl">FleetOS</span>
         </Link>
         <Link href="/login" className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1.5">
           <ArrowLeft className="w-4 h-4" /> Logga in
@@ -57,7 +57,7 @@ export default function KomIgangPage() {
         ) : (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 w-full max-w-lg">
             <div className="p-8 border-b border-slate-100">
-              <h1 className="text-2xl font-bold text-slate-900 mb-1">Kom igång med FleetRent</h1>
+              <h1 className="text-2xl font-bold text-slate-900 mb-1">Kom igång med FleetOS</h1>
               <p className="text-slate-500 text-sm">Fyll i dina uppgifter så hör vi av oss inom 24 timmar.</p>
             </div>
 

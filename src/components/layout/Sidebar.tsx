@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -57,7 +57,7 @@ export default function Sidebar() {
           <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-blue-600 shrink-0">
             <Zap className="w-3.5 h-3.5 text-white" />
           </div>
-          <span className="text-[14px] font-semibold text-white tracking-tight">FleetRent</span>
+          <span className="text-[14px] font-semibold text-white tracking-tight">FleetOS</span>
         </Link>
         <button
           onClick={close}

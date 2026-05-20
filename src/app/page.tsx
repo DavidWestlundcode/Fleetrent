@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import {
   Zap, Truck, BarChart3, QrCode, Wrench, Users, CheckCircle,
   ArrowRight, Shield, Clock, TrendingUp, Bell, Search,
@@ -13,7 +13,7 @@ const TESTIMONIALS = [
   {
     name: 'Magnus Eriksson',
     title: 'VD, Eriksson Maskinuthyrning AB',
-    text: 'Vi hanterade allt i Excel tidigare. FleetRent gav oss full kontroll på dag ett – beläggningsgrad, försenade returer, lönsamhet per maskin. Det tog oss under en vecka att komma igång.',
+    text: 'Vi hanterade allt i Excel tidigare. FleetOS gav oss full kontroll på dag ett – beläggningsgrad, försenade returer, lönsamhet per maskin. Det tog oss under en vecka att komma igång.',
     initials: 'ME',
     color: 'from-blue-500 to-blue-700',
   },
@@ -27,7 +27,7 @@ const TESTIMONIALS = [
   {
     name: 'Johan Pettersson',
     title: 'Ägare, JP Anläggning & Uthyrning',
-    text: 'Har testat tre andra system. FleetRent är det enda som faktiskt funkar för maskinuthyrning specifikt. Statistiken och ROI-analysen per maskin är något de andra saknar helt.',
+    text: 'Har testat tre andra system. FleetOS är det enda som faktiskt funkar för maskinuthyrning specifikt. Statistiken och ROI-analysen per maskin är något de andra saknar helt.',
     initials: 'JP',
     color: 'from-emerald-500 to-emerald-700',
   },
@@ -62,7 +62,7 @@ function DashboardMockup() {
             <div className="w-5 h-5 bg-blue-600 rounded-md flex items-center justify-center shrink-0">
               <Zap className="w-2.5 h-2.5 text-white" />
             </div>
-            <span className="text-[11px] font-bold text-white">FleetRent</span>
+            <span className="text-[11px] font-bold text-white">FleetOS</span>
           </div>
           {[
             { icon: LayoutDashboard, label: 'Dashboard', active: true },
@@ -389,7 +389,7 @@ export default function LandingPage() {
             <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
               <Zap className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="font-bold text-slate-900 text-[15px] tracking-tight">FleetRent</span>
+            <span className="font-bold text-slate-900 text-[15px] tracking-tight">FleetOS</span>
           </div>
           <nav className="hidden md:flex items-center gap-1">
             {[
@@ -449,7 +449,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-[18px] text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-            FleetRent ersätter Excel, telefonsamtal och manuellt arbete med ett intelligent system som hanterar flotta, order och lönsamhet automatiskt.
+            FleetOS ersätter Excel, telefonsamtal och manuellt arbete med ett intelligent system som hanterar flotta, order och lönsamhet automatiskt.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-12">
@@ -517,7 +517,7 @@ export default function LandingPage() {
               Maskinuthyrning utan rätt<br />verktyg är kostsamt
             </h2>
             <p className="text-[16px] text-slate-500 max-w-xl mx-auto leading-relaxed">
-              De flesta uthyrningsföretag förlorar tid och pengar på grund av ineffektiva processer. FleetRent löser det.
+              De flesta uthyrningsföretag förlorar tid och pengar på grund av ineffektiva processer. FleetOS löser det.
             </p>
           </AnimateIn>
 
@@ -527,7 +527,7 @@ export default function LandingPage() {
               <div className="bg-white border border-red-100 rounded-2xl overflow-hidden shadow-sm h-full">
                 <div className="px-6 py-4 bg-red-50 border-b border-red-100 flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-red-400" />
-                  <span className="text-[12px] font-bold text-red-600 uppercase tracking-wider">Utan FleetRent</span>
+                  <span className="text-[12px] font-bold text-red-600 uppercase tracking-wider">Utan FleetOS</span>
                 </div>
                 <div className="p-6 space-y-4">
                   {[
@@ -556,7 +556,7 @@ export default function LandingPage() {
               <div className="bg-[#060D1A] border border-blue-500/20 rounded-2xl overflow-hidden shadow-xl h-full">
                 <div className="px-6 py-4 bg-blue-600/10 border-b border-blue-500/20 flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                  <span className="text-[12px] font-bold text-blue-400 uppercase tracking-wider">Med FleetRent</span>
+                  <span className="text-[12px] font-bold text-blue-400 uppercase tracking-wider">Med FleetOS</span>
                 </div>
                 <div className="p-6 space-y-4">
                   {[
@@ -644,7 +644,7 @@ export default function LandingPage() {
                 Lägg till maskiner<br />på sekunder med AI
               </h3>
               <p className="text-[15px] text-slate-500 leading-relaxed mb-7">
-                Fotografera maskinens typskylt med mobilen. FleetRents AI identifierar märke, modell, kapacitet och serienummer automatiskt – utan att du behöver skriva ett enda tecken manuellt.
+                Fotografera maskinens typskylt med mobilen. FleetOSs AI identifierar märke, modell, kapacitet och serienummer automatiskt – utan att du behöver skriva ett enda tecken manuellt.
               </p>
               <div className="space-y-3">
                 {[
@@ -753,7 +753,7 @@ export default function LandingPage() {
               Intelligent automatisering<br />i varje steg
             </h2>
             <p className="text-[16px] text-slate-400 max-w-xl mx-auto leading-relaxed">
-              FleetRent använder AI för att eliminera manuellt arbete – från registrering till analys.
+              FleetOS använder AI för att eliminera manuellt arbete – från registrering till analys.
             </p>
           </AnimateIn>
 
@@ -815,7 +815,7 @@ export default function LandingPage() {
           {/* Bottom CTA */}
           <AnimateIn className="mt-14 text-center">
             <Link href="/kom-igang" className="inline-flex items-center gap-2 px-7 py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all text-[14px] shadow-xl shadow-blue-900/40 hover:-translate-y-0.5">
-              Kom igång med FleetRent
+              Kom igång med FleetOS
               <ArrowRight className="w-4 h-4" />
             </Link>
           </AnimateIn>
@@ -909,7 +909,7 @@ export default function LandingPage() {
           <div className="space-y-4">
             {[
               { q: 'Hur lång tid tar det att komma igång?', a: 'De flesta kunder är igång med full drift inom en arbetsdag. Vi hjälper dig att lägga upp flottan och onboarda teamet.' },
-              { q: 'Fungerar det i mobilen?', a: 'Ja, FleetRent är fullt responsivt och optimerat för mobila enheter. QR-funktionen kräver bara en webbläsare.' },
+              { q: 'Fungerar det i mobilen?', a: 'Ja, FleetOS är fullt responsivt och optimerat för mobila enheter. QR-funktionen kräver bara en webbläsare.' },
               { q: 'Hur säker är datan?', a: 'All data lagras krypterad i EU-baserade datacenter (Supabase/AWS Frankfurt). Vi följer GDPR fullt ut.' },
               { q: 'Kan jag bjuda in hela teamet?', a: 'Ja, alla planer inkluderar obegränsat antal användare. Du styr vilka roller och behörigheter varje person har.' },
               { q: 'Vad händer med mina befintliga data i Excel?', a: 'Vi hjälper dig migrera din befintliga data. Kontakta oss så sätter vi upp en import anpassad för din situation.' },
@@ -941,14 +941,14 @@ export default function LandingPage() {
             Redo att modernisera<br />din uthyrning?
           </h2>
           <p className="text-[16px] text-slate-400 mb-10 max-w-md mx-auto leading-relaxed">
-            Digitalisera hela uthyrningsprocessen med FleetRent — från order och hyresavtal till returhantering och fakturaunderlag.
+            Digitalisera hela uthyrningsprocessen med FleetOS — från order och hyresavtal till returhantering och fakturaunderlag.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/kom-igang" className="flex items-center gap-2 px-7 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-[15px] shadow-xl shadow-blue-900/40 hover:-translate-y-0.5">
-              Kom igång med FleetRent
+              Kom igång med FleetOS
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <a href="mailto:info@fleetrent.se" className="flex items-center gap-2 px-7 py-4 bg-white/[0.06] hover:bg-white/[0.1] text-white font-medium rounded-xl border border-white/10 transition-all text-[15px]">
+            <a href="mailto:info@FleetOS.se" className="flex items-center gap-2 px-7 py-4 bg-white/[0.06] hover:bg-white/[0.1] text-white font-medium rounded-xl border border-white/10 transition-all text-[15px]">
               Kontakta oss
             </a>
           </div>
@@ -965,7 +965,7 @@ export default function LandingPage() {
                 <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
                   <Zap className="w-3.5 h-3.5 text-white" />
                 </div>
-                <span className="text-[14px] font-bold text-white tracking-tight">FleetRent</span>
+                <span className="text-[14px] font-bold text-white tracking-tight">FleetOS</span>
               </div>
               <p className="text-[13px] text-slate-500 leading-relaxed max-w-[220px]">
                 Det moderna uthyrningssystemet för maskinföretag i Sverige.

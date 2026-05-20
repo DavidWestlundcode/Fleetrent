@@ -1,4 +1,4 @@
-import PublicLayout from '@/components/layout/PublicLayout';
+﻿import PublicLayout from '@/components/layout/PublicLayout';
 
 export default function KontaktPage() {
   return (
@@ -8,10 +8,10 @@ export default function KontaktPage() {
       </p>
       <div className="not-prose grid grid-cols-1 md:grid-cols-2 gap-5">
         {[
-          { title: 'Support', desc: 'Frågor om plattformen eller ditt konto.', email: 'support@fleetrent.se' },
-          { title: 'Försäljning', desc: 'Frågor om priser eller att komma igång.', email: 'sales@fleetrent.se' },
-          { title: 'Press', desc: 'Medieförfrågningar och intervjuer.', email: 'press@fleetrent.se' },
-          { title: 'Övrigt', desc: 'Allt annat — vi hjälper gärna.', email: 'info@fleetrent.se' },
+          { title: 'Support', desc: 'Frågor om plattformen eller ditt konto.', email: 'support@FleetOS.se' },
+          { title: 'Försäljning', desc: 'Frågor om priser eller att komma igång.', email: 'sales@FleetOS.se' },
+          { title: 'Press', desc: 'Medieförfrågningar och intervjuer.', email: 'press@FleetOS.se' },
+          { title: 'Övrigt', desc: 'Allt annat — vi hjälper gärna.', email: 'info@FleetOS.se' },
         ].map(({ title, desc, email }) => (
           <div key={title} className="p-5 bg-slate-50 rounded-xl border border-slate-200">
             <p className="font-semibold text-slate-900 text-sm mb-1">{title}</p>

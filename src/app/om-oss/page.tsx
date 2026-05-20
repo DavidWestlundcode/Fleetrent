@@ -1,16 +1,16 @@
-import PublicLayout from '@/components/layout/PublicLayout';
+﻿import PublicLayout from '@/components/layout/PublicLayout';
 
 export default function OmOssPage() {
   return (
     <PublicLayout title="Om oss">
       <p className="text-lg text-slate-500 mb-8">
-        FleetRent är en produkt från DSE ENTERPRISE AB — ett svenskt teknikbolag med fokus på smarta verktyg för maskinuthyrningsbranschen.
+        FleetOS är en produkt från DSE ENTERPRISE AB — ett svenskt teknikbolag med fokus på smarta verktyg för maskinuthyrningsbranschen.
       </p>
       <p className="mb-6">
         Vi grundades med målet att modernisera en bransch där pappersblanketter och kalkylblad fortfarande är standard. Vår plattform kombinerar AI-teknik med ett enkelt gränssnitt för att ge uthyrningsföretag full kontroll över sin flotta — utan onödig komplexitet.
       </p>
       <p className="mb-6">
-        FleetRent används av maskinuthyrare i hela Sverige och fortsätter att växa. Vi lyssnar aktivt på våra kunder och bygger funktioner som löser verkliga problem.
+        FleetOS används av maskinuthyrare i hela Sverige och fortsätter att växa. Vi lyssnar aktivt på våra kunder och bygger funktioner som löser verkliga problem.
       </p>
 
       <h2>Varför vi är bättre</h2>
@@ -43,7 +43,7 @@ export default function OmOssPage() {
         <p className="text-sm text-slate-500">Org.nr: 559510-0248</p>
         <p className="text-sm text-slate-500 mt-3">
           Frågor?{' '}
-          <a href="mailto:info@fleetrent.se" className="text-blue-600 hover:underline">info@fleetrent.se</a>
+          <a href="mailto:info@FleetOS.se" className="text-blue-600 hover:underline">info@FleetOS.se</a>
         </p>
       </div>
     </PublicLayout>

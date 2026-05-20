@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -81,12 +81,12 @@ function LoginPageInner() {
             <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-white text-xl">FleetRent</span>
+            <span className="font-bold text-white text-xl">FleetOS</span>
           </Link>
 
           <div className="max-w-md">
             <blockquote className="text-2xl font-medium text-white leading-relaxed mb-6">
-              "FleetRent gav oss full kontroll över flottan på första dagen. Allt på ett ställe."
+              "FleetOS gav oss full kontroll över flottan på första dagen. Allt på ett ställe."
             </blockquote>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">M</div>
@@ -119,7 +119,7 @@ function LoginPageInner() {
                 <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                   <Zap className="w-4 h-4 text-white" />
                 </div>
-                <span className="font-bold text-slate-900">FleetRent</span>
+                <span className="font-bold text-slate-900">FleetOS</span>
               </Link>
             </div>
 
@@ -158,7 +158,7 @@ function LoginPageInner() {
               <>
                 <div className="mb-8">
                   <h2 className="text-2xl font-bold text-slate-900 mb-1">Välkommen tillbaka</h2>
-                  <p className="text-slate-500 text-sm">Logga in på ditt FleetRent-konto</p>
+                  <p className="text-slate-500 text-sm">Logga in på ditt FleetOS-konto</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -212,7 +212,7 @@ function LoginPageInner() {
                     onClick={() => { setShowLead(true); setLeadSent(false); setLeadError(''); }}
                     className="w-full py-3.5 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all"
                   >
-                    Kom igång med FleetRent
+                    Kom igång med FleetOS
                   </button>
                 </div>
               </>
@@ -227,7 +227,7 @@ function LoginPageInner() {
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-slate-100">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Kom igång med FleetRent</h2>
+                <h2 className="text-lg font-bold text-slate-900">Kom igång med FleetOS</h2>
                 <p className="text-sm text-slate-500 mt-0.5">Vi hör av oss inom 24 timmar</p>
               </div>
               <button onClick={() => setShowLead(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">

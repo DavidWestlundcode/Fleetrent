@@ -1,4 +1,4 @@
-import PublicLayout from '@/components/layout/PublicLayout';
+﻿import PublicLayout from '@/components/layout/PublicLayout';
 
 const entries = [
   {
@@ -33,7 +33,7 @@ const entries = [
     version: '1.0.0',
     date: 'Februari 2026',
     items: [
-      'Lansering av FleetRent',
+      'Lansering av FleetOS',
       'Maskinflotta, orderhantering och kundregister',
       'QR-koder per maskin',
     ],
@@ -43,7 +43,7 @@ const entries = [
 export default function ChangelogPage() {
   return (
     <PublicLayout title="Changelog">
-      <p className="text-lg text-slate-500 mb-10">Senaste uppdateringar och förbättringar av FleetRent.</p>
+      <p className="text-lg text-slate-500 mb-10">Senaste uppdateringar och förbättringar av FleetOS.</p>
       <div className="not-prose space-y-8">
         {entries.map(({ version, date, items }) => (
           <div key={version} className="flex gap-6">

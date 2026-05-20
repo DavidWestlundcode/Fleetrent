@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 
 export default function PublicLayout({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -11,7 +11,7 @@ export default function PublicLayout({ title, children }: { title: string; child
                 <rect x="1" y="3" width="15" height="13" rx="2" /><path d="M16 8h4l3 5v3h-7V8z" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
               </svg>
             </div>
-            <span className="text-sm font-semibold text-slate-900">FleetRent</span>
+            <span className="text-sm font-semibold text-slate-900">FleetOS</span>
           </Link>
           <Link href="/" className="text-sm text-slate-500 hover:text-slate-700 transition-colors">← Tillbaka till startsidan</Link>
         </div>

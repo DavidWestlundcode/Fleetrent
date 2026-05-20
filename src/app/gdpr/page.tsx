@@ -1,10 +1,10 @@
-import PublicLayout from '@/components/layout/PublicLayout';
+﻿import PublicLayout from '@/components/layout/PublicLayout';
 
 export default function GdprPage() {
   return (
     <PublicLayout title="GDPR">
       <p className="text-lg text-slate-500 mb-8">
-        Vi tar dataskydd på allvar. Här förklarar vi hur FleetRent hanterar personuppgifter i enlighet med GDPR (General Data Protection Regulation).
+        Vi tar dataskydd på allvar. Här förklarar vi hur FleetOS hanterar personuppgifter i enlighet med GDPR (General Data Protection Regulation).
       </p>
 
       <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">Dina rättigheter enligt GDPR</h2>
@@ -28,7 +28,7 @@ export default function GdprPage() {
       </div>
 
       <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">Utöva dina rättigheter</h2>
-      <p className="mb-4">Skicka din begäran till <a href="mailto:gdpr@fleetrent.se" className="text-blue-600 hover:underline">gdpr@fleetrent.se</a>. Vi svarar inom 30 dagar.</p>
+      <p className="mb-4">Skicka din begäran till <a href="mailto:gdpr@FleetOS.se" className="text-blue-600 hover:underline">gdpr@FleetOS.se</a>. Vi svarar inom 30 dagar.</p>
 
       <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">Klagomål</h2>
       <p className="mb-4">Om du anser att vi hanterar dina uppgifter felaktigt har du rätt att lämna klagomål till <a href="https://www.imy.se" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Integritetsskyddsmyndigheten (IMY)</a>.</p>

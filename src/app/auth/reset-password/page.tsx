@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, Zap } from 'lucide-react';
@@ -36,7 +36,7 @@ export default function ResetPasswordPage() {
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             <Zap className="w-4 h-4 text-white" />
           </div>
-          <span className="font-bold text-slate-900">FleetRent</span>
+          <span className="font-bold text-slate-900">FleetOS</span>
         </div>
         <h2 className="text-2xl font-bold text-slate-900 mb-1">Nytt lösenord</h2>
         <p className="text-slate-500 text-sm mb-8">Ange ditt nya lösenord nedan.</p>

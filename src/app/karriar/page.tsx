@@ -1,4 +1,4 @@
-import PublicLayout from '@/components/layout/PublicLayout';
+﻿import PublicLayout from '@/components/layout/PublicLayout';
 
 export default function KarriarPage() {
   return (
@@ -13,7 +13,7 @@ export default function KarriarPage() {
         <p className="text-sm font-semibold text-slate-900 mb-1">Spontanansökan</p>
         <p className="text-sm text-slate-500">
           Skicka ett mail till{' '}
-          <a href="mailto:jobb@fleetrent.se" className="text-blue-600 hover:underline">jobb@fleetrent.se</a>
+          <a href="mailto:jobb@FleetOS.se" className="text-blue-600 hover:underline">jobb@FleetOS.se</a>
           {' '}med en kort beskrivning av dig själv och vad du vill göra.
         </p>
       </div>

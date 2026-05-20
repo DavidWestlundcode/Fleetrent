@@ -1,4 +1,4 @@
-import PublicLayout from '@/components/layout/PublicLayout';
+﻿import PublicLayout from '@/components/layout/PublicLayout';
 
 export default function VillkorPage() {
   return (
@@ -6,7 +6,7 @@ export default function VillkorPage() {
       <p className="text-sm text-slate-400 mb-8">Senast uppdaterad: maj 2026</p>
 
       <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">1. Tjänsten</h2>
-      <p className="mb-4">FleetRent tillhandahålls av DSE ENTERPRISE AB som en molnbaserad tjänst (SaaS) för hantering av maskinflottor. Användning av tjänsten innebär att du accepterar dessa villkor.</p>
+      <p className="mb-4">FleetOS tillhandahålls av DSE ENTERPRISE AB som en molnbaserad tjänst (SaaS) för hantering av maskinflottor. Användning av tjänsten innebär att du accepterar dessa villkor.</p>
 
       <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">2. Konto och ansvar</h2>
       <p className="mb-4">Du ansvarar för att hålla dina inloggningsuppgifter konfidentiella och för all aktivitet som sker via ditt konto. Kontakta oss omedelbart vid misstänkt obehörig åtkomst.</p>
@@ -24,7 +24,7 @@ export default function VillkorPage() {
       <p className="mb-4">Dessa villkor regleras av svensk lag. Tvister ska i första hand lösas genom förhandling och i andra hand via allmän domstol med Stockholm som forum.</p>
 
       <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">7. Kontakt</h2>
-      <p className="mb-4">Frågor om dessa villkor skickas till <a href="mailto:info@fleetrent.se" className="text-blue-600 hover:underline">info@fleetrent.se</a>.</p>
+      <p className="mb-4">Frågor om dessa villkor skickas till <a href="mailto:info@FleetOS.se" className="text-blue-600 hover:underline">info@FleetOS.se</a>.</p>
     </PublicLayout>
   );
 }
