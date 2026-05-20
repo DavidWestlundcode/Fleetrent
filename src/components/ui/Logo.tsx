@@ -1,4 +1,10 @@
+'use client';
+import { useId } from 'react';
+
 export function Logo({ size = 32 }: { size?: number }) {
+  const uid = useId();
+  const gId = `fg${uid.replace(/:/g, '')}`;
+
   return (
     <svg
       width={size}
@@ -8,32 +14,26 @@ export function Logo({ size = 32 }: { size?: number }) {
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <linearGradient id="fleetosGrad" x1="30" y1="20" x2="70" y2="110" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#4F7FFF" />
-          <stop offset="55%" stopColor="#6B52F5" />
-          <stop offset="100%" stopColor="#8B2FE8" />
+        <linearGradient id={gId} x1="76" y1="44" x2="18" y2="108" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#3D5EFF" />
+          <stop offset="55%" stopColor="#6633EE" />
+          <stop offset="100%" stopColor="#8B22EE" />
         </linearGradient>
       </defs>
 
-      {/* Dark navy top bar of the F */}
+      {/* Dark navy top arm — rectangle with semicircular right cap */}
+      <path d="M 12,8 H 74 A 15,15 0 0 1 74,38 H 12 Z" fill="#1B2444" />
+
+      {/* Blue-to-purple gradient F: middle arm + vertical stem */}
       <path
-        d="M18 22 C18 14 24 10 32 10 L88 10 C98 10 104 18 100 28 L92 40 C88 47 80 50 70 48 L28 48 L28 22 Z"
-        fill="#111827"
-        opacity="0.95"
+        d="M 12,46 H 72 A 14,14 0 0 1 72,74 H 27 V 104 Q 27,112 19.5,112 Q 12,112 12,104 Z"
+        fill={`url(#${gId})`}
       />
 
-      {/* Blue-purple gradient F shape */}
-      <path
-        d="M28 54 L28 95 C28 100 24 104 19 104 C14 104 10 100 10 95 L10 38 C10 32 14 28 20 28 L76 28 C86 28 92 36 88 46 L82 56 C78 63 70 66 60 64 L28 64 Z"
-        fill="url(#fleetosGrad)"
-      />
-
-      {/* Bar chart element 1 (shortest) */}
-      <rect x="62" y="82" width="10" height="22" rx="3" fill="url(#fleetosGrad)" opacity="0.9" />
-      {/* Bar chart element 2 (medium) */}
-      <rect x="76" y="72" width="10" height="32" rx="3" fill="#5B8FFF" opacity="0.85" />
-      {/* Bar chart element 3 (tallest) */}
-      <rect x="90" y="60" width="10" height="44" rx="3" fill="#6B7FFF" opacity="0.8" />
+      {/* Bar charts in negative space below middle arm */}
+      <rect x="40" y="92" width="9" height="12" rx="2.5" fill="#6B55EE" />
+      <rect x="53" y="85" width="9" height="19" rx="2.5" fill="#5B65FF" />
+      <rect x="66" y="78" width="9" height="26" rx="2.5" fill="#4D7CFF" />
     </svg>
   );
 }
