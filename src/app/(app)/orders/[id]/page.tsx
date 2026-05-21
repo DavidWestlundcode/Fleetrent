@@ -6,7 +6,7 @@ import { ArrowLeft, Clock, Truck, Building2, Calendar, CheckCircle2, Trash2, Pen
 import Header from '@/components/layout/Header';
 import { MachineStatusBadge, OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
-import { formatCurrency, formatDate, formatDateTime, daysBetween, daysUntil } from '@/lib/utils';
+import { formatCurrency, formatDate, formatDateTime, daysBetween, daysUntil, calcBreakdown, countBusinessDays } from '@/lib/utils';
 import { ARTICLE_UNIT_LABELS } from '@/lib/types';
 
 export default function OrderDetailPage() {
@@ -415,59 +415,149 @@ export default function OrderDetailPage() {
           {/* Sidebar */}
           <div className="space-y-4">
             {/* Pricing */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h3 className="font-semibold text-slate-900 mb-3">Ekonomi</h3>
-              <div className="space-y-2">
-                {[
-                  { label: 'Dagspris', value: formatCurrency(order.dailyPrice) + '/dag' },
-                  { label: 'Veckopris', value: formatCurrency(order.weeklyPrice) + '/vecka' },
-                  { label: 'Månadspris', value: formatCurrency(order.monthlyPrice) + '/mån' },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex justify-between text-sm">
-                    <span className="text-slate-500">{label}</span>
-                    <span className="font-medium">{value}</span>
-                  </div>
-                ))}
-                {order.transportCost > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Transport</span>
-                    <div className="text-right">
-                      <span className="font-medium">{formatCurrency(order.transportCost)}</span>
-                      {(order.transportDiscount ?? 0) > 0 && (
-                        <span className="ml-1.5 text-[11px] font-medium text-emerald-600">-{order.transportDiscount}%</span>
-                      )}
+            {(() => {
+              const endDate = order.actualReturnDate || order.plannedReturnDate || null;
+              const totalCalDays = endDate ? daysBetween(order.startDate, endDate) : null;
+              const billableDays = totalCalDays !== null
+                ? (order.chargeWeekends ? totalCalDays : countBusinessDays(order.startDate, endDate!))
+                : null;
+              const breakdown = billableDays !== null
+                ? calcBreakdown(billableDays, order.dailyPrice, order.weeklyPrice, order.monthlyPrice)
+                : null;
+              const insuranceMonths = billableDays ? Math.ceil(billableDays / 30) : 0;
+              const rentalDisc = order.rentalDiscount ?? 0;
+              const insDisc = order.insuranceDiscount ?? 0;
+              const rentalGross = breakdown ? breakdown.total : 0;
+              const rentalNet = rentalGross * (1 - rentalDisc / 100);
+
+              return (
+                <div className="bg-white rounded-xl border border-slate-200 p-5">
+                  <h3 className="font-semibold text-slate-900 mb-4">Ekonomi</h3>
+                  <div className="space-y-4">
+
+                    {/* Rental */}
+                    <div>
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Hyra</p>
+                      {order.openEnded ? (
+                        <div className="space-y-1.5">
+                          {order.dailyPrice > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-500">Dagspris</span>
+                              <span className="font-medium">{formatCurrency(order.dailyPrice)}/dag</span>
+                            </div>
+                          )}
+                          {order.weeklyPrice > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-500">Veckopris</span>
+                              <span className="font-medium">{formatCurrency(order.weeklyPrice)}/vecka</span>
+                            </div>
+                          )}
+                          {order.monthlyPrice > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-500">Månadspris</span>
+                              <span className="font-medium">{formatCurrency(order.monthlyPrice)}/mån</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-sm pt-1 border-t border-slate-100">
+                            <span className="text-slate-400 italic text-[12px]">Beräknas vid retur</span>
+                          </div>
+                        </div>
+                      ) : breakdown ? (
+                        <div className="space-y-1.5">
+                          {breakdown.months > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-500">{breakdown.months} mån à {formatCurrency(order.monthlyPrice)}</span>
+                              <span className="font-medium">{formatCurrency(breakdown.months * order.monthlyPrice)}</span>
+                            </div>
+                          )}
+                          {breakdown.weeks > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-500">{breakdown.weeks} v à {formatCurrency(order.weeklyPrice)}</span>
+                              <span className="font-medium">{formatCurrency(breakdown.weeks * order.weeklyPrice)}</span>
+                            </div>
+                          )}
+                          {breakdown.days > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-500">{breakdown.days} dagar à {formatCurrency(order.dailyPrice)}</span>
+                              <span className="font-medium">{formatCurrency(breakdown.days * order.dailyPrice)}</span>
+                            </div>
+                          )}
+                          {rentalDisc > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-emerald-600">Rabatt -{rentalDisc}%</span>
+                              <span className="text-emerald-600 font-medium">-{formatCurrency(rentalGross - rentalNet)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-sm font-semibold pt-1 border-t border-slate-100">
+                            <span className="text-slate-700">Hyra totalt</span>
+                            <span>{formatCurrency(rentalNet)}</span>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {/* Insurance */}
+                    {(order.insuranceCost ?? 0) > 0 && (
+                      <div>
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Försäkring</p>
+                        <div className="space-y-1.5">
+                          {order.insuranceMonthlyRate ? (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-500">{insuranceMonths} mån à {formatCurrency(order.insuranceMonthlyRate)}</span>
+                              <span className="font-medium">{formatCurrency(insuranceMonths * order.insuranceMonthlyRate)}</span>
+                            </div>
+                          ) : (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-500">Försäkring</span>
+                              <span className="font-medium">{formatCurrency(order.insuranceCost!)}</span>
+                            </div>
+                          )}
+                          {insDisc > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-emerald-600">Rabatt -{insDisc}%</span>
+                              <span className="text-emerald-600 font-medium">-{formatCurrency((order.insuranceCost ?? 0) * insDisc / 100)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-sm font-semibold pt-1 border-t border-slate-100">
+                            <span className="text-slate-700">Försäkring totalt</span>
+                            <span>{formatCurrency((order.insuranceCost ?? 0) * (1 - insDisc / 100))}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Articles */}
+                    {(order.orderArticles ?? []).length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Artiklar</p>
+                        <div className="space-y-1.5">
+                          {(order.orderArticles ?? []).map((row, i) => {
+                            const art = articles.find((a) => a.id === row.articleId);
+                            const d = row.discountPercent ?? 0;
+                            const lineTotal = row.quantity * row.unitPrice * (1 - d / 100);
+                            return (
+                              <div key={i} className="flex justify-between text-sm gap-2">
+                                <span className="text-slate-500 min-w-0">
+                                  <span className="font-medium text-slate-700">{art?.name ?? 'Artikel'}</span>
+                                  <span className="ml-1 text-[12px] text-slate-400">{row.quantity} × {formatCurrency(row.unitPrice)}</span>
+                                  {d > 0 && <span className="ml-1 text-[11px] font-medium text-emerald-600">-{d}%</span>}
+                                </span>
+                                <span className="font-medium shrink-0">{formatCurrency(lineTotal)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline">
+                      <span className="font-semibold text-slate-800">Totalt</span>
+                      <span className="font-bold text-blue-600 text-lg">{formatCurrency(order.totalPrice)}</span>
                     </div>
                   </div>
-                )}
-                {order.insuranceCost && order.insuranceCost > 0 ? (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Försäkring</span>
-                    <div className="text-right">
-                      <span className="font-medium">{formatCurrency(order.insuranceCost)}</span>
-                      {(order.insuranceDiscount ?? 0) > 0 && (
-                        <span className="ml-1.5 text-[11px] font-medium text-emerald-600">-{order.insuranceDiscount}%</span>
-                      )}
-                    </div>
-                  </div>
-                ) : null}
-                {order.deposit > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Deposition</span>
-                    <span className="font-medium">{formatCurrency(order.deposit)}</span>
-                  </div>
-                )}
-                {(order.rentalDiscount ?? 0) > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-emerald-600">Rabatt hyra</span>
-                    <span className="font-medium text-emerald-600">-{order.rentalDiscount}%</span>
-                  </div>
-                )}
-                <div className="pt-2 border-t border-slate-100 flex justify-between">
-                  <span className="font-semibold text-slate-800">Totalt</span>
-                  <span className="font-bold text-blue-600 text-lg">{formatCurrency(order.totalPrice)}</span>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* Duration */}
             <div className="bg-white rounded-xl border border-slate-200 p-5">
