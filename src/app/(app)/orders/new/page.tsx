@@ -141,23 +141,6 @@ function NewOrderForm() {
     setTransportDiscount(template.transportDiscount ?? 0);
     setInsuranceDiscount(template.insuranceDailyDiscount ?? 0);
 
-    // Auto-add transport as article when template has transport cost
-    if (template.transportCost > 0) {
-      const transportArtId = template.transportArticleId ||
-        articles.find((a) => a.isActive && a.type === 'transport')?.id;
-      if (transportArtId) {
-        const tDiscount = template.transportDiscount ?? 0;
-        setOrderArticles((prev) => {
-          const withoutTransport = prev.filter((a) => a.articleId !== transportArtId);
-          return [...withoutTransport, {
-            articleId: transportArtId,
-            quantity: 1,
-            unitPrice: template.transportCost,
-            ...(tDiscount > 0 ? { discountPercent: tDiscount } : {}),
-          }];
-        });
-      }
-    }
   };
 
   useEffect(() => {
@@ -568,7 +551,10 @@ function NewOrderForm() {
                               type="button"
                               onMouseDown={() => {
                                 setNewArticleId(a.id);
-                                setNewArticlePrice(a.defaultPrice);
+                                const tmpl = selectedTemplate;
+                                const isTemplateTransport = tmpl && tmpl.transportArticleId === a.id && (tmpl.transportCost ?? 0) > 0;
+                                setNewArticlePrice(isTemplateTransport ? tmpl!.transportCost : a.defaultPrice);
+                                setNewArticleDiscount(isTemplateTransport ? (tmpl!.transportDiscount ?? 0) : 0);
                                 setArticleSearch(`${a.articleNumber} – ${a.name}`);
                                 setShowArticleDropdown(false);
                               }}
