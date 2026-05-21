@@ -171,11 +171,34 @@ export async function POST(request: NextRequest) {
       : `Hyra – ${days} dagar`;
 
     const rentalDiscount = (orderRow.rental_discount as number) ?? 0;
-    const transportDiscount = (orderRow.transport_discount as number) ?? 0;
     const insuranceDiscount = (orderRow.insurance_discount as number) ?? 0;
-    type FortnoxRow = { Description: string; DeliveredQuantity: number; Price: number; Unit: string; Discount?: number };
+
+    // Fetch article numbers for all referenced articles in one query
+    const extraArticles = (orderRow.order_articles as { articleId: string; quantity: number; unitPrice: number; discountPercent?: number }[]) ?? [];
+    const allArticleIds = [
+      orderRow.rental_article_id,
+      orderRow.insurance_article_id,
+      ...extraArticles.map((a) => a.articleId),
+    ].filter(Boolean) as string[];
+
+    const articleLookup: Record<string, { name: string; unit: string; article_number: string }> = {};
+    if (allArticleIds.length > 0) {
+      const { data: artRows } = await admin
+        .from('articles')
+        .select('id, name, unit, article_number')
+        .in('id', allArticleIds);
+      for (const a of artRows ?? []) {
+        articleLookup[a.id] = a;
+      }
+    }
+
+    const rentalArt = orderRow.rental_article_id ? articleLookup[orderRow.rental_article_id as string] : null;
+    const insArt = orderRow.insurance_article_id ? articleLookup[orderRow.insurance_article_id as string] : null;
+
+    type FortnoxRow = { ArticleNumber?: string; Description: string; DeliveredQuantity: number; Price: number; Unit: string; Discount?: number };
     const orderRows: FortnoxRow[] = [
       {
+        ...(rentalArt?.article_number ? { ArticleNumber: rentalArt.article_number } : {}),
         Description: rentalDescription,
         DeliveredQuantity: days,
         Price: (orderRow.daily_price as number) ?? 0,
@@ -184,18 +207,9 @@ export async function POST(request: NextRequest) {
       },
     ];
 
-    if ((orderRow.transport_cost as number) > 0) {
-      orderRows.push({
-        Description: 'Transport',
-        DeliveredQuantity: 1,
-        Price: orderRow.transport_cost as number,
-        Unit: 'st',
-        ...(transportDiscount > 0 ? { Discount: transportDiscount } : {}),
-      });
-    }
-
     if ((orderRow.insurance_cost as number) > 0) {
       orderRows.push({
+        ...(insArt?.article_number ? { ArticleNumber: insArt.article_number } : {}),
         Description: 'Försäkring',
         DeliveredQuantity: 1,
         Price: orderRow.insurance_cost as number,
@@ -204,26 +218,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Extra articles — fetch names from articles table, send as free-text rows (no ArticleNumber)
-    const extraArticles = (orderRow.order_articles as { articleId: string; quantity: number; unitPrice: number; discountPercent?: number }[]) ?? [];
-    if (extraArticles.length > 0) {
-      const articleIds = extraArticles.map((a) => a.articleId);
-      const { data: articleRows } = await admin
-        .from('articles')
-        .select('id, name, unit')
-        .in('id', articleIds);
-
-      for (const extra of extraArticles) {
-        const art = articleRows?.find((a) => a.id === extra.articleId);
-        const artDiscount = extra.discountPercent ?? 0;
-        orderRows.push({
-          Description: art?.name ?? 'Artikel',
-          DeliveredQuantity: extra.quantity,
-          Price: extra.unitPrice,
-          Unit: (art?.unit as string) ?? 'st',
-          ...(artDiscount > 0 ? { Discount: artDiscount } : {}),
-        });
-      }
+    for (const extra of extraArticles) {
+      const art = articleLookup[extra.articleId];
+      const artDiscount = extra.discountPercent ?? 0;
+      orderRows.push({
+        ...(art?.article_number ? { ArticleNumber: art.article_number } : {}),
+        Description: art?.name ?? 'Artikel',
+        DeliveredQuantity: extra.quantity,
+        Price: extra.unitPrice,
+        Unit: art?.unit ?? 'st',
+        ...(artDiscount > 0 ? { Discount: artDiscount } : {}),
+      });
     }
 
     const fortnoxRes = await fetch(`${FORTNOX_API}/orders`, {
