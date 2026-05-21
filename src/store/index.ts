@@ -328,10 +328,10 @@ function toDbTemplate(t: PriceTemplate, orgId: string): DbRow {
     standard_terms: t.standardTerms,
     internal_note: t.internalNote,
     discount_percent: t.discountPercent ?? 0,
-    rental_article_id: t.rentalArticleId ?? null,
-    insurance_article_id: t.insuranceArticleId ?? null,
-    transport_article_id: t.transportArticleId ?? null,
-    deposit_article_id: t.depositArticleId ?? null,
+    rental_article_id: t.rentalArticleId || null,
+    insurance_article_id: t.insuranceArticleId || null,
+    transport_article_id: t.transportArticleId || null,
+    deposit_article_id: t.depositArticleId || null,
     created_at: t.createdAt,
   };
 }
