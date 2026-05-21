@@ -236,8 +236,8 @@ export async function POST(request: NextRequest) {
         Order: {
           CustomerNumber: fortnoxCustomerNumber,
           OrderDate: new Date().toISOString().split('T')[0],
-          YourOrderNumber: orderRow.order_number,
-          ExternalInvoiceReference1: (orderRow.order_reference as string) || '',
+          OurReference: orderRow.order_number,
+          YourOrderNumber: (orderRow.order_reference as string) || '',
           Comments: `FleetOS-order ${orderRow.order_number}`,
           OrderRows: orderRows,
         },
