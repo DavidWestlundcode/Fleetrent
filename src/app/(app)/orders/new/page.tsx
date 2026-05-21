@@ -127,8 +127,8 @@ function NewOrderForm() {
       dailyPrice: isLong ? (template.longTermDailyPrice ?? 0) : template.dailyPrice,
       weeklyPrice: isLong ? (template.longTermWeeklyPrice ?? 0) : template.weeklyPrice,
       monthlyPrice: isLong ? (template.longTermMonthlyPrice ?? 0) : template.monthlyPrice,
-      transportCost: template.transportCost,
-      deposit: template.deposit,
+      transportCost: 0,
+      deposit: 0,
       rentalArticleId: template.rentalArticleId ?? '',
       insuranceArticleId: template.insuranceArticleId ?? '',
       transportArticleId: template.transportArticleId ?? '',
@@ -140,6 +140,24 @@ function NewOrderForm() {
     setMonthlyDiscount(isLong ? (template.longTermMonthlyDiscount ?? 0) : (template.monthlyPriceDiscount ?? 0));
     setTransportDiscount(template.transportDiscount ?? 0);
     setInsuranceDiscount(template.insuranceDailyDiscount ?? 0);
+
+    // Auto-add transport as article when template has transport cost
+    if (template.transportCost > 0) {
+      const transportArtId = template.transportArticleId ||
+        articles.find((a) => a.isActive && a.type === 'transport')?.id;
+      if (transportArtId) {
+        const tDiscount = template.transportDiscount ?? 0;
+        setOrderArticles((prev) => {
+          const withoutTransport = prev.filter((a) => a.articleId !== transportArtId);
+          return [...withoutTransport, {
+            articleId: transportArtId,
+            quantity: 1,
+            unitPrice: template.transportCost,
+            ...(tDiscount > 0 ? { discountPercent: tDiscount } : {}),
+          }];
+        });
+      }
+    }
   };
 
   useEffect(() => {
@@ -192,7 +210,7 @@ function NewOrderForm() {
     const d = r.discountPercent ?? 0;
     return sum + r.quantity * r.unitPrice * (1 - d / 100);
   }, 0);
-  const totalPrice = rentalTotal + transportTotal + insuranceTotal + form.deposit + (openEnded ? extraArticlesTotal : extraArticlesTotal);
+  const totalPrice = rentalTotal + insuranceTotal + extraArticlesTotal;
 
   const availableMachines = machines.filter((m) => {
     if (m.status !== 'i_lager' && m.id !== form.machineId) return false;
@@ -436,17 +454,6 @@ function NewOrderForm() {
                   onPriceChange={(v) => set('monthlyPrice', v)} onDiscountChange={setMonthlyDiscount}
                 />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                <PriceWithDiscount
-                  label="Transport"
-                  price={form.transportCost} discount={transportDiscount}
-                  onPriceChange={(v) => set('transportCost', v)} onDiscountChange={setTransportDiscount}
-                />
-                <Field label="Deposition (kr)">
-                  <input type="number" value={form.deposit} onChange={(e) => set('deposit', Number(e.target.value))} className={inputClass} min={0} />
-                </Field>
-              </div>
-
               {/* Insurance toggle */}
               {hasInsuranceOption && (
                 <div className="mt-4 pt-4 border-t border-slate-100">
@@ -736,28 +743,6 @@ function NewOrderForm() {
                   })()}
                 </div>
 
-                {/* Transport row */}
-                {form.transportCost > 0 && (
-                  <div>
-                    <div className="flex justify-between text-[13px]">
-                      <span className="text-slate-500">
-                        Transport
-                        {transportDiscount > 0 && <span className="ml-1.5 text-[11px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">-{transportDiscount}%</span>}
-                      </span>
-                      <span className="font-medium">{formatCurrency(transportTotal)}</span>
-                    </div>
-                    {transportDiscount > 0 && (
-                      <div className="flex justify-end">
-                        <span className="text-[11px] text-slate-400 line-through">{formatCurrency(form.transportCost)}</span>
-                      </div>
-                    )}
-                    {(() => {
-                      const transArt = form.transportArticleId ? articles.find(a => a.id === form.transportArticleId) : null;
-                      return transArt ? <p className="text-[11px] text-blue-500 mt-0.5">#{transArt.articleNumber} {transArt.name}</p> : null;
-                    })()}
-                  </div>
-                )}
-
                 {/* Insurance row */}
                 {includeInsurance && (
                   <div>
@@ -782,14 +767,6 @@ function NewOrderForm() {
                   </div>
                 )}
 
-                {/* Deposit */}
-                {form.deposit > 0 && (
-                  <div className="flex justify-between text-[13px]">
-                    <span className="text-slate-500">Deposition</span>
-                    <span className="font-medium">{formatCurrency(form.deposit)}</span>
-                  </div>
-                )}
-
                 {/* Extra articles */}
                 {orderArticles.length > 0 && (
                   <div className="flex justify-between text-[13px]">
@@ -800,7 +777,7 @@ function NewOrderForm() {
 
                 <div className="pt-2 border-t border-slate-100 flex justify-between items-baseline">
                   <span className="text-[13px] font-semibold text-slate-800">
-                    {openEnded ? 'Delpris (ex. hyra)' : 'Totalt'}
+                    {openEnded ? 'Delpris (ex. hyra och försäkring)' : 'Totalt'}
                   </span>
                   <span className="text-lg font-bold text-blue-600">{formatCurrency(totalPrice)}</span>
                 </div>

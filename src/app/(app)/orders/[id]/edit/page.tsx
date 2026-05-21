@@ -123,8 +123,8 @@ export default function EditOrderPage() {
       dailyPrice: isLong ? (template.longTermDailyPrice ?? 0) : template.dailyPrice,
       weeklyPrice: isLong ? (template.longTermWeeklyPrice ?? 0) : template.weeklyPrice,
       monthlyPrice: isLong ? (template.longTermMonthlyPrice ?? 0) : template.monthlyPrice,
-      transportCost: template.transportCost,
-      deposit: template.deposit,
+      transportCost: 0,
+      deposit: 0,
       rentalArticleId: template.rentalArticleId ?? '',
       insuranceArticleId: template.insuranceArticleId ?? '',
       transportArticleId: template.transportArticleId ?? '',
@@ -171,8 +171,8 @@ export default function EditOrderPage() {
     : 0;
   const extraArticlesTotal = orderArticles.reduce((sum, r) => sum + r.quantity * r.unitPrice, 0);
   const totalPrice = openEnded
-    ? form.transportCost + form.deposit + extraArticlesTotal
-    : calculatedPrice + form.transportCost + insuranceCost + extraArticlesTotal;
+    ? extraArticlesTotal
+    : calculatedPrice + insuranceCost + extraArticlesTotal;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -397,12 +397,6 @@ export default function EditOrderPage() {
                 <Field label="Månadspris (kr)">
                   <input type="number" value={form.monthlyPrice} onChange={(e) => set('monthlyPrice', Number(e.target.value))} className={inputClass} min={0} />
                 </Field>
-                <Field label="Transportkostnad (kr)">
-                  <input type="number" value={form.transportCost} onChange={(e) => set('transportCost', Number(e.target.value))} className={inputClass} min={0} />
-                </Field>
-                <Field label="Deposition (kr)">
-                  <input type="number" value={form.deposit} onChange={(e) => set('deposit', Number(e.target.value))} className={inputClass} min={0} />
-                </Field>
               </div>
 
               {hasInsuranceOption && (
@@ -619,8 +613,6 @@ export default function EditOrderPage() {
                 {(() => {
                   const rentalArt = form.rentalArticleId ? articles.find(a => a.id === form.rentalArticleId) : null;
                   const insArt = form.insuranceArticleId ? articles.find(a => a.id === form.insuranceArticleId) : null;
-                  const transArt = form.transportArticleId ? articles.find(a => a.id === form.transportArticleId) : null;
-                  const depArt = form.depositArticleId ? articles.find(a => a.id === form.depositArticleId) : null;
                   return (
                     <>
                       <div>
@@ -632,15 +624,6 @@ export default function EditOrderPage() {
                         </div>
                         {rentalArt && <p className="text-[11px] text-blue-500 mt-0.5">#{rentalArt.articleNumber} {rentalArt.name}</p>}
                       </div>
-                      {form.transportCost > 0 && (
-                        <div>
-                          <div className="flex justify-between text-[13px]">
-                            <span className="text-slate-500">Transport</span>
-                            <span className="font-medium">{formatCurrency(form.transportCost)}</span>
-                          </div>
-                          {transArt && <p className="text-[11px] text-blue-500 mt-0.5">#{transArt.articleNumber} {transArt.name}</p>}
-                        </div>
-                      )}
                       {includeInsurance && (
                         <div>
                           <div className="flex justify-between text-[13px]">
@@ -650,15 +633,6 @@ export default function EditOrderPage() {
                             </span>
                           </div>
                           {insArt && <p className="text-[11px] text-blue-500 mt-0.5">#{insArt.articleNumber} {insArt.name}</p>}
-                        </div>
-                      )}
-                      {form.deposit > 0 && (
-                        <div>
-                          <div className="flex justify-between text-[13px]">
-                            <span className="text-slate-500">Deposition</span>
-                            <span className="font-medium">{formatCurrency(form.deposit)}</span>
-                          </div>
-                          {depArt && <p className="text-[11px] text-blue-500 mt-0.5">#{depArt.articleNumber} {depArt.name}</p>}
                         </div>
                       )}
                     </>
