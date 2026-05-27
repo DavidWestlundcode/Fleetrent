@@ -22,6 +22,7 @@ export interface OrderArticle {
   quantity: number;
   unitPrice: number;
   discountPercent?: number;
+  description?: string;
 }
 
 export interface ContactPerson {

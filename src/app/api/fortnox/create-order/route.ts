@@ -223,7 +223,7 @@ export async function POST(request: NextRequest) {
       const artDiscount = extra.discountPercent ?? 0;
       orderRows.push({
         ...(art?.article_number ? { ArticleNumber: art.article_number } : {}),
-        Description: art?.name ?? 'Artikel',
+        Description: extra.description || art?.name || 'Artikel',
         DeliveredQuantity: extra.quantity,
         Price: extra.unitPrice,
         Unit: art?.unit ?? 'st',

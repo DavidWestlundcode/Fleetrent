@@ -93,6 +93,7 @@ function NewOrderForm() {
   const [newArticleQty, setNewArticleQty] = useState(1);
   const [newArticlePrice, setNewArticlePrice] = useState(0);
   const [newArticleDiscount, setNewArticleDiscount] = useState(0);
+  const [newArticleDescription, setNewArticleDescription] = useState('');
   const [articleSearch, setArticleSearch] = useState('');
   const [showArticleDropdown, setShowArticleDropdown] = useState(false);
 
@@ -491,7 +492,7 @@ function NewOrderForm() {
                           <tr key={i} className="hover:bg-slate-50/60">
                             <td className="px-3 py-2.5 text-[13px] text-slate-700">
                               <span className="text-slate-400 font-mono text-[11px] mr-1.5">{art?.articleNumber}</span>
-                              {art?.name}
+                              {row.description ?? art?.name}
                             </td>
                             <td className="px-3 py-2.5 text-[13px] text-right text-slate-700">{row.quantity} {art?.unit}</td>
                             <td className="px-3 py-2.5 text-[13px] text-right text-slate-700">{formatCurrency(row.unitPrice)}</td>
@@ -520,7 +521,7 @@ function NewOrderForm() {
                 <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Lägg till artikel</p>
                 <div className="flex gap-2 items-end flex-wrap">
                   {/* Searchable article picker */}
-                  <div className="flex-1 min-w-[180px] relative">
+                  <div className="flex-1 min-w-[160px] relative">
                     <label className="block text-xs font-medium text-slate-600 mb-1.5">Sök artikel</label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
@@ -555,6 +556,7 @@ function NewOrderForm() {
                                 const isTemplateTransport = tmpl && tmpl.transportArticleId === a.id && (tmpl.transportCost ?? 0) > 0;
                                 setNewArticlePrice(isTemplateTransport ? tmpl!.transportCost : a.defaultPrice);
                                 setNewArticleDiscount(isTemplateTransport ? (tmpl!.transportDiscount ?? 0) : 0);
+                                setNewArticleDescription(a.name);
                                 setArticleSearch(`${a.articleNumber} – ${a.name}`);
                                 setShowArticleDropdown(false);
                               }}
@@ -575,6 +577,16 @@ function NewOrderForm() {
                         )}
                       </div>
                     )}
+                  </div>
+                  <div className="flex-1 min-w-[140px]">
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Benämning</label>
+                    <input
+                      type="text"
+                      value={newArticleDescription}
+                      onChange={(e) => setNewArticleDescription(e.target.value)}
+                      className={inputClass}
+                      placeholder="Beskrivning på raden..."
+                    />
                   </div>
                   <div className="w-16">
                     <label className="block text-xs font-medium text-slate-600 mb-1.5">Antal</label>
@@ -602,16 +614,20 @@ function NewOrderForm() {
                     disabled={!newArticleId}
                     onClick={() => {
                       if (!newArticleId) return;
+                      const art = articles.find((a) => a.id === newArticleId);
+                      const finalDesc = newArticleDescription.trim() || art?.name || '';
                       setOrderArticles((p) => [...p, {
                         articleId: newArticleId,
                         quantity: newArticleQty,
                         unitPrice: newArticlePrice,
                         ...(newArticleDiscount > 0 ? { discountPercent: newArticleDiscount } : {}),
+                        ...(finalDesc && finalDesc !== art?.name ? { description: finalDesc } : {}),
                       }]);
                       setNewArticleId('');
                       setNewArticleQty(1);
                       setNewArticlePrice(0);
                       setNewArticleDiscount(0);
+                      setNewArticleDescription('');
                       setArticleSearch('');
                     }}
                     className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-[13px] font-medium rounded-xl hover:bg-blue-700 disabled:opacity-40 transition-colors cursor-pointer shrink-0"

@@ -374,7 +374,7 @@ export default function OrderDetailPage() {
                         return (
                           <tr key={`extra-${i}`} className="hover:bg-slate-50/60 transition-colors">
                             <td className="px-5 py-3 font-mono text-[13px] text-slate-700">{art.articleNumber}</td>
-                            <td className="px-5 py-3 text-[13px] text-slate-800">{art.name}</td>
+                            <td className="px-5 py-3 text-[13px] text-slate-800">{row.description ?? art.name}</td>
                             <td className="px-5 py-3 text-[13px] text-right font-medium text-slate-700">{row.quantity}</td>
                             <td className="px-5 py-3 text-[13px] text-slate-500">{ARTICLE_UNIT_LABELS[art.unit]}</td>
                             <td className="px-5 py-3 text-[13px] text-right font-medium text-slate-700">{formatCurrency(row.quantity * row.unitPrice)}</td>
@@ -538,7 +538,7 @@ export default function OrderDetailPage() {
                             return (
                               <div key={i} className="flex justify-between text-sm gap-2">
                                 <span className="text-slate-500 min-w-0">
-                                  <span className="font-medium text-slate-700">{art?.name ?? 'Artikel'}</span>
+                                  <span className="font-medium text-slate-700">{row.description ?? art?.name ?? 'Artikel'}</span>
                                   <span className="ml-1 text-[12px] text-slate-400">{row.quantity} × {formatCurrency(row.unitPrice)}</span>
                                   {d > 0 && <span className="ml-1 text-[11px] font-medium text-emerald-600">-{d}%</span>}
                                 </span>
