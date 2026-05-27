@@ -125,6 +125,7 @@ function fromDbCustomer(r: DbRow): Customer {
     activeOrders: (r.active_orders as number) ?? 0,
     fortnoxCustomerNumber: (r.fortnox_customer_number as string) || undefined,
     contacts: (r.contacts as ContactPerson[]) ?? [],
+    isActive: (r.is_active as boolean) ?? true,
     createdAt: r.created_at as string,
   };
 }
@@ -146,6 +147,7 @@ function toDbCustomer(c: Customer, orgId: string): DbRow {
     active_orders: c.activeOrders,
     fortnox_customer_number: c.fortnoxCustomerNumber ?? null,
     contacts: c.contacts ?? [],
+    is_active: c.isActive ?? true,
     created_at: c.createdAt,
   };
 }

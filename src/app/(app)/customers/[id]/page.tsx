@@ -1,7 +1,7 @@
 'use client';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Building2, Phone, Mail, MapPin, FileText, Plus } from 'lucide-react';
+import { ArrowLeft, Building2, Phone, Mail, MapPin, FileText, Plus, Trash2, Ban, RotateCcw } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
@@ -9,7 +9,8 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { customers, orders, machines } = useStore();
+  const router = useRouter();
+  const { customers, orders, machines, updateCustomer, deleteCustomer } = useStore();
 
   const customer = customers.find((c) => c.id === id);
   const customerOrders = orders
@@ -26,6 +27,28 @@ export default function CustomerDetailPage() {
 
   const activeOrders = customerOrders.filter((o) => o.status === 'aktiv' || o.status === 'reserverad');
   const completedOrders = customerOrders.filter((o) => o.status === 'avslutad');
+  const isActive = customer.isActive !== false;
+
+  const handleDeactivate = () => {
+    if (confirm(`Inaktivera ${customer.companyName}? Kunden döljs från kundlistan men kan återaktiveras.`)) {
+      updateCustomer(customer.id, { isActive: false });
+    }
+  };
+
+  const handleActivate = () => {
+    updateCustomer(customer.id, { isActive: true });
+  };
+
+  const handleDelete = () => {
+    if (activeOrders.length > 0) {
+      alert(`Kan inte radera kund med ${activeOrders.length} aktiv${activeOrders.length !== 1 ? 'a' : ''} order. Avsluta orderna först.`);
+      return;
+    }
+    if (confirm(`Radera ${customer.companyName} permanent? Detta går inte att ångra.`)) {
+      deleteCustomer(customer.id);
+      router.push('/customers');
+    }
+  };
 
   return (
     <div className="flex flex-col flex-1 overflow-auto">
@@ -33,13 +56,41 @@ export default function CustomerDetailPage() {
         title={customer.companyName}
         subtitle={`Org.nr ${customer.orgNumber}`}
         actions={
-          <Link
-            href={`/orders/new?customer=${customer.id}`}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Ny order
-          </Link>
+          <div className="flex items-center gap-2">
+            {isActive ? (
+              <>
+                <Link
+                  href={`/orders/new?customer=${customer.id}`}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Ny order
+                </Link>
+                <button
+                  onClick={handleDeactivate}
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-amber-600 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
+                >
+                  <Ban className="w-4 h-4" />
+                  Inaktivera
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleActivate}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Återaktivera
+              </button>
+            )}
+            <button
+              onClick={handleDelete}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              Radera
+            </button>
+          </div>
         }
       />
 
@@ -48,6 +99,19 @@ export default function CustomerDetailPage() {
           <ArrowLeft className="w-4 h-4" />
           Tillbaka till kunder
         </Link>
+
+        {!isActive && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+            <Ban className="w-5 h-5 text-amber-500 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-800">Inaktiv kund</p>
+              <p className="text-sm text-amber-700">Kunden visas inte i kundlistan och kan inte väljas vid nya ordrar.</p>
+            </div>
+            <button onClick={handleActivate} className="shrink-0 text-sm font-medium text-amber-700 underline hover:text-amber-900">
+              Återaktivera
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: Info */}

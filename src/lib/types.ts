@@ -104,6 +104,7 @@ export interface Customer {
   activeOrders: number;
   fortnoxCustomerNumber?: string;
   contacts: ContactPerson[];
+  isActive?: boolean;
   createdAt: string;
 }
 

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Plus, Search, Building2, Phone, Mail, TrendingUp } from 'lucide-react';
+import { Plus, Search, Building2, Phone, Mail, TrendingUp, Ban } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
 import { formatCurrency } from '@/lib/utils';
@@ -9,18 +9,23 @@ import { formatCurrency } from '@/lib/utils';
 export default function CustomersPage() {
   const { customers, orders } = useStore();
   const [search, setSearch] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
 
   const filtered = useMemo(
-    () => customers.filter(
-      (c) =>
+    () => customers.filter((c) => {
+      if (!showInactive && c.isActive === false) return false;
+      return (
         !search ||
         c.companyName.toLowerCase().includes(search.toLowerCase()) ||
         c.contactPerson.toLowerCase().includes(search.toLowerCase()) ||
         c.orgNumber.includes(search) ||
         c.email.toLowerCase().includes(search.toLowerCase())
-    ),
-    [customers, search]
+      );
+    }),
+    [customers, search, showInactive]
   );
+
+  const inactiveCount = customers.filter((c) => c.isActive === false).length;
 
   const getActiveOrders = (customerId: string) =>
     orders.filter((o) => o.customerId === customerId && (o.status === 'aktiv' || o.status === 'reserverad')).length;
@@ -42,35 +47,54 @@ export default function CustomersPage() {
       />
 
       <div className="flex-1 p-3 sm:p-6 space-y-4">
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Sök kund, kontaktperson, org.nr..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-[13px] bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all placeholder:text-slate-400"
-          />
+        <div className="flex items-center gap-3">
+          <div className="relative max-w-sm flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Sök kund, kontaktperson, org.nr..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-[13px] bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all placeholder:text-slate-400"
+            />
+          </div>
+          {inactiveCount > 0 && (
+            <button
+              onClick={() => setShowInactive((v) => !v)}
+              className={`shrink-0 px-3 py-2 text-[13px] font-medium rounded-xl border transition-colors cursor-pointer ${
+                showInactive
+                  ? 'bg-amber-50 border-amber-200 text-amber-700'
+                  : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+              }`}
+            >
+              {showInactive ? 'Dölj inaktiva' : `Visa inaktiva (${inactiveCount})`}
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((customer) => {
             const activeOrders = getActiveOrders(customer.id);
+            const inactive = customer.isActive === false;
             return (
               <Link
                 key={customer.id}
                 href={`/customers/${customer.id}`}
-                className="bg-white rounded-2xl border border-slate-200/80 p-5 hover:shadow-md hover:-translate-y-0.5 hover:border-blue-200/80 transition-all duration-200 cursor-pointer"
+                className={`bg-white rounded-2xl border p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer ${
+                  inactive ? 'border-amber-200/80 opacity-60 hover:border-amber-300' : 'border-slate-200/80 hover:border-blue-200/80'
+                }`}
               >
                 <div className="flex items-start gap-3">
-                  <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-slate-100 text-slate-600 shrink-0">
-                    <Building2 className="w-4 h-4" />
+                  <div className={`flex items-center justify-center w-9 h-9 rounded-xl shrink-0 ${inactive ? 'bg-amber-50 text-amber-500' : 'bg-slate-100 text-slate-600'}`}>
+                    {inactive ? <Ban className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[13px] font-semibold text-slate-800 truncate leading-tight">{customer.companyName}</h3>
                     <p className="text-[11px] text-slate-400 mt-0.5">Org.nr {customer.orgNumber}</p>
                   </div>
-                  {activeOrders > 0 && (
+                  {inactive ? (
+                    <span className="shrink-0 px-2 py-0.5 text-[11px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 rounded-full">Inaktiv</span>
+                  ) : activeOrders > 0 && (
                     <span className="shrink-0 px-2 py-0.5 text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/80 rounded-full">
                       {activeOrders} aktiv{activeOrders !== 1 ? 'a' : ''}
                     </span>
