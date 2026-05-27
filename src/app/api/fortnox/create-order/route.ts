@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
     const insuranceDiscount = (orderRow.insurance_discount as number) ?? 0;
 
     // Fetch article numbers for all referenced articles in one query
-    const extraArticles = (orderRow.order_articles as { articleId: string; quantity: number; unitPrice: number; discountPercent?: number }[]) ?? [];
+    const extraArticles = (orderRow.order_articles as { articleId: string; quantity: number; unitPrice: number; discountPercent?: number; description?: string }[]) ?? [];
     const allArticleIds = [
       orderRow.rental_article_id,
       orderRow.insurance_article_id,
