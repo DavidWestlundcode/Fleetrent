@@ -383,12 +383,12 @@ export default function LandingPage() {
 
       {/* ── Navbar ── */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 h-16 grid grid-cols-3 items-center">
           <div className="flex items-center gap-2">
             <Logo size={28} />
             <span className="font-bold text-slate-900 text-[15px] tracking-tight">FleetOS</span>
           </div>
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center justify-center gap-1">
             {[
               { label: 'Funktioner', href: '#features' },
               { label: 'Hur det fungerar', href: '#how-it-works' },
@@ -399,7 +399,7 @@ export default function LandingPage() {
               </a>
             ))}
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-end gap-2">
             <Link href="/login" className="text-[13px] font-medium text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">
               Logga in
             </Link>
