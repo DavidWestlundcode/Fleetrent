@@ -561,7 +561,7 @@ export default function LandingPage() {
                     { icon: Check, text: 'Automatiska notiser och påminnelser', sub: 'Aldrig mer missade returdatum', color: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' },
                     { icon: Check, text: 'AI fyller i maskinuppgifter från foto', sub: 'Registrering tar sekunder, inte minuter', color: 'bg-blue-500/20 text-blue-400 border border-blue-500/20' },
                     { icon: Check, text: 'Full ROI-analys per maskin i realtid', sub: 'Fatta beslut baserade på data', color: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' },
-                    { icon: Check, text: 'Digital returhantering via QR-kod', sub: 'Kunden skannar och registrerar retur på sekunder', color: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' },
+                    { icon: Check, text: 'Digital returhantering via QR-kod', sub: 'Skanna och registrera retur på sekunder', color: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' },
                   ].map(({ icon: Icon, text, sub, color }) => (
                     <div key={text} className="flex gap-3">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${color}`}>
