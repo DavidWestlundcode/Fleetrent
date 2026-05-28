@@ -465,7 +465,7 @@ export default function LandingPage() {
               { icon: CheckCircle, label: 'Ingen bindningstid' },
               { icon: Shield, label: 'GDPR-anpassad' },
               { icon: Zap, label: 'Kom igång på < 1 dag' },
-              { icon: Users, label: 'Obegränsat antal användare' },
+              { icon: Users, label: 'Fullständig dashboard' },
             ].map(({ icon: Icon, label }) => (
               <span key={label} className="flex items-center gap-1.5">
                 <Icon className="w-3.5 h-3.5 text-emerald-500" />
