@@ -608,20 +608,36 @@ export const useStore = create<AppStore>()((set, get) => ({
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
     const period: InvoicePeriod = { ...periodData, id, createdAt: now };
+    const order = get().orders.find((o) => o.id === orderId);
+    if (!order) return;
+
     set((s) => ({
       orders: s.orders.map((o) =>
         o.id === orderId ? { ...o, invoicePeriods: [...(o.invoicePeriods ?? []), period] } : o
       ),
+      machines: s.machines.map((m) =>
+        m.id === order.machineId
+          ? { ...m, totalRevenue: m.totalRevenue + period.amount, totalRentalDays: m.totalRentalDays + period.days, updatedAt: now }
+          : m
+      ),
+      customers: s.customers.map((c) =>
+        c.id === order.customerId ? { ...c, totalSpent: c.totalSpent + period.amount } : c
+      ),
     }));
+
     const { organizationId } = get();
     if (organizationId) {
-      const updated = get().orders.find((o) => o.id === orderId);
-      if (updated) {
-        syncQuery(
-          sb().from('orders').update({ invoice_periods: updated.invoicePeriods ?? [] }).eq('id', orderId),
-          'sync addInvoicePeriod:'
-        );
-      }
+      const updatedOrder = get().orders.find((o) => o.id === orderId);
+      const updatedMachine = get().machines.find((m) => m.id === order.machineId);
+      const updatedCustomer = get().customers.find((c) => c.id === order.customerId);
+      const client = sb();
+      Promise.all([
+        updatedOrder ? client.from('orders').update({ invoice_periods: updatedOrder.invoicePeriods ?? [] }).eq('id', orderId) : Promise.resolve({ error: null }),
+        updatedMachine ? client.from('machines').update({ total_revenue: updatedMachine.totalRevenue, total_rental_days: updatedMachine.totalRentalDays, updated_at: now }).eq('id', order.machineId) : Promise.resolve({ error: null }),
+        updatedCustomer ? client.from('customers').update({ total_spent: updatedCustomer.totalSpent }).eq('id', order.customerId) : Promise.resolve({ error: null }),
+      ]).then((results) => {
+        results.forEach((r, i) => { if (r.error) console.error(`sync addInvoicePeriod[${i}]:`, r.error); });
+      });
     }
   },
 
@@ -987,8 +1003,14 @@ export const useStore = create<AppStore>()((set, get) => ({
     const finalPrice = data.finalTotalPrice !== undefined ? data.finalTotalPrice : order.totalPrice;
     const byName = userName ? ` av ${userName}` : '';
 
+    // Subtract already-invoiced amounts to avoid double-counting with addInvoicePeriod
+    const alreadyInvoicedAmount = (order.invoicePeriods ?? []).reduce((s, p) => s + p.amount, 0);
+    const alreadyInvoicedDays = (order.invoicePeriods ?? []).reduce((s, p) => s + p.days, 0);
+    const remainingPrice = Math.max(0, finalPrice - alreadyInvoicedAmount);
+
     const startDate = new Date(order.startDate);
     const rentalDays = Math.max(1, Math.round((Date.now() - startDate.getTime()) / 86400000));
+    const remainingDays = Math.max(0, rentalDays - alreadyInvoicedDays);
 
     set((s) => ({
       orders: s.orders.map((o) =>
@@ -1020,15 +1042,15 @@ export const useStore = create<AppStore>()((set, get) => ({
               ...m,
               status: newMachineStatus as Machine['status'],
               updatedAt: now,
-              totalRevenue: m.totalRevenue + finalPrice,
+              totalRevenue: m.totalRevenue + remainingPrice,
               totalRentals: m.totalRentals + 1,
-              totalRentalDays: m.totalRentalDays + rentalDays,
+              totalRentalDays: m.totalRentalDays + remainingDays,
             }
           : m
       ),
       customers: s.customers.map((c) =>
         c.id === order.customerId
-          ? { ...c, activeOrders: Math.max(0, c.activeOrders - 1), totalSpent: c.totalSpent + finalPrice }
+          ? { ...c, activeOrders: Math.max(0, c.activeOrders - 1), totalSpent: c.totalSpent + remainingPrice }
           : c
       ),
     }));
