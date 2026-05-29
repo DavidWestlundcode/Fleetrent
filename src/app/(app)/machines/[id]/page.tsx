@@ -25,6 +25,7 @@ export default function MachineDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const machine = machines.find((m) => m.id === id);
+  const today = new Date().toISOString().split('T')[0];
   const machineOrders = useMemo(
     () => orders.filter((o) => o.machineId === id).sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()),
     [orders, id]
@@ -136,7 +137,22 @@ export default function MachineDetailPage() {
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <div className="flex items-start justify-between mb-4">
                 <h2 className="font-semibold text-slate-900">Maskininformation</h2>
-                <MachineStatusBadge status={machine.status} />
+                <div className="flex flex-col items-end gap-1">
+                  <MachineStatusBadge status={machine.status} />
+                  {(() => {
+                    const res = orders
+                      .filter((o) => o.machineId === id && o.status === 'reserverad' && o.startDate > today)
+                      .sort((a, b) => a.startDate.localeCompare(b.startDate))[0];
+                    return res ? (
+                      <span
+                        title={`Bokad från ${res.startDate}`}
+                        className="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 rounded-full cursor-default"
+                      >
+                        Bokad {res.startDate}
+                      </span>
+                    ) : null;
+                  })()}
+                </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {[

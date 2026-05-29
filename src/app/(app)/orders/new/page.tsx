@@ -657,10 +657,17 @@ function NewOrderForm() {
               </div>
             </div>
 
+            {form.startDate > today && (
+              <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-[12px] text-amber-700">
+                <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+                Startdatum är i framtiden — ordern sparas som bokning och aktiveras automatiskt {form.startDate}.
+              </div>
+            )}
             <div className="flex items-center justify-end gap-3">
               <Link href="/orders" className="px-4 py-2 text-[13px] font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">Avbryt</Link>
-              <button type="submit" className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-[13px] font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-sm">
-                <Save className="w-4 h-4" /> Skapa order
+              <button type="submit" className={`flex items-center gap-2 px-5 py-2 text-white text-[13px] font-medium rounded-xl transition-colors shadow-sm ${form.startDate > today ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                <Save className="w-4 h-4" />
+                {form.startDate > today ? 'Skapa bokning' : 'Skapa order'}
               </button>
             </div>
 

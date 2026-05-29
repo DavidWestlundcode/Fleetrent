@@ -82,7 +82,14 @@ function applyAICriteria(machines: Machine[], criteria: SearchCriteria): Machine
 }
 
 export default function MachinesPage() {
-  const { machines, maxMachines } = useStore();
+  const { machines, orders, maxMachines } = useStore();
+
+  const getUpcomingReservation = (machineId: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    return orders
+      .filter((o) => o.machineId === machineId && o.status === 'reserverad' && o.startDate > today)
+      .sort((a, b) => a.startDate.localeCompare(b.startDate))[0] ?? null;
+  };
   const atMachineLimit = machines.length >= maxMachines;
   const [statusFilter, setStatusFilter] = useState<MachineStatus | 'all'>('all');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
@@ -351,7 +358,22 @@ export default function MachinesPage() {
                       {machine.capacity > 0 ? `${machine.capacity.toLocaleString('sv-SE')} kg` : '–'}
                     </td>
                     <td className="px-4 py-3.5 text-[13px] text-slate-600">{machine.operatingHours.toLocaleString('sv-SE')} h</td>
-                    <td className="px-4 py-3.5"><MachineStatusBadge status={machine.status} /></td>
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <MachineStatusBadge status={machine.status} />
+                        {(() => {
+                          const res = getUpcomingReservation(machine.id);
+                          return res ? (
+                            <span
+                              title={`Bokad från ${res.startDate}`}
+                              className="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 rounded-full cursor-default"
+                            >
+                              Bokad {res.startDate}
+                            </span>
+                          ) : null;
+                        })()}
+                      </div>
+                    </td>
                     <td className="px-4 py-3.5 text-[13px] font-medium text-slate-700">{formatCurrency(machine.totalRevenue)}</td>
                     <td className="px-4 py-3.5 text-[12px] text-slate-400">{machine.location}</td>
                     <td className="px-4 py-3.5">
@@ -376,7 +398,20 @@ export default function MachinesPage() {
                   <div className="p-2 bg-slate-100 rounded-xl">
                     <Truck className="w-4 h-4 text-slate-600" />
                   </div>
-                  <MachineStatusBadge status={machine.status} />
+                  <div className="flex flex-col items-end gap-1">
+                    <MachineStatusBadge status={machine.status} />
+                    {(() => {
+                      const res = getUpcomingReservation(machine.id);
+                      return res ? (
+                        <span
+                          title={`Bokad från ${res.startDate}`}
+                          className="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 rounded-full cursor-default"
+                        >
+                          Bokad {res.startDate}
+                        </span>
+                      ) : null;
+                    })()}
+                  </div>
                 </div>
                 <h3 className="text-[13px] font-semibold text-slate-800 leading-tight">{machine.name}</h3>
                 <p className="text-[11px] text-slate-400 mt-1">{machine.brand} {machine.model}</p>

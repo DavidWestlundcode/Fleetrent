@@ -726,12 +726,13 @@ export const useStore = create<AppStore>()((set, get) => ({
       createdBy: userId ?? '',
     };
 
-    const machineStatus = orderData.status === 'reserverad' ? 'reserverad' as const : 'uthyrd' as const;
+    const isReservation = orderData.status === 'reserverad';
 
     set((s) => ({
       orders: [...s.orders, newOrder],
-      machines: s.machines.map((m) =>
-        m.id === orderData.machineId ? { ...m, status: machineStatus, updatedAt: now } : m
+      // Reservations keep machine as i_lager; active orders set it to uthyrd
+      machines: isReservation ? s.machines : s.machines.map((m) =>
+        m.id === orderData.machineId ? { ...m, status: 'uthyrd' as const, updatedAt: now } : m
       ),
       customers: s.customers.map((c) =>
         c.id === orderData.customerId ? { ...c, activeOrders: c.activeOrders + 1 } : c
@@ -741,15 +742,18 @@ export const useStore = create<AppStore>()((set, get) => ({
     if (organizationId) {
       const client = sb();
       const newActiveOrders = get().customers.find((c) => c.id === orderData.customerId)?.activeOrders ?? 1;
-      Promise.all([
-        client.from('orders').insert(toDbOrder(newOrder, organizationId)),
+      const ops: Promise<{ error: unknown }>[] = [
+        client.from('orders').insert(toDbOrder(newOrder, organizationId)) as unknown as Promise<{ error: unknown }>,
         client.from('order_events').insert({
           id: eventId, order_id: id, organization_id: organizationId,
           type: 'skapad', description: 'Order skapad', timestamp: now, user_id: userId ?? null,
-        }),
-        client.from('machines').update({ status: machineStatus, updated_at: now }).eq('id', orderData.machineId),
-        client.from('customers').update({ active_orders: newActiveOrders }).eq('id', orderData.customerId),
-      ]).then((results) => {
+        }) as unknown as Promise<{ error: unknown }>,
+        client.from('customers').update({ active_orders: newActiveOrders }).eq('id', orderData.customerId) as unknown as Promise<{ error: unknown }>,
+      ];
+      if (!isReservation) {
+        ops.push(client.from('machines').update({ status: 'uthyrd', updated_at: now }).eq('id', orderData.machineId) as unknown as Promise<{ error: unknown }>);
+      }
+      Promise.all(ops).then((results) => {
         results.forEach((r, i) => {
           if (r.error) console.error(`sync addOrder[${i}]:`, r.error);
         });
