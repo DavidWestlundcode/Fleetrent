@@ -2,7 +2,7 @@
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { Truck, Clock, User, Calendar, CheckCircle2, AlertTriangle, Wrench, Printer } from 'lucide-react';
+import { Truck, Clock, User, Calendar, CheckCircle2, AlertTriangle, Wrench, Printer, Plus } from 'lucide-react';
 import { useStore } from '@/store';
 import { MachineStatusBadge, OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { formatDate, daysUntil } from '@/lib/utils';
@@ -151,7 +151,18 @@ export default function QRPage() {
               <CheckCircle2 className="w-5 h-5 text-emerald-500" />
               <h2 className="font-bold text-slate-900">Ingen aktiv uthyrning</h2>
             </div>
-            <p className="text-sm text-slate-500">Maskinen är för tillfället {machine.status === 'i_lager' ? 'tillgänglig i lager' : machine.status === 'service' ? 'på service' : machine.status === 'skadad' ? 'skadad' : 'inte uthyrd'}.</p>
+            <p className="text-sm text-slate-500 mb-4">
+              Maskinen är för tillfället {machine.status === 'i_lager' ? 'tillgänglig i lager' : machine.status === 'service' ? 'på service' : machine.status === 'skadad' ? 'skadad' : 'inte uthyrd'}.
+            </p>
+            {machine.status === 'i_lager' && (
+              <Link
+                href={`/orders/new?machine=${machine.id}`}
+                className="flex items-center justify-center gap-2 w-full py-4 bg-blue-600 text-white font-bold text-base rounded-xl hover:bg-blue-700 active:scale-95 transition-all"
+              >
+                <Plus className="w-5 h-5" />
+                Skapa hyra
+              </Link>
+            )}
           </div>
         )}
 
