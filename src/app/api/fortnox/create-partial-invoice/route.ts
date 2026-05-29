@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
           OrderDate: new Date().toISOString().split('T')[0],
           OurReference: orderRow.order_number,
           YourOrderNumber: (orderRow.order_reference as string) || '',
-          Comments: `Delfaktura ${period.startDate}-${period.endDate} | FleetOS-order ${orderRow.order_number}`,
+          Comments: `Delfaktura ${period.startDate} - ${period.endDate}, order ${orderRow.order_number}`,
           OrderRows: orderRows,
         },
       }),
