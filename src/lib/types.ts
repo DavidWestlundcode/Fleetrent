@@ -116,6 +116,17 @@ export interface OrderEvent {
   userId: string;
 }
 
+export interface InvoicePeriod {
+  id: string;
+  startDate: string;
+  endDate: string;
+  days: number;
+  amount: number;
+  fortnoxOrderNumber?: string;
+  sentToAccounting?: boolean;
+  createdAt: string;
+}
+
 export interface Order {
   id: string;
   orderNumber: string;
@@ -156,6 +167,7 @@ export interface Order {
   sentToAccounting?: boolean;
   fortnoxOrderNumber?: string;
   orderArticles: OrderArticle[];
+  invoicePeriods?: InvoicePeriod[];
   createdAt: string;
   createdBy: string;
 }

@@ -5,6 +5,7 @@ import type {
   Machine, Customer, Order, PriceTemplate, ServiceRecord, Article,
   MachineCategory, MachineStatus, FuelType, OrderStatus, ReturnCondition,
   ServiceType, ServiceStatus, ArticleType, ArticleUnit, OrderArticle, ContactPerson,
+  InvoicePeriod,
 } from '@/lib/types';
 import { generateOrderNumber } from '@/lib/utils';
 
@@ -200,6 +201,7 @@ function fromDbOrder(r: DbRow): Order {
     sentToAccounting: (r.sent_to_accounting as boolean) ?? false,
     fortnoxOrderNumber: (r.fortnox_order_number as string) || undefined,
     orderArticles: (r.order_articles as OrderArticle[]) ?? [],
+    invoicePeriods: (r.invoice_periods as InvoicePeriod[]) ?? [],
     createdAt: r.created_at as string,
     createdBy: (r.created_by as string) ?? '',
   };
@@ -246,6 +248,7 @@ function toDbOrder(o: Order, orgId: string): DbRow {
     sent_to_accounting: o.sentToAccounting ?? false,
     fortnox_order_number: o.fortnoxOrderNumber ?? null,
     order_articles: o.orderArticles ?? [],
+    invoice_periods: o.invoicePeriods ?? [],
     created_by: o.createdBy || null,
     created_at: o.createdAt,
   };
@@ -492,6 +495,9 @@ interface AppStore {
   deleteArticle: (id: string) => void;
 
   activateReservedOrders: () => void;
+
+  addInvoicePeriod: (orderId: string, period: Omit<InvoicePeriod, 'id' | 'createdAt'>) => void;
+  markInvoicePeriodSent: (orderId: string, periodId: string, fortnoxOrderNumber: string) => void;
 }
 
 const EMPTY_STATE = {
@@ -595,6 +601,52 @@ export const useStore = create<AppStore>()((set, get) => ({
     } catch (e) {
       console.error('Store initialization failed:', e);
       set({ loading: false, initialized: true });
+    }
+  },
+
+  addInvoicePeriod: (orderId, periodData) => {
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const period: InvoicePeriod = { ...periodData, id, createdAt: now };
+    set((s) => ({
+      orders: s.orders.map((o) =>
+        o.id === orderId ? { ...o, invoicePeriods: [...(o.invoicePeriods ?? []), period] } : o
+      ),
+    }));
+    const { organizationId } = get();
+    if (organizationId) {
+      const updated = get().orders.find((o) => o.id === orderId);
+      if (updated) {
+        syncQuery(
+          sb().from('orders').update({ invoice_periods: updated.invoicePeriods ?? [] }).eq('id', orderId),
+          'sync addInvoicePeriod:'
+        );
+      }
+    }
+  },
+
+  markInvoicePeriodSent: (orderId, periodId, fortnoxOrderNumber) => {
+    set((s) => ({
+      orders: s.orders.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              invoicePeriods: (o.invoicePeriods ?? []).map((p) =>
+                p.id === periodId ? { ...p, fortnoxOrderNumber, sentToAccounting: true } : p
+              ),
+            }
+          : o
+      ),
+    }));
+    const { organizationId } = get();
+    if (organizationId) {
+      const updated = get().orders.find((o) => o.id === orderId);
+      if (updated) {
+        syncQuery(
+          sb().from('orders').update({ invoice_periods: updated.invoicePeriods ?? [] }).eq('id', orderId),
+          'sync markInvoicePeriodSent:'
+        );
+      }
     }
   },
 

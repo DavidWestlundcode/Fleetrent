@@ -1,0 +1,197 @@
+import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { calcBreakdown, countBusinessDays } from '@/lib/utils';
+import { NextResponse, type NextRequest } from 'next/server';
+import type { InvoicePeriod } from '@/lib/types';
+
+const FORTNOX_API = 'https://api.fortnox.se/3';
+
+async function getValidToken(orgId: string): Promise<string | null> {
+  const admin = createAdminClient();
+  const { data: integration } = await admin
+    .from('integrations')
+    .select('access_token, refresh_token, expires_at')
+    .eq('organization_id', orgId)
+    .eq('provider', 'fortnox')
+    .single();
+
+  if (!integration) return null;
+
+  const expiresAt = new Date(integration.expires_at as string).getTime();
+  if (Date.now() < expiresAt - 5 * 60 * 1000) return integration.access_token as string;
+
+  const credentials = Buffer.from(
+    `${process.env.FORTNOX_CLIENT_ID}:${process.env.FORTNOX_CLIENT_SECRET}`
+  ).toString('base64');
+
+  const res = await fetch('https://apps.fortnox.se/oauth-v1/token', {
+    method: 'POST',
+    headers: { 'Authorization': `Basic ${credentials}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: integration.refresh_token as string }),
+  });
+  if (!res.ok) return null;
+
+  const tokens = await res.json();
+  const newExpiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
+  await admin.from('integrations').update({
+    access_token: tokens.access_token,
+    refresh_token: tokens.refresh_token,
+    expires_at: newExpiresAt,
+    updated_at: new Date().toISOString(),
+  }).eq('organization_id', orgId).eq('provider', 'fortnox');
+
+  return tokens.access_token as string;
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { orderId, periodId } = await request.json();
+    if (!orderId || !periodId) return NextResponse.json({ error: 'orderId och periodId krävs' }, { status: 400 });
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 });
+
+    const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user.id).single();
+    const orgId = profile?.organization_id;
+    if (!orgId) return NextResponse.json({ error: 'Ingen organisation' }, { status: 400 });
+
+    const token = await getValidToken(orgId);
+    if (!token) return NextResponse.json({ error: 'Fortnox inte ansluten' }, { status: 400 });
+
+    const admin = createAdminClient();
+    const { data: orderRow } = await admin
+      .from('orders')
+      .select('*, customers(*), machines(name, brand, model, internal_code, serial_number)')
+      .eq('id', orderId)
+      .eq('organization_id', orgId)
+      .single();
+
+    if (!orderRow) return NextResponse.json({ error: 'Order hittades inte' }, { status: 404 });
+
+    const invoicePeriods = (orderRow.invoice_periods as InvoicePeriod[]) ?? [];
+    const period = invoicePeriods.find((p) => p.id === periodId);
+    if (!period) return NextResponse.json({ error: 'Fakturaperiod hittades inte' }, { status: 404 });
+    if (period.sentToAccounting) return NextResponse.json({ error: 'Perioden är redan skickad till Fortnox' }, { status: 400 });
+
+    // Ensure Fortnox customer
+    const customerRow = orderRow.customers as Record<string, unknown>;
+    let fortnoxCustomerNumber = customerRow.fortnox_customer_number as string | null;
+
+    if (!fortnoxCustomerNumber) {
+      const res = await fetch(`${FORTNOX_API}/customers`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          Customer: {
+            Name: customerRow.company_name,
+            OrganisationNumber: customerRow.org_number || undefined,
+            Email: customerRow.email || undefined,
+            Phone1: customerRow.phone || undefined,
+            Address1: customerRow.invoice_address || undefined,
+          },
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        return NextResponse.json({ error: `Kunde inte skapa kund: ${err?.ErrorInformation?.message ?? res.status}` }, { status: 500 });
+      }
+      const json = await res.json();
+      fortnoxCustomerNumber = json.Customer?.CustomerNumber ?? null;
+      if (fortnoxCustomerNumber) {
+        await admin.from('customers').update({ fortnox_customer_number: fortnoxCustomerNumber }).eq('id', orderRow.customer_id);
+      }
+    }
+
+    if (!fortnoxCustomerNumber) return NextResponse.json({ error: 'Kunde inte hämta kundnummer' }, { status: 500 });
+
+    // Build machine description
+    const machineRow = orderRow.machines as Record<string, unknown> | null;
+    const machineParts = machineRow ? [
+      machineRow.brand, machineRow.model, machineRow.name,
+      machineRow.internal_code ? `(${machineRow.internal_code})` : null,
+    ].filter(Boolean).join(' ') : 'Maskin';
+
+    // Calculate breakdown for period
+    const chargeWeekends = (orderRow.charge_weekends as boolean) ?? false;
+    const billableDays = chargeWeekends
+      ? period.days
+      : countBusinessDays(period.startDate, period.endDate);
+    const breakdown = calcBreakdown(billableDays, orderRow.daily_price as number, orderRow.weekly_price as number, orderRow.monthly_price as number);
+    const rentalDiscount = (orderRow.rental_discount as number) ?? 0;
+
+    type FortnoxRow = { ArticleNumber?: string; Description: string; DeliveredQuantity: number; Price: number; Unit: string; Discount?: number };
+    const orderRows: FortnoxRow[] = [];
+
+    if (breakdown.months > 0) {
+      orderRows.push({
+        Description: `${machineParts} – ${period.startDate} – ${period.endDate} (${breakdown.months} mån)`,
+        DeliveredQuantity: breakdown.months,
+        Price: orderRow.monthly_price as number,
+        Unit: 'mån',
+        ...(rentalDiscount > 0 ? { Discount: rentalDiscount } : {}),
+      });
+    }
+    if (breakdown.weeks > 0) {
+      orderRows.push({
+        Description: `${machineParts} – veckor`,
+        DeliveredQuantity: breakdown.weeks,
+        Price: orderRow.weekly_price as number,
+        Unit: 'vecka',
+        ...(rentalDiscount > 0 ? { Discount: rentalDiscount } : {}),
+      });
+    }
+    if (breakdown.days > 0 || orderRows.length === 0) {
+      orderRows.push({
+        Description: orderRows.length === 0
+          ? `Hyra – ${machineParts} – ${period.startDate} t.o.m. ${period.endDate}`
+          : `${machineParts} – dagar`,
+        DeliveredQuantity: breakdown.days > 0 ? breakdown.days : billableDays,
+        Price: orderRow.daily_price as number,
+        Unit: 'dag',
+        ...(rentalDiscount > 0 ? { Discount: rentalDiscount } : {}),
+      });
+    }
+
+    // Lookup rental article number
+    if (orderRow.rental_article_id) {
+      const { data: art } = await admin.from('articles').select('article_number').eq('id', orderRow.rental_article_id).single();
+      if (art?.article_number) orderRows.forEach((r) => { r.ArticleNumber = art.article_number; });
+    }
+
+    const fortnoxRes = await fetch(`${FORTNOX_API}/orders`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        Order: {
+          CustomerNumber: fortnoxCustomerNumber,
+          OrderDate: new Date().toISOString().split('T')[0],
+          OurReference: orderRow.order_number,
+          YourOrderNumber: (orderRow.order_reference as string) || '',
+          Comments: `Delfaktura ${period.startDate}–${period.endDate} | FleetOS-order ${orderRow.order_number}`,
+          OrderRows: orderRows,
+        },
+      }),
+    });
+
+    if (!fortnoxRes.ok) {
+      const errBody = await fortnoxRes.json().catch(() => ({}));
+      const errMsg = errBody?.ErrorInformation?.message ?? JSON.stringify(errBody);
+      return NextResponse.json({ error: `Fortnox: ${errMsg}` }, { status: 500 });
+    }
+
+    const fortnoxJson = await fortnoxRes.json();
+    const fortnoxOrderNumber = fortnoxJson.Order?.DocumentNumber as string;
+
+    // Mark period as sent
+    const updatedPeriods = invoicePeriods.map((p) =>
+      p.id === periodId ? { ...p, fortnoxOrderNumber, sentToAccounting: true } : p
+    );
+    await admin.from('orders').update({ invoice_periods: updatedPeriods }).eq('id', orderId);
+
+    return NextResponse.json({ success: true, fortnoxOrderNumber });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Okänt fel';
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}

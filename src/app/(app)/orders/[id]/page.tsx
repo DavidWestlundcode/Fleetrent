@@ -2,7 +2,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Clock, Truck, Building2, Calendar, CheckCircle2, Trash2, Pencil, Send, Loader2, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Clock, Truck, Building2, Calendar, CheckCircle2, Trash2, Pencil, Send, Loader2, ExternalLink, Receipt, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { MachineStatusBadge, OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
@@ -12,10 +12,15 @@ import { ARTICLE_UNIT_LABELS } from '@/lib/types';
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { orders, machines, customers, articles, members, updateOrder, deleteOrder } = useStore();
+  const { orders, machines, customers, articles, members, updateOrder, deleteOrder, addInvoicePeriod, markInvoicePeriodSent } = useStore();
   const getMemberName = (userId: string) => members.find((m) => m.id === userId)?.fullName ?? 'Okänd användare';
   const [sendingToFortnox, setSendingToFortnox] = useState(false);
   const [fortnoxError, setFortnoxError] = useState<string | null>(null);
+  const [showInvoiceForm, setShowInvoiceForm] = useState(false);
+  const [invoiceEndDate, setInvoiceEndDate] = useState('');
+  const [savingInvoice, setSavingInvoice] = useState(false);
+  const [sendingPeriodId, setSendingPeriodId] = useState<string | null>(null);
+  const [periodFortnoxError, setPeriodFortnoxError] = useState<string | null>(null);
 
   const order = orders.find((o) => o.id === id);
   if (!order) {
@@ -36,6 +41,26 @@ export default function OrderDetailPage() {
   const actualDays = order.actualReturnDate
     ? daysBetween(order.startDate, order.actualReturnDate)
     : daysBetween(order.startDate, new Date().toISOString());
+
+  // Invoice period calculations
+  const todayStr = new Date().toISOString().split('T')[0];
+  const sortedInvoices = [...(order.invoicePeriods ?? [])].sort((a, b) => a.startDate.localeCompare(b.startDate));
+  const lastInvoiceEnd = sortedInvoices.length > 0 ? sortedInvoices[sortedInvoices.length - 1].endDate : null;
+  const nextInvoiceStart = lastInvoiceEnd
+    ? new Date(new Date(lastInvoiceEnd).getTime() + 86400000).toISOString().split('T')[0]
+    : order.startDate;
+  const effectiveEnd = order.actualReturnDate || todayStr;
+  const totalRentedDays = Math.max(0, daysBetween(order.startDate, effectiveEnd));
+  const invoicedDays = sortedInvoices.reduce((s, p) => s + p.days, 0);
+  const uninvoicedDays = Math.max(0, totalRentedDays - invoicedDays);
+  const canInvoice = (order.status === 'aktiv' || order.status === 'klar_for_fakturering') && nextInvoiceStart <= effectiveEnd;
+
+  const newInvoiceDays = invoiceEndDate && invoiceEndDate >= nextInvoiceStart
+    ? (order.chargeWeekends ? daysBetween(nextInvoiceStart, invoiceEndDate) : countBusinessDays(nextInvoiceStart, invoiceEndDate))
+    : 0;
+  const newInvoiceBreakdown = calcBreakdown(newInvoiceDays, order.dailyPrice, order.weeklyPrice, order.monthlyPrice);
+  const rentalDisc = order.rentalDiscount ?? 0;
+  const newInvoiceAmount = newInvoiceBreakdown.total * (1 - rentalDisc / 100);
 
   const handleCancelOrder = () => {
     if (confirm('Är du säker på att du vill annullera denna order?')) {
@@ -298,6 +323,195 @@ export default function OrderDetailPage() {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Fakturering */}
+            {(order.status === 'aktiv' || order.status === 'klar_for_fakturering' || sortedInvoices.length > 0) && (
+              <div className="bg-white rounded-xl border border-slate-200 p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Receipt className="w-4 h-4 text-slate-500" />
+                    <h2 className="font-semibold text-slate-900">Fakturering</h2>
+                  </div>
+                  {canInvoice && (
+                    <button
+                      onClick={() => { setShowInvoiceForm((v) => !v); setInvoiceEndDate(effectiveEnd); setPeriodFortnoxError(null); }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
+                    >
+                      {showInvoiceForm ? <ChevronUp className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                      {showInvoiceForm ? 'Stäng' : 'Skapa delfaktura'}
+                    </button>
+                  )}
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  {[
+                    { label: 'Totalt uthyrd', value: `${totalRentedDays} dagar`, color: 'text-slate-700' },
+                    { label: 'Fakturerat', value: `${invoicedDays} dagar`, color: 'text-emerald-600' },
+                    { label: 'Ej fakturerat', value: `${uninvoicedDays} dagar`, color: uninvoicedDays > 0 ? 'text-amber-600' : 'text-slate-400' },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} className="bg-slate-50 rounded-xl p-3">
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1">{label}</p>
+                      <p className={`text-[15px] font-bold ${color}`}>{value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Period history */}
+                {sortedInvoices.length > 0 && (
+                  <div className="border border-slate-200 rounded-xl overflow-hidden mb-4">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-100">
+                          <th className="text-left px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Period</th>
+                          <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Dagar</th>
+                          <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Belopp</th>
+                          <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Status</th>
+                          <th className="px-3 py-2 w-8" />
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {sortedInvoices.map((period) => (
+                          <tr key={period.id} className="hover:bg-slate-50/60">
+                            <td className="px-3 py-2.5 text-[13px] text-slate-700">
+                              {formatDate(period.startDate)} – {formatDate(period.endDate)}
+                            </td>
+                            <td className="px-3 py-2.5 text-[13px] text-right text-slate-600">{period.days} dagar</td>
+                            <td className="px-3 py-2.5 text-[13px] text-right font-medium text-slate-800">{formatCurrency(period.amount)}</td>
+                            <td className="px-3 py-2.5 text-right">
+                              {period.sentToAccounting ? (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600">
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  {period.fortnoxOrderNumber ? `#${period.fortnoxOrderNumber}` : 'Skickad'}
+                                </span>
+                              ) : (
+                                <span className="text-[11px] text-amber-600 font-medium">Ej skickad</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2.5 text-right">
+                              {!period.sentToAccounting && (
+                                <button
+                                  onClick={async () => {
+                                    setSendingPeriodId(period.id);
+                                    setPeriodFortnoxError(null);
+                                    try {
+                                      const res = await fetch('/api/fortnox/create-partial-invoice', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ orderId: order.id, periodId: period.id }),
+                                      });
+                                      const data = await res.json();
+                                      if (!res.ok) { setPeriodFortnoxError(data.error ?? 'Fel'); return; }
+                                      markInvoicePeriodSent(order.id, period.id, data.fortnoxOrderNumber);
+                                    } finally { setSendingPeriodId(null); }
+                                  }}
+                                  disabled={sendingPeriodId === period.id}
+                                  className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-colors cursor-pointer disabled:opacity-50"
+                                >
+                                  {sendingPeriodId === period.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                                  Fortnox
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {periodFortnoxError && (
+                  <p className="mb-3 text-[12px] text-red-600 bg-red-50 px-3 py-2 rounded-lg">{periodFortnoxError}</p>
+                )}
+
+                {/* New invoice form */}
+                {showInvoiceForm && canInvoice && (
+                  <div className="border border-blue-200 bg-blue-50/40 rounded-xl p-4 space-y-3">
+                    <p className="text-[12px] font-semibold text-slate-600">Ny delfaktura</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-500 mb-1">Från</label>
+                        <div className="px-3 py-2 text-[13px] bg-white border border-slate-200 rounded-lg text-slate-500">{nextInvoiceStart}</div>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-medium text-slate-500 mb-1">Till</label>
+                        <input
+                          type="date"
+                          value={invoiceEndDate}
+                          min={nextInvoiceStart}
+                          max={effectiveEnd}
+                          onChange={(e) => setInvoiceEndDate(e.target.value)}
+                          className="w-full px-3 py-2 text-[13px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                        />
+                      </div>
+                    </div>
+
+                    {newInvoiceDays > 0 && (
+                      <div className="bg-white rounded-lg border border-slate-200 p-3 space-y-1 text-[12px]">
+                        {newInvoiceBreakdown.months > 0 && (
+                          <div className="flex justify-between text-slate-600">
+                            <span>{newInvoiceBreakdown.months} mån à {formatCurrency(order.monthlyPrice)}</span>
+                            <span>{formatCurrency(newInvoiceBreakdown.months * order.monthlyPrice)}</span>
+                          </div>
+                        )}
+                        {newInvoiceBreakdown.weeks > 0 && (
+                          <div className="flex justify-between text-slate-600">
+                            <span>{newInvoiceBreakdown.weeks} v à {formatCurrency(order.weeklyPrice)}</span>
+                            <span>{formatCurrency(newInvoiceBreakdown.weeks * order.weeklyPrice)}</span>
+                          </div>
+                        )}
+                        {newInvoiceBreakdown.days > 0 && (
+                          <div className="flex justify-between text-slate-600">
+                            <span>{newInvoiceBreakdown.days} dagar à {formatCurrency(order.dailyPrice)}</span>
+                            <span>{formatCurrency(newInvoiceBreakdown.days * order.dailyPrice)}</span>
+                          </div>
+                        )}
+                        {rentalDisc > 0 && (
+                          <div className="flex justify-between text-emerald-600">
+                            <span>Rabatt -{rentalDisc}%</span>
+                            <span>-{formatCurrency(newInvoiceBreakdown.total * rentalDisc / 100)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between font-semibold text-slate-800 pt-1 border-t border-slate-100">
+                          <span>{newInvoiceDays} fakturerbara dagar</span>
+                          <span>{formatCurrency(newInvoiceAmount)}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <button
+                        disabled={newInvoiceDays === 0 || savingInvoice}
+                        onClick={async () => {
+                          if (newInvoiceDays === 0) return;
+                          setSavingInvoice(true);
+                          addInvoicePeriod(order.id, {
+                            startDate: nextInvoiceStart,
+                            endDate: invoiceEndDate,
+                            days: newInvoiceDays,
+                            amount: newInvoiceAmount,
+                            sentToAccounting: false,
+                          });
+                          setShowInvoiceForm(false);
+                          setSavingInvoice(false);
+                        }}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-[13px] font-medium rounded-lg hover:bg-blue-700 disabled:opacity-40 transition-colors cursor-pointer"
+                      >
+                        {savingInvoice ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Receipt className="w-3.5 h-3.5" />}
+                        Spara delfaktura
+                      </button>
+                      <button onClick={() => setShowInvoiceForm(false)} className="px-4 py-2 text-[13px] text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
+                        Avbryt
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {sortedInvoices.length === 0 && !canInvoice && (
+                  <p className="text-[13px] text-slate-400 text-center py-2">Inga fakturor skapade ännu</p>
+                )}
               </div>
             )}
 
