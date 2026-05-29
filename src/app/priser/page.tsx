@@ -4,8 +4,7 @@ import { Logo } from '@/components/ui/Logo';
 
 const BASIC_FEATURES = [
   'Hela plattformen inkluderad',
-  '2 användare ingår',
-  'Extra användare 199 kr/mån',
+  'Obegränsat antal användare',
   'Upp till 20 maskiner',
   'Uthyrningsorder & hyresavtal',
   'Prismallar & artikelregister',
@@ -17,8 +16,7 @@ const BASIC_FEATURES = [
 
 const PREMIUM_FEATURES = [
   'Allt i Basic',
-  '5 användare ingår',
-  'Extra användare 199 kr/mån',
+  'Obegränsat antal användare',
   'Obegränsat antal maskiner',
   'Prioriterad support',
 ];
@@ -98,11 +96,6 @@ export default function PriserPage() {
                 ))}
               </ul>
 
-              <div className="mt-6 p-4 bg-slate-50 rounded-xl">
-                <p className="text-[12px] text-slate-500 leading-relaxed">
-                  <span className="font-semibold text-slate-700">Exempel:</span> 5 användare = 2 499 + (3 × 199) = <span className="font-semibold text-slate-900">3 096 kr/mån</span>
-                </p>
-              </div>
             </div>
 
             {/* Premium */}
@@ -139,11 +132,6 @@ export default function PriserPage() {
                 ))}
               </ul>
 
-              <div className="mt-6 p-4 bg-blue-50 rounded-xl">
-                <p className="text-[12px] text-blue-700 leading-relaxed">
-                  <span className="font-semibold text-blue-900">Exempel:</span> 8 användare = 3 999 + (3 × 199) = <span className="font-semibold text-blue-900">4 596 kr/mån</span>
-                </p>
-              </div>
             </div>
           </div>
 
@@ -155,10 +143,6 @@ export default function PriserPage() {
                 {
                   q: 'Kan jag byta plan?',
                   a: 'Ja, kontakta oss så hjälper vi dig uppgradera eller nedgradera när som helst.',
-                },
-                {
-                  q: 'Vad räknas som en "användare"?',
-                  a: 'Varje person som har ett inloggningskonto i FleetOS räknas som en användare — oavsett roll (admin, säljare eller verkstad).',
                 },
                 {
                   q: 'Finns det en bindningstid?',
