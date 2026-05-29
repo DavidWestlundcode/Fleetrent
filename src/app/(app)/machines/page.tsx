@@ -84,12 +84,21 @@ function applyAICriteria(machines: Machine[], criteria: SearchCriteria): Machine
 export default function MachinesPage() {
   const { machines, orders, maxMachines } = useStore();
 
-  const getUpcomingReservation = (machineId: string) => {
-    const today = new Date().toISOString().split('T')[0];
-    return orders
+  const today = new Date().toISOString().split('T')[0];
+
+  const reservedMachineIds = useMemo(() => {
+    const ids = new Set<string>();
+    orders.forEach((o) => {
+      if (o.status === 'reserverad' && o.startDate > today) ids.add(o.machineId);
+    });
+    return ids;
+  }, [orders, today]);
+
+  const getUpcomingReservation = (machineId: string) =>
+    orders
       .filter((o) => o.machineId === machineId && o.status === 'reserverad' && o.startDate > today)
       .sort((a, b) => a.startDate.localeCompare(b.startDate))[0] ?? null;
-  };
+
   const atMachineLimit = machines.length >= maxMachines;
   const [statusFilter, setStatusFilter] = useState<MachineStatus | 'all'>('all');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
@@ -143,12 +152,19 @@ export default function MachinesPage() {
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { all: machines.length };
     machines.forEach((m) => { counts[m.status] = (counts[m.status] ?? 0) + 1; });
+    // Add machines with upcoming reservations to the 'reserverad' count
+    const extraReserved = machines.filter((m) => m.status !== 'reserverad' && reservedMachineIds.has(m.id)).length;
+    counts['reserverad'] = (counts['reserverad'] ?? 0) + extraReserved;
     return counts;
-  }, [machines]);
+  }, [machines, reservedMachineIds]);
 
   const filtered = useMemo(() => {
     let result = machines;
-    if (statusFilter !== 'all') result = result.filter((m) => m.status === statusFilter);
+    if (statusFilter === 'reserverad') {
+      result = result.filter((m) => m.status === 'reserverad' || reservedMachineIds.has(m.id));
+    } else if (statusFilter !== 'all') {
+      result = result.filter((m) => m.status === statusFilter);
+    }
     if (aiActive && aiCriteria) {
       result = applyAICriteria(result, aiCriteria);
     } else if (textSearch) {
