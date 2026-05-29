@@ -7,7 +7,7 @@ import {
 } from 'recharts';
 import {
   ArrowLeft, Edit, QrCode, Wrench, TrendingUp, Calendar, Hash,
-  Zap, MapPin, Clock, BarChart2, Trash2, AlertTriangle,
+  Zap, MapPin, Clock, BarChart2, Trash2, AlertTriangle, CalendarPlus,
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { MachineStatusBadge } from '@/components/ui/StatusBadge';
@@ -103,6 +103,15 @@ export default function MachineDetailPage() {
               <QrCode className="w-4 h-4" />
               QR-kod
             </Link>
+            {machine.status === 'i_lager' && (
+              <Link
+                href={`/orders/new?machine=${machine.id}`}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
+              >
+                <CalendarPlus className="w-4 h-4" />
+                Boka
+              </Link>
+            )}
             <Link
               href={`/machines/${machine.id}/edit`}
               className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"

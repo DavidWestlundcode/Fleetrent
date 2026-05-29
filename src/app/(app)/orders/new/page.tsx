@@ -64,7 +64,7 @@ function NewOrderForm() {
   const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   const [form, setForm] = useState({
-    machineId: '',
+    machineId: searchParams.get('machine') ?? '',
     customerId: searchParams.get('customer') ?? '',
     templateId: '',
     startDate: today,
@@ -224,7 +224,7 @@ function NewOrderForm() {
       deposit: form.deposit,
       insuranceCost: (!openEnded && includeInsurance && insuranceCost) ? insuranceCost : undefined,
       totalPrice,
-      status: 'aktiv',
+      status: form.startDate > today ? 'reserverad' : 'aktiv',
       orderReference: form.orderReference,
       internalNotes: form.internalNotes,
       customerNotes: form.customerNotes,

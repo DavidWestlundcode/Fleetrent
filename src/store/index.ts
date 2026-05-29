@@ -490,6 +490,8 @@ interface AppStore {
   addArticle: (article: Omit<Article, 'id' | 'createdAt'>) => string;
   updateArticle: (id: string, updates: Partial<Article>) => void;
   deleteArticle: (id: string) => void;
+
+  activateReservedOrders: () => void;
 }
 
 const EMPTY_STATE = {
@@ -589,9 +591,41 @@ export const useStore = create<AppStore>()((set, get) => ({
         loading: false,
         initialized: true,
       });
+      get().activateReservedOrders();
     } catch (e) {
       console.error('Store initialization failed:', e);
       set({ loading: false, initialized: true });
+    }
+  },
+
+  activateReservedOrders: () => {
+    const today = new Date().toISOString().split('T')[0];
+    const { orders, organizationId } = get();
+    const toActivate = orders.filter(
+      (o) => o.status === 'reserverad' && o.startDate <= today
+    );
+    if (toActivate.length === 0) return;
+    const now = new Date().toISOString();
+    set((s) => ({
+      orders: s.orders.map((o) =>
+        toActivate.some((a) => a.id === o.id) ? { ...o, status: 'aktiv' as const } : o
+      ),
+      machines: s.machines.map((m) => {
+        const activated = toActivate.find((o) => o.machineId === m.id);
+        return activated ? { ...m, status: 'uthyrd' as const, updatedAt: now } : m;
+      }),
+    }));
+    if (organizationId) {
+      for (const order of toActivate) {
+        syncQuery(
+          sb().from('orders').update({ status: 'aktiv' }).eq('id', order.id),
+          'sync activateReservedOrders order:'
+        );
+        syncQuery(
+          sb().from('machines').update({ status: 'uthyrd', updated_at: now }).eq('id', order.machineId),
+          'sync activateReservedOrders machine:'
+        );
+      }
     }
   },
 
@@ -692,10 +726,12 @@ export const useStore = create<AppStore>()((set, get) => ({
       createdBy: userId ?? '',
     };
 
+    const machineStatus = orderData.status === 'reserverad' ? 'reserverad' as const : 'uthyrd' as const;
+
     set((s) => ({
       orders: [...s.orders, newOrder],
       machines: s.machines.map((m) =>
-        m.id === orderData.machineId ? { ...m, status: 'uthyrd' as const, updatedAt: now } : m
+        m.id === orderData.machineId ? { ...m, status: machineStatus, updatedAt: now } : m
       ),
       customers: s.customers.map((c) =>
         c.id === orderData.customerId ? { ...c, activeOrders: c.activeOrders + 1 } : c
@@ -711,7 +747,7 @@ export const useStore = create<AppStore>()((set, get) => ({
           id: eventId, order_id: id, organization_id: organizationId,
           type: 'skapad', description: 'Order skapad', timestamp: now, user_id: userId ?? null,
         }),
-        client.from('machines').update({ status: 'uthyrd', updated_at: now }).eq('id', orderData.machineId),
+        client.from('machines').update({ status: machineStatus, updated_at: now }).eq('id', orderData.machineId),
         client.from('customers').update({ active_orders: newActiveOrders }).eq('id', orderData.customerId),
       ]).then((results) => {
         results.forEach((r, i) => {
