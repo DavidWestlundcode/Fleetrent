@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
 
     if (breakdown.months > 0) {
       orderRows.push({
-        Description: `${machineParts} – ${period.startDate} – ${period.endDate} (${breakdown.months} mån)`,
+        Description: `${machineParts} - ${period.startDate} - ${period.endDate} (${breakdown.months} mån)`,
         DeliveredQuantity: breakdown.months,
         Price: orderRow.monthly_price as number,
         Unit: 'mån',
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     }
     if (breakdown.weeks > 0) {
       orderRows.push({
-        Description: `${machineParts} – veckor`,
+        Description: `${machineParts} - veckor`,
         DeliveredQuantity: breakdown.weeks,
         Price: orderRow.weekly_price as number,
         Unit: 'vecka',
@@ -144,8 +144,8 @@ export async function POST(request: NextRequest) {
     if (breakdown.days > 0 || orderRows.length === 0) {
       orderRows.push({
         Description: orderRows.length === 0
-          ? `Hyra – ${machineParts} – ${period.startDate} t.o.m. ${period.endDate}`
-          : `${machineParts} – dagar`,
+          ? `Hyra - ${machineParts} - ${period.startDate} t.o.m. ${period.endDate}`
+          : `${machineParts} - dagar`,
         DeliveredQuantity: breakdown.days > 0 ? breakdown.days : billableDays,
         Price: orderRow.daily_price as number,
         Unit: 'dag',
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
           OrderDate: new Date().toISOString().split('T')[0],
           OurReference: orderRow.order_number,
           YourOrderNumber: (orderRow.order_reference as string) || '',
-          Comments: `Delfaktura ${period.startDate}–${period.endDate} | FleetOS-order ${orderRow.order_number}`,
+          Comments: `Delfaktura ${period.startDate}-${period.endDate} | FleetOS-order ${orderRow.order_number}`,
           OrderRows: orderRows,
         },
       }),
