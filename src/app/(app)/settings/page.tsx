@@ -145,6 +145,11 @@ function SettingsInner() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteStatus, setInviteStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [inviteError, setInviteError] = useState('');
+  const [createName, setCreateName] = useState('');
+  const [createEmail, setCreateEmail] = useState('');
+  const [createPassword, setCreatePassword] = useState('');
+  const [createStatus, setCreateStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [createError, setCreateError] = useState('');
 
   const { userId } = useStore();
 
@@ -258,6 +263,29 @@ function SettingsInner() {
     } catch (err) {
       setInviteError(err instanceof Error ? err.message : 'Något gick fel');
       setInviteStatus('error');
+    }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateStatus('loading');
+    setCreateError('');
+    try {
+      const res = await fetch('/api/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: createEmail, password: createPassword, fullName: createName }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setCreateStatus('success');
+      setCreateName('');
+      setCreateEmail('');
+      setCreatePassword('');
+      setTimeout(() => setCreateStatus('idle'), 4000);
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : 'Något gick fel');
+      setCreateStatus('error');
     }
   };
 
@@ -434,6 +462,64 @@ function SettingsInner() {
                   {inviteStatus === 'error' && (
                     <div className="flex items-center gap-2 mt-3 text-red-600 text-sm">
                       <XCircle className="w-4 h-4" /> {inviteError}
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-white rounded-xl border border-slate-200 p-6">
+                  <h2 className="font-semibold text-slate-900 mb-1">Skapa användare manuellt</h2>
+                  <p className="text-sm text-slate-500 mb-4">Skapa ett konto direkt utan e-postinbjudan. Dela inloggningsuppgifterna med medarbetaren.</p>
+                  <form onSubmit={handleCreateUser} className="space-y-3">
+                    <input
+                      type="text"
+                      value={createName}
+                      onChange={(e) => setCreateName(e.target.value)}
+                      placeholder="Namn (valfritt)"
+                      className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                      type="email"
+                      required
+                      value={createEmail}
+                      onChange={(e) => setCreateEmail(e.target.value)}
+                      placeholder="E-postadress *"
+                      className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        required
+                        minLength={8}
+                        value={createPassword}
+                        onChange={(e) => setCreatePassword(e.target.value)}
+                        placeholder="Lösenord (minst 8 tecken) *"
+                        className="flex-1 px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setCreatePassword(Math.random().toString(36).slice(-10) + 'A1!')}
+                        className="px-3 py-2.5 text-xs font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer shrink-0"
+                      >
+                        Generera
+                      </button>
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={createStatus === 'loading'}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors cursor-pointer"
+                    >
+                      {createStatus === 'loading' ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                      Skapa användare
+                    </button>
+                  </form>
+                  {createStatus === 'success' && (
+                    <div className="flex items-center gap-2 mt-3 text-emerald-700 text-sm">
+                      <CheckCircle2 className="w-4 h-4" /> Användare skapad! Dela e-post och lösenord med personen.
+                    </div>
+                  )}
+                  {createStatus === 'error' && (
+                    <div className="flex items-center gap-2 mt-3 text-red-600 text-sm">
+                      <XCircle className="w-4 h-4" /> {createError}
                     </div>
                   )}
                 </div>
