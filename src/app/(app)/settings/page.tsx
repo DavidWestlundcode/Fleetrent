@@ -145,6 +145,7 @@ function SettingsInner() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteStatus, setInviteStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [inviteError, setInviteError] = useState('');
+  const [inviteLink, setInviteLink] = useState('');
   const [createName, setCreateName] = useState('');
   const [createEmail, setCreateEmail] = useState('');
   const [createPassword, setCreatePassword] = useState('');
@@ -258,8 +259,8 @@ function SettingsInner() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setInviteStatus('success');
+      setInviteLink(data.link ?? '');
       setInviteEmail('');
-      setTimeout(() => setInviteStatus('idle'), 4000);
     } catch (err) {
       setInviteError(err instanceof Error ? err.message : 'Något gick fel');
       setInviteStatus('error');
@@ -454,9 +455,26 @@ function SettingsInner() {
                       Skicka inbjudan
                     </button>
                   </form>
-                  {inviteStatus === 'success' && (
-                    <div className="flex items-center gap-2 mt-3 text-emerald-700 text-sm">
-                      <CheckCircle2 className="w-4 h-4" /> Inbjudan skickad!
+                  {inviteStatus === 'success' && inviteLink && (
+                    <div className="mt-3 space-y-2">
+                      <div className="flex items-center gap-2 text-emerald-700 text-sm">
+                        <CheckCircle2 className="w-4 h-4" /> Konto skapat! Dela denna länk med personen:
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          readOnly
+                          value={inviteLink}
+                          className="flex-1 px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg font-mono truncate"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => { navigator.clipboard.writeText(inviteLink); }}
+                          className="px-3 py-2 text-xs font-medium bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer shrink-0"
+                        >
+                          Kopiera
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-400">Länken är giltig i 24 timmar. Personen sätter sitt lösenord när de klickar.</p>
                     </div>
                   )}
                   {inviteStatus === 'error' && (
