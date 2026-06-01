@@ -37,8 +37,8 @@ export default function ResetPasswordPage() {
           <Logo size={32} />
           <span className="font-bold text-slate-900">FleetOS</span>
         </div>
-        <h2 className="text-2xl font-bold text-slate-900 mb-1">Nytt lösenord</h2>
-        <p className="text-slate-500 text-sm mb-8">Ange ditt nya lösenord nedan.</p>
+        <h2 className="text-2xl font-bold text-slate-900 mb-1">Välkommen till FleetOS</h2>
+        <p className="text-slate-500 text-sm mb-8">Välj ett lösenord för att aktivera ditt konto.</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Nytt lösenord</label>
@@ -77,7 +77,7 @@ export default function ResetPasswordPage() {
             disabled={loading}
             className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-60"
           >
-            {loading ? 'Sparar...' : 'Spara nytt lösenord'}
+            {loading ? 'Aktiverar...' : 'Aktivera konto'}
           </button>
         </form>
       </div>
