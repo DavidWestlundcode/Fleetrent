@@ -160,15 +160,22 @@ export async function POST(request: NextRequest) {
     const participantData = await participantRes.json();
     const participantId = participantData.data?.id;
 
-    // 5. Initiate signing (draft → pending)
+    // 5. Fetch agreement state to verify it's ready
+    const agreementCheckRes = await fetch(`${ZIGNED_API}/agreements/${agreementId}`, { headers });
+    const agreementCheck = agreementCheckRes.ok ? await agreementCheckRes.json() : null;
+    const currentStatus = agreementCheck?.data?.status;
+    console.log('Agreement state before pending:', currentStatus, JSON.stringify(agreementCheck?.data));
+
+    // 6. Initiate signing (draft → pending)
     const pendingRes = await fetch(`${ZIGNED_API}/agreements/${agreementId}`, {
       method: 'PATCH',
-      headers,
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'pending' }),
     });
     if (!pendingRes.ok) {
-      const err = await pendingRes.json().catch(() => ({}));
-      return NextResponse.json({ error: `Zigned aktivering: ${err?.error?.message ?? pendingRes.status}` }, { status: 500 });
+      const errBody = await pendingRes.text().catch(() => '');
+      console.error('Zigned PATCH error:', pendingRes.status, errBody);
+      return NextResponse.json({ error: `Zigned aktivering (${pendingRes.status}): ${errBody}` }, { status: 500 });
     }
 
     // 6. Fetch signing URL after pending (only available then)
