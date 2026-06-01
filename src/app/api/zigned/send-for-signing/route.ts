@@ -131,7 +131,18 @@ export async function POST(request: NextRequest) {
     const agreementData = await agreementRes.json();
     const agreementId = agreementData.data?.id;
 
-    // 3. Add customer as signer
+    // 3. Add document FIRST (required before pending)
+    const docRes = await fetch(`${ZIGNED_API}/agreements/${agreementId}/documents/main`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ file_id: fileId }),
+    });
+    if (!docRes.ok) {
+      const err = await docRes.json().catch(() => ({}));
+      return NextResponse.json({ error: `Zigned dokument: ${err?.error?.message ?? docRes.status}` }, { status: 500 });
+    }
+
+    // 4. Add customer as signer
     const participantRes = await fetch(`${ZIGNED_API}/agreements/${agreementId}/participants`, {
       method: 'POST',
       headers,
@@ -147,21 +158,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Zigned deltagare: ${err?.error?.message ?? participantRes.status}` }, { status: 500 });
     }
     const participantData = await participantRes.json();
-    const signingUrl = participantData.data?.signing_room_url ?? null;
-
-    // 4. Add document
-    await fetch(`${ZIGNED_API}/agreements/${agreementId}/documents/main`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ file_id: fileId }),
-    });
+    const participantId = participantData.data?.id;
 
     // 5. Initiate signing (draft → pending)
-    await fetch(`${ZIGNED_API}/agreements/${agreementId}`, {
+    const pendingRes = await fetch(`${ZIGNED_API}/agreements/${agreementId}`, {
       method: 'PATCH',
       headers,
       body: JSON.stringify({ status: 'pending' }),
     });
+    if (!pendingRes.ok) {
+      const err = await pendingRes.json().catch(() => ({}));
+      return NextResponse.json({ error: `Zigned aktivering: ${err?.error?.message ?? pendingRes.status}` }, { status: 500 });
+    }
+
+    // 6. Fetch signing URL after pending (only available then)
+    let signingUrl: string | null = null;
+    if (participantId) {
+      const fetchPart = await fetch(`${ZIGNED_API}/agreements/${agreementId}/participants/${participantId}`, { headers });
+      if (fetchPart.ok) {
+        const pd = await fetchPart.json();
+        signingUrl = pd.data?.signing_room_url ?? null;
+      }
+    }
 
     // 6. Update order in DB
     await admin.from('orders').update({
