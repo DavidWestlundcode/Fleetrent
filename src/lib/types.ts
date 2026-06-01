@@ -168,6 +168,9 @@ export interface Order {
   fortnoxOrderNumber?: string;
   orderArticles: OrderArticle[];
   invoicePeriods?: InvoicePeriod[];
+  zignedAgreementId?: string;
+  signingStatus?: 'not_sent' | 'pending' | 'signed' | 'cancelled';
+  signingUrl?: string;
   createdAt: string;
   createdBy: string;
 }

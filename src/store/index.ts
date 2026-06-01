@@ -202,6 +202,9 @@ function fromDbOrder(r: DbRow): Order {
     fortnoxOrderNumber: (r.fortnox_order_number as string) || undefined,
     orderArticles: (r.order_articles as OrderArticle[]) ?? [],
     invoicePeriods: (r.invoice_periods as InvoicePeriod[]) ?? [],
+    zignedAgreementId: (r.zigned_agreement_id as string) || undefined,
+    signingStatus: (r.signing_status as Order['signingStatus']) || undefined,
+    signingUrl: (r.signing_url as string) || undefined,
     createdAt: r.created_at as string,
     createdBy: (r.created_by as string) ?? '',
   };
@@ -249,6 +252,9 @@ function toDbOrder(o: Order, orgId: string): DbRow {
     fortnox_order_number: o.fortnoxOrderNumber ?? null,
     order_articles: o.orderArticles ?? [],
     invoice_periods: o.invoicePeriods ?? [],
+    zigned_agreement_id: o.zignedAgreementId ?? null,
+    signing_status: o.signingStatus ?? null,
+    signing_url: o.signingUrl ?? null,
     created_by: o.createdBy || null,
     created_at: o.createdAt,
   };

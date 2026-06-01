@@ -2,7 +2,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Clock, Truck, Building2, Calendar, CheckCircle2, Trash2, Pencil, Send, Loader2, ExternalLink, Receipt, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Clock, Truck, Building2, Calendar, CheckCircle2, Trash2, Pencil, Send, Loader2, ExternalLink, Receipt, Plus, ChevronDown, ChevronUp, FileSignature } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { MachineStatusBadge, OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
@@ -16,6 +16,8 @@ export default function OrderDetailPage() {
   const getMemberName = (userId: string) => members.find((m) => m.id === userId)?.fullName ?? 'Okänd användare';
   const [sendingToFortnox, setSendingToFortnox] = useState(false);
   const [fortnoxError, setFortnoxError] = useState<string | null>(null);
+  const [sendingToZigned, setSendingToZigned] = useState(false);
+  const [zignedError, setZignedError] = useState<string | null>(null);
   const [showInvoiceForm, setShowInvoiceForm] = useState(false);
   const [invoiceEndDate, setInvoiceEndDate] = useState('');
   const [savingInvoice, setSavingInvoice] = useState(false);
@@ -75,6 +77,27 @@ export default function OrderDetailPage() {
     }
   };
 
+  const handleSendToZigned = async () => {
+    setSendingToZigned(true);
+    setZignedError(null);
+    try {
+      const res = await fetch('/api/zigned/send-for-signing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setZignedError(data.error ?? 'Något gick fel'); return; }
+      updateOrder(order.id, {
+        zignedAgreementId: data.agreementId,
+        signingStatus: 'pending',
+        signingUrl: data.signingUrl,
+      });
+    } finally {
+      setSendingToZigned(false);
+    }
+  };
+
   const handleSendToFortnox = async () => {
     setSendingToFortnox(true);
     setFortnoxError(null);
@@ -131,6 +154,28 @@ export default function OrderDetailPage() {
                   Annullera
                 </button>
               </>
+            )}
+            {(order.status === 'aktiv' || order.status === 'reserverad') && !order.signingStatus && (
+              <button
+                onClick={handleSendToZigned}
+                disabled={sendingToZigned}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-60"
+              >
+                {sendingToZigned ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSignature className="w-4 h-4" />}
+                Skicka för signering
+              </button>
+            )}
+            {order.signingStatus === 'pending' && (
+              <span className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Väntar på signering
+              </span>
+            )}
+            {order.signingStatus === 'signed' && (
+              <span className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg">
+                <CheckCircle2 className="w-4 h-4" />
+                Signerat
+              </span>
             )}
             {order.status === 'klar_for_fakturering' && !order.sentToAccounting && (
               <button
@@ -202,6 +247,39 @@ export default function OrderDetailPage() {
                 Markera som skickad manuellt istället
               </button>
             </div>
+          </div>
+        )}
+
+        {zignedError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+            <div className="w-5 h-5 rounded-full bg-red-200 flex items-center justify-center shrink-0 mt-0.5">
+              <span className="text-red-700 text-xs font-bold">!</span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-red-800">Kunde inte skicka till Zigned</p>
+              <p className="text-sm text-red-700">{zignedError}</p>
+            </div>
+          </div>
+        )}
+
+        {order.signingStatus === 'pending' && order.signingUrl && (
+          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-center gap-3">
+            <FileSignature className="w-5 h-5 text-indigo-500 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-indigo-800">Väntar på kundens signering</p>
+              <p className="text-sm text-indigo-600 mt-0.5">Kunden har fått ett e-postmeddelande med signeringslänken.</p>
+            </div>
+            <a href={order.signingUrl} target="_blank" rel="noopener noreferrer"
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors">
+              <ExternalLink className="w-3.5 h-3.5" /> Öppna signeringsrum
+            </a>
+          </div>
+        )}
+
+        {order.signingStatus === 'signed' && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+            <p className="text-sm font-semibold text-emerald-800">Hyresavtalet är signerat av kunden.</p>
           </div>
         )}
 
