@@ -1,6 +1,6 @@
 ﻿'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Save, User, Building2, Bell, Globe, Mail, Loader2, CheckCircle2, XCircle, Link2, Link2Off, Shield } from 'lucide-react';
+import { Save, User, Building2, Bell, Globe, Mail, Loader2, CheckCircle2, XCircle, Link2, Link2Off, Shield, Phone } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
@@ -11,6 +11,7 @@ import { useStore } from '@/store';
 const inputClass = 'w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white';
 
 const TABS = [
+  { id: 'profile', label: 'Min profil', icon: User },
   { id: 'company', label: 'Företagsinformation', icon: Building2 },
   { id: 'users', label: 'Användare', icon: User },
   { id: 'notifications', label: 'Notiser', icon: Bell },
@@ -134,7 +135,7 @@ type Member = {
 };
 
 function SettingsInner() {
-  const [activeTab, setActiveTab] = useState<Tab>('company');
+  const [activeTab, setActiveTab] = useState<Tab>('profile');
   const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
   const [orgId, setOrgId] = useState<string | null>(null);
   const [orgLoading, setOrgLoading] = useState(true);
@@ -151,6 +152,10 @@ function SettingsInner() {
   const [createPassword, setCreatePassword] = useState('');
   const [createStatus, setCreateStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [createError, setCreateError] = useState('');
+  const [profileName, setProfileName] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
 
   const { userId } = useStore();
 
@@ -179,9 +184,12 @@ function SettingsInner() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('organization_id')
+        .select('organization_id, full_name, phone')
         .eq('id', user.id)
         .single();
+
+      setProfileName((profile?.full_name as string) ?? '');
+      setProfilePhone((profile?.phone as string) ?? '');
 
       const oid = profile?.organization_id as string | null;
       setOrgId(oid);
@@ -208,7 +216,7 @@ function SettingsInner() {
         setMembers(
           (membersRes.data ?? []).map((r) => ({
             id: r.id as string,
-            fullName: (r.full_name as string) || 'Okänd användare',
+            fullName: (r.full_name as string) || '(Ej namngivet)',
             role: (r.role as string) || 'saljare',
           }))
         );
@@ -267,6 +275,22 @@ function SettingsInner() {
     }
   };
 
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileSaving(true);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('profiles').update({
+        full_name: profileName,
+        phone: profilePhone,
+      }).eq('id', user.id);
+    }
+    setProfileSaving(false);
+    setProfileSaved(true);
+    setTimeout(() => setProfileSaved(false), 2500);
+  };
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreateStatus('loading');
@@ -319,6 +343,66 @@ function SettingsInner() {
 
           {/* Content */}
           <div className="flex-1 space-y-6">
+
+            {/* ---- MIN PROFIL ---- */}
+            {activeTab === 'profile' && (
+              <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <h2 className="font-semibold text-slate-900 mb-1">Min profil</h2>
+                <p className="text-sm text-slate-500 mb-6">Uppdatera dina personliga uppgifter.</p>
+                <form onSubmit={handleSaveProfile} className="space-y-4 max-w-md">
+                  {currentUser?.email && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">E-postadress</label>
+                      <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-500">
+                        <Mail className="w-4 h-4 shrink-0" />
+                        {currentUser.email}
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Namn</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        value={profileName}
+                        onChange={(e) => setProfileName(e.target.value)}
+                        placeholder="Ditt namn"
+                        className={`${inputClass} pl-9`}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Telefonnummer</label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="tel"
+                        value={profilePhone}
+                        onChange={(e) => setProfilePhone(e.target.value)}
+                        placeholder="+46 70 000 00 00"
+                        className={`${inputClass} pl-9`}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 pt-2">
+                    <button
+                      type="submit"
+                      disabled={profileSaving}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors cursor-pointer"
+                    >
+                      {profileSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                      Spara profil
+                    </button>
+                    {profileSaved && (
+                      <span className="flex items-center gap-1.5 text-emerald-600 text-sm">
+                        <CheckCircle2 className="w-4 h-4" /> Sparat!
+                      </span>
+                    )}
+                  </div>
+                </form>
+              </div>
+            )}
 
             {/* ---- FÖRETAGSINFORMATION ---- */}
             {activeTab === 'company' && (
