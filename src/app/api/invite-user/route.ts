@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     const admin = createAdminClient();
     const { error } = await admin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${request.nextUrl.origin}/auth/callback?next=/auth/reset-password`,
+      redirectTo: `${request.nextUrl.origin}/api/auth/callback?next=/auth/reset-password`,
       data: { organization_id: profile.organization_id },
     });
 
