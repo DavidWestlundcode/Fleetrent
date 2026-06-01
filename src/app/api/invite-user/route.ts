@@ -23,43 +23,49 @@ export async function POST(request: NextRequest) {
     const admin = createAdminClient();
     const origin = request.nextUrl.origin;
 
-    // First create/confirm the user so they exist
-    const { data: existingUsers } = await admin.auth.admin.listUsers();
-    const alreadyExists = existingUsers?.users?.some((u) => u.email === email);
+    // Create user if not exists
+    const { data: { users: existingUsers } } = await admin.auth.admin.listUsers();
+    const alreadyExists = existingUsers?.some((u) => u.email === email);
+
+    let userId: string | null = null;
 
     if (!alreadyExists) {
-      const { error: createErr } = await admin.auth.admin.createUser({
+      const { data: created, error: createErr } = await admin.auth.admin.createUser({
         email,
         email_confirm: true,
         user_metadata: { organization_id: profile.organization_id },
       });
-      if (createErr && !createErr.message.includes('already registered')) throw createErr;
-
-      // Ensure profile record
-      const { data: newUser } = await admin.auth.admin.listUsers();
-      const created = newUser?.users?.find((u) => u.email === email);
-      if (created) {
-        await admin.from('profiles').upsert({
-          id: created.id,
-          organization_id: profile.organization_id,
-          full_name: '',
-          role: 'saljare',
-        });
-      }
+      if (createErr) throw createErr;
+      userId = created.user.id;
+    } else {
+      userId = existingUsers?.find((u) => u.email === email)?.id ?? null;
     }
 
-    // Generate a magic link (password recovery) — bypasses OTP expiry issues
+    if (userId) {
+      await admin.from('profiles').upsert({
+        id: userId,
+        organization_id: profile.organization_id,
+        full_name: '',
+        role: 'saljare',
+      });
+    }
+
+    // Generate recovery link — get the hashed_token directly
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
       type: 'recovery',
       email,
-      options: {
-        redirectTo: `${origin}/api/auth/callback?next=/auth/reset-password`,
-      },
+      options: { redirectTo: `${origin}/auth/reset-password` },
     });
 
     if (linkErr) throw linkErr;
 
-    return NextResponse.json({ success: true, link: linkData.properties?.action_link });
+    const hashedToken = linkData?.properties?.hashed_token;
+    if (!hashedToken) throw new Error('Kunde inte generera länk');
+
+    // Build a direct link to our confirm page — bypasses PKCE completely
+    const link = `${origin}/auth/confirm?token_hash=${encodeURIComponent(hashedToken)}&type=recovery`;
+
+    return NextResponse.json({ success: true, link });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Okänt fel';
     return NextResponse.json({ error: msg }, { status: 500 });
