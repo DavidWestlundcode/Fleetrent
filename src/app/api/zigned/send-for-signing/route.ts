@@ -166,16 +166,31 @@ export async function POST(request: NextRequest) {
     const currentStatus = agreementCheck?.data?.status;
     console.log('Agreement state before pending:', currentStatus, JSON.stringify(agreementCheck?.data));
 
-    // 6. Initiate signing (draft → pending)
-    const pendingRes = await fetch(`${ZIGNED_API}/agreements/${agreementId}`, {
-      method: 'PATCH',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'pending' }),
-    });
-    if (!pendingRes.ok) {
-      const errBody = await pendingRes.text().catch(() => '');
-      console.error('Zigned PATCH error:', pendingRes.status, errBody);
-      return NextResponse.json({ error: `Zigned aktivering (${pendingRes.status}): ${errBody}` }, { status: 500 });
+    // 6. Initiate signing — try multiple endpoint patterns
+    const authHeader = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+    const attempts = [
+      { method: 'PATCH', url: `${ZIGNED_API}/agreements/${agreementId}`, body: { status: 'pending' } },
+      { method: 'PUT',   url: `${ZIGNED_API}/agreements/${agreementId}`, body: { status: 'pending' } },
+      { method: 'POST',  url: `${ZIGNED_API}/agreements/${agreementId}/send`, body: {} },
+      { method: 'POST',  url: `${ZIGNED_API}/agreements/${agreementId}/activate`, body: {} },
+      { method: 'PATCH', url: `https://api.zigned.se/agreements/${agreementId}`, body: { status: 'pending' } },
+    ];
+
+    let pendingOk = false;
+    let lastErr = '';
+    for (const attempt of attempts) {
+      const res = await fetch(attempt.url, {
+        method: attempt.method,
+        headers: authHeader,
+        body: JSON.stringify(attempt.body),
+      });
+      const body = await res.text();
+      console.log(`${attempt.method} ${attempt.url} → ${res.status}: ${body.slice(0, 200)}`);
+      if (res.ok) { pendingOk = true; break; }
+      lastErr = `${attempt.method} ${attempt.url} (${res.status}): ${body}`;
+    }
+    if (!pendingOk) {
+      return NextResponse.json({ error: `Zigned aktivering misslyckades. Senaste fel: ${lastErr}` }, { status: 500 });
     }
 
     // 6. Fetch signing URL after pending (only available then)
