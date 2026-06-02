@@ -27,19 +27,19 @@ export async function GET() {
     const token = tokenData.Token;
     if (!token) return NextResponse.json({ error: 'Auth misslyckades', tokenData }, { status: 400 });
 
-    // Fetch first 3 service objects
-    const res = await fetch(`${SP_API}/ServiceObject/Get?request.skip=0&request.take=3`, {
+    // First 2 customers
+    const custRes = await fetch(`${SP_API}/Customer/Get?request.skip=0&request.take=2`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    const raw = await res.json();
+    const customers = custRes.ok ? await custRes.json() : 'failed';
 
-    // Fetch CSV to see if it has more fields (tags, uthyrningsbar etc)
-    const csvRes = await fetch(`${SP_API}/ServiceObject/GetCSV`, {
+    // First 2 facilities
+    const facRes = await fetch(`${SP_API}/Facility/Get?request.skip=0&request.take=2`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    const csvText = csvRes.ok ? (await csvRes.text()).slice(0, 2000) : 'CSV fetch failed';
+    const facilities = facRes.ok ? await facRes.json() : 'failed';
 
-    return NextResponse.json({ raw, csvPreview: csvText });
+    return NextResponse.json({ customers, facilities });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
