@@ -445,12 +445,12 @@ export default function LandingPage() {
 
       {/* ── Navbar ── */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
-        <div className="max-w-7xl mx-auto px-6 h-16 grid grid-cols-3 items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Logo size={28} />
             <span className="font-bold text-slate-900 text-[15px] tracking-tight">FleetOS</span>
           </div>
-          <nav className="hidden md:flex items-center justify-center gap-1">
+          <nav className="hidden md:flex items-center justify-center gap-1 absolute left-1/2 -translate-x-1/2">
             {[
               { label: 'Funktioner', href: '#features' },
               { label: 'Hur det fungerar', href: '#how-it-works' },
@@ -461,7 +461,7 @@ export default function LandingPage() {
               </a>
             ))}
           </nav>
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center gap-2">
             <Link href="/login" className="text-[13px] font-medium text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">
               Logga in
             </Link>
@@ -538,11 +538,10 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Dashboard with floating cards */}
-        <div className="relative max-w-6xl mx-auto px-6">
+        {/* Dashboard – desktop */}
+        <div className="relative max-w-6xl mx-auto px-6 hidden sm:block">
           <div className="absolute -inset-4 bg-gradient-to-b from-blue-600/10 via-transparent to-transparent rounded-3xl blur-3xl pointer-events-none" />
           <div className="relative">
-            {/* Floating notification – top right */}
             <div className="absolute -top-5 right-8 z-20 hidden lg:flex items-center gap-2.5 bg-white rounded-2xl border border-slate-200 shadow-2xl px-3.5 py-2.5 animate-float">
               <div className="w-8 h-8 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
                 <CheckCircle className="w-4 h-4 text-emerald-600" />
@@ -552,7 +551,6 @@ export default function LandingPage() {
                 <p className="text-[10px] text-slate-400">Toyota 8FBN25 · Lindström AB</p>
               </div>
             </div>
-            {/* Floating stat – bottom left */}
             <div className="absolute -bottom-4 left-8 z-20 hidden lg:flex items-center gap-2.5 bg-white rounded-2xl border border-slate-200 shadow-2xl px-3.5 py-2.5 animate-float2">
               <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
                 <TrendingUp className="w-4 h-4 text-blue-600" />
@@ -563,6 +561,55 @@ export default function LandingPage() {
               </div>
             </div>
             <DashboardMockup />
+          </div>
+        </div>
+
+        {/* Dashboard – mobil */}
+        <div className="sm:hidden px-4 pb-8 space-y-3">
+          <div className="bg-[#0B1120] border border-white/[0.08] rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">Flottans status</div>
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+                <div className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[9px] font-semibold text-emerald-400">LIVE</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: 'I lager', val: '8', sub: 'av 14 totalt', dot: 'bg-emerald-500', accent: 'bg-emerald-500' },
+                { label: 'Uthyrda', val: '5', sub: '36% beläggning', dot: 'bg-blue-500', accent: 'bg-blue-500' },
+                { label: 'Aktiva order', val: '7', sub: '1 försenad', dot: 'bg-amber-400', accent: 'bg-amber-400' },
+                { label: 'Månadsintäkt', val: '84k', sub: '+12% vs förra', dot: 'bg-violet-500', accent: 'bg-violet-500' },
+              ].map(({ label, val, sub, dot, accent }) => (
+                <div key={label} className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3 relative overflow-hidden">
+                  <div className={`absolute top-0 left-0 right-0 h-[2px] ${accent}`} />
+                  <div className="text-[9px] text-white/40 uppercase tracking-wider">{label}</div>
+                  <div className="text-[22px] font-bold text-white mt-0.5 leading-none">{val}</div>
+                  <div className="flex items-center gap-1 mt-1">
+                    <div className={`w-1 h-1 rounded-full ${dot}`} />
+                    <div className="text-[8px] text-white/30">{sub}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-[#0B1120] border border-white/[0.08] rounded-2xl p-4">
+            <div className="text-[11px] font-semibold text-white/60 uppercase tracking-wider mb-3">Senaste order</div>
+            <div className="space-y-2">
+              {[
+                { nr: 'ORD-241', co: 'Lindström AB', roi: '+127%', color: 'text-emerald-400' },
+                { nr: 'ORD-240', co: 'Björk & Söner', roi: '+89%', color: 'text-emerald-400' },
+                { nr: 'ORD-239', co: 'NordMark', roi: '+44%', color: 'text-amber-400' },
+              ].map(({ nr, co, roi, color }) => (
+                <div key={nr} className="flex items-center justify-between py-1.5 border-b border-white/[0.05] last:border-0">
+                  <div>
+                    <div className="text-[11px] font-medium text-white/80">{nr}</div>
+                    <div className="text-[9px] text-white/30">{co}</div>
+                  </div>
+                  <span className={`text-[11px] font-bold ${color}`}>{roi}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
