@@ -277,15 +277,18 @@ function SettingsInner() {
     setSpSyncing(true);
     setSpSyncError('');
     setSpSyncResult(null);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
     try {
-      const res = await fetch('/api/serviceprotokoll/sync', { method: 'POST' });
+      const res = await fetch('/api/serviceprotokoll/sync', { method: 'POST', signal: controller.signal });
       const data = await res.json();
       if (!res.ok) { setSpSyncError(data.error ?? 'Synken misslyckades'); return; }
       setSpSyncResult({ machinesImported: data.machinesImported, customersImported: data.customersImported });
       setSpLastSync(new Date().toISOString());
-    } catch {
-      setSpSyncError('Nätverksfel – försök igen');
+    } catch (e) {
+      setSpSyncError(e instanceof Error && e.name === 'AbortError' ? 'Synken tog för lång tid – försök igen' : 'Nätverksfel – försök igen');
     } finally {
+      clearTimeout(timeout);
       setSpSyncing(false);
     }
   };

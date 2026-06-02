@@ -21,16 +21,21 @@ async function fetchAllPages(url: string, token: string): Promise<any[]> {
   const results = [];
   let skip = 0;
   const take = 100;
-  while (true) {
+  const MAX_PAGES = 10;
+  let page = 0;
+  while (page < MAX_PAGES) {
     const res = await fetch(`${url}?request.skip=${skip}&request.take=${take}`, {
       headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) break;
     const data = await res.json();
+    const total = data.Count ?? 0;
     const items = data.Result ?? [];
     results.push(...items);
-    if (items.length < take) break;
     skip += take;
+    page++;
+    if (skip >= total || items.length < take) break;
   }
   return results;
 }
