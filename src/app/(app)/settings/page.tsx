@@ -156,6 +156,13 @@ function SettingsInner() {
   const [profilePhone, setProfilePhone] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
+  const [spKey, setSpKey] = useState('');
+  const [spKeySaving, setSpKeySaving] = useState(false);
+  const [spKeySaved, setSpKeySaved] = useState(false);
+  const [spSyncing, setSpSyncing] = useState(false);
+  const [spSyncResult, setSpSyncResult] = useState<{ machinesImported: number; customersImported: number } | null>(null);
+  const [spLastSync, setSpLastSync] = useState<string | null>(null);
+  const [spSyncError, setSpSyncError] = useState('');
 
   const { userId } = useStore();
 
@@ -211,6 +218,8 @@ function SettingsInner() {
             postalCity: d.postal_city ?? '',
             standardTerms: d.standard_terms ?? '',
           });
+          setSpKey(d.sp_integration_key ?? '');
+          setSpLastSync(d.sp_last_sync ?? null);
         }
 
         setMembers(
@@ -251,6 +260,33 @@ function SettingsInner() {
     } else {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+    }
+  };
+
+  const handleSaveSpKey = async () => {
+    if (!orgId) return;
+    setSpKeySaving(true);
+    const supabase = createClient();
+    await supabase.from('organizations').update({ sp_integration_key: spKey || null }).eq('id', orgId);
+    setSpKeySaving(false);
+    setSpKeySaved(true);
+    setTimeout(() => setSpKeySaved(false), 2000);
+  };
+
+  const handleSpSync = async () => {
+    setSpSyncing(true);
+    setSpSyncError('');
+    setSpSyncResult(null);
+    try {
+      const res = await fetch('/api/serviceprotokoll/sync', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) { setSpSyncError(data.error ?? 'Synken misslyckades'); return; }
+      setSpSyncResult({ machinesImported: data.machinesImported, customersImported: data.customersImported });
+      setSpLastSync(new Date().toISOString());
+    } catch {
+      setSpSyncError('Nätverksfel – försök igen');
+    } finally {
+      setSpSyncing(false);
     }
   };
 
@@ -664,6 +700,60 @@ function SettingsInner() {
                   <Suspense fallback={<div className="h-20 bg-slate-50 rounded-xl animate-pulse" />}>
                     <FortnoxCard />
                   </Suspense>
+
+                  {/* Serviceprotokoll */}
+                  <div className="border border-slate-200 rounded-xl p-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">Serviceprotokoll</p>
+                        <p className="text-xs text-slate-500">Synka maskiner och kunder automatiskt</p>
+                      </div>
+                      {spLastSync && (
+                        <span className="text-xs text-slate-400">Senast synkad: {new Date(spLastSync).toLocaleString('sv-SE')}</span>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="password"
+                        value={spKey}
+                        onChange={(e) => setSpKey(e.target.value)}
+                        placeholder="Klistra in din integrationsnyckel"
+                        className={inputClass + ' flex-1'}
+                      />
+                      <button
+                        onClick={handleSaveSpKey}
+                        disabled={spKeySaving}
+                        className="px-4 py-2 text-sm font-medium bg-slate-800 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 flex items-center gap-2 shrink-0"
+                      >
+                        {spKeySaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : spKeySaved ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : null}
+                        {spKeySaved ? 'Sparad' : 'Spara nyckel'}
+                      </button>
+                    </div>
+
+                    {spKey && (
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={handleSpSync}
+                          disabled={spSyncing}
+                          className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                        >
+                          {spSyncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                          {spSyncing ? 'Synkar...' : 'Synka nu'}
+                        </button>
+                        {spSyncResult && (
+                          <span className="text-sm text-emerald-700 font-medium">
+                            ✓ {spSyncResult.machinesImported} maskiner och {spSyncResult.customersImported} kunder importerade
+                          </span>
+                        )}
+                        {spSyncError && <span className="text-sm text-red-600">{spSyncError}</span>}
+                      </div>
+                    )}
+
+                    <p className="text-xs text-slate-400">
+                      Maskiner med taggen <span className="font-mono bg-slate-100 px-1 rounded">uthyrningsbar</span> i Serviceprotokoll synkas automatiskt var 30:e minut.
+                    </p>
+                  </div>
                   {[
                     { name: 'Visma', desc: 'Bokföring och fakturahantering' },
                     { name: 'SMS-tjänst', desc: 'Automatiska SMS-påminnelser till kunder' },

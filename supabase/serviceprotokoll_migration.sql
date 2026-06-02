@@ -1,0 +1,18 @@
+-- Serviceprotokoll integration columns
+ALTER TABLE organizations
+  ADD COLUMN IF NOT EXISTS sp_integration_key TEXT,
+  ADD COLUMN IF NOT EXISTS sp_last_sync       TIMESTAMPTZ;
+
+-- sp_id on machines — links machine back to Serviceprotokoll object
+ALTER TABLE machines
+  ADD COLUMN IF NOT EXISTS sp_id TEXT;
+
+CREATE UNIQUE INDEX IF NOT EXISTS machines_org_sp_id ON machines (organization_id, sp_id)
+  WHERE sp_id IS NOT NULL;
+
+-- sp_id on customers — links customer back to Serviceprotokoll customer
+ALTER TABLE customers
+  ADD COLUMN IF NOT EXISTS sp_id TEXT;
+
+CREATE UNIQUE INDEX IF NOT EXISTS customers_org_sp_id ON customers (organization_id, sp_id)
+  WHERE sp_id IS NOT NULL;
