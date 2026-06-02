@@ -1067,11 +1067,6 @@ export default function LandingPage() {
               </div>
             </div>
             {[
-              { title: 'Produkt', links: [
-                { label: 'Funktioner', href: '/funktioner' },
-                { label: 'Changelog', href: '/changelog' },
-                { label: 'Roadmap', href: '/roadmap' },
-              ]},
               { title: 'Företag', links: [
                 { label: 'Om oss', href: '/om-oss' },
                 { label: 'Karriär', href: '/karriar' },
