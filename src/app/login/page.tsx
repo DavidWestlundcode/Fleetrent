@@ -85,22 +85,18 @@ function LoginPageInner() {
 
           <div className="max-w-md">
             <blockquote className="text-2xl font-medium text-white leading-relaxed mb-6">
-              "FleetOS gav oss full kontroll över flottan på första dagen. Allt på ett ställe."
+              "Byggd för maskinuthyrning. Inte för alla."
             </blockquote>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">M</div>
-              <div>
-                <p className="text-white font-medium">Magnus Eriksson</p>
-                <p className="text-slate-400 text-sm">VD, Eriksson Maskinuthyrning AB</p>
-              </div>
-            </div>
+            <p className="text-slate-400 text-[15px] leading-relaxed">
+              FleetOS är specialbyggt för uthyrningsbolag som tröttnat på att hantera flottan i Excel, lappar och minnesanteckningar.
+            </p>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: 'Maskiner spårade', value: '500+' },
-              { label: 'Order per år', value: '10 000+' },
-              { label: 'Nöjda kunder', value: '98%' },
+              { label: 'Byggd för maskinuthyrning', value: '100%' },
+              { label: 'Uppsättningstid', value: '1 dag' },
+              { label: 'Excel-flikar ersatta', value: '∞' },
             ].map(({ label, value }) => (
               <div key={label} className="bg-white/10 rounded-xl p-4">
                 <p className="text-2xl font-bold text-white">{value}</p>
