@@ -199,12 +199,26 @@ export async function POST(request: NextRequest) {
         else customersImported += toInsert.slice(i, i + BATCH).length;
       }
 
-      // Bulk upsert existing customers (update contacts, facilities etc.) in batches of 200
+      // Update only SP-sourced fields — don't overwrite manual fields like notes, credit_limit
       for (let i = 0; i < toUpdate.length; i += BATCH) {
+        const batch = toUpdate.slice(i, i + BATCH).map(r => ({
+          id: r.id,
+          company_name: r.company_name,
+          org_number: r.org_number,
+          email: r.email,
+          phone: r.phone,
+          contact_person: r.contact_person,
+          invoice_address: r.invoice_address,
+          delivery_address: r.delivery_address,
+          contacts: r.contacts,
+          facilities: r.facilities,
+          sp_id: r.sp_id,
+          organization_id: r.organization_id,
+        }));
         const { error } = await admin.from('customers')
-          .upsert(toUpdate.slice(i, i + BATCH), { onConflict: 'id' });
+          .upsert(batch, { onConflict: 'id' });
         if (error) errors.push(`Update batch ${i}: ${error.message}`);
-        else customersImported += toUpdate.slice(i, i + BATCH).length;
+        else customersImported += batch.length;
       }
     } catch (e) {
       errors.push(`Kunder: ${e instanceof Error ? e.message : String(e)}`);
