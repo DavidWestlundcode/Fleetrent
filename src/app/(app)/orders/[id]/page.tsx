@@ -19,6 +19,7 @@ export default function OrderDetailPage() {
   const [sendingToZigned, setSendingToZigned] = useState(false);
   const [zignedError, setZignedError] = useState<string | null>(null);
   const [checkingZignedStatus, setCheckingZignedStatus] = useState(false);
+  const [downloadingAgreement, setDownloadingAgreement] = useState(false);
   const [showInvoiceForm, setShowInvoiceForm] = useState(false);
   const [invoiceEndDate, setInvoiceEndDate] = useState('');
   const [savingInvoice, setSavingInvoice] = useState(false);
@@ -92,6 +93,23 @@ export default function OrderDetailPage() {
       }
     } finally {
       setCheckingZignedStatus(false);
+    }
+  };
+
+  const handleDownloadAgreement = async () => {
+    setDownloadingAgreement(true);
+    try {
+      const res = await fetch('/api/zigned/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+      const data = await res.json();
+      if (res.ok && data.downloadUrl) {
+        window.open(data.downloadUrl, '_blank');
+      }
+    } finally {
+      setDownloadingAgreement(false);
     }
   };
 
@@ -308,7 +326,14 @@ export default function OrderDetailPage() {
         {order.signingStatus === 'signed' && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-            <p className="text-sm font-semibold text-emerald-800">Hyresavtalet är signerat av kunden.</p>
+            <p className="text-sm font-semibold text-emerald-800 flex-1">Hyresavtalet är signerat av kunden.</p>
+            <button
+              onClick={handleDownloadAgreement}
+              disabled={downloadingAgreement}
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-white border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors disabled:opacity-50">
+              {downloadingAgreement ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+              Ladda ner signerat avtal
+            </button>
           </div>
         )}
 
