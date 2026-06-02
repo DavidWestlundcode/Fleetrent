@@ -4,7 +4,7 @@ import {
   ArrowRight, Shield, Clock, TrendingUp, Bell, Search,
   LayoutDashboard, FileText, Tag, Star, Activity, ChevronRight,
   Camera, Sparkles, X, Check, Brain, ArrowUpRight, Database,
-  Target, RefreshCw, Cpu, Monitor, Upload,
+  Target, RefreshCw, Cpu, Monitor, Upload, FileSignature, Mail, PenLine,
 } from 'lucide-react';
 import { AnimateIn, CountUp } from '@/components/ui/AnimateIn';
 import { Logo } from '@/components/ui/Logo';
@@ -376,6 +376,68 @@ function ROIMockup() {
   );
 }
 
+function SigningMockup() {
+  return (
+    <div className="bg-[#0B1120] rounded-2xl border border-white/[0.08] p-5 shadow-2xl space-y-3">
+      <div className="text-[11px] font-semibold text-white/60 uppercase tracking-wider mb-2">Digital signering</div>
+
+      {/* Document row */}
+      <div className="flex items-center gap-3 bg-white/[0.04] border border-white/[0.06] rounded-xl p-3">
+        <div className="w-9 h-9 bg-indigo-600/20 rounded-xl flex items-center justify-center shrink-0">
+          <FileSignature className="w-4.5 h-4.5 text-indigo-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[12px] font-medium text-white/90 truncate">hyresavtal-FR-202606-9204.pdf</div>
+          <div className="text-[10px] text-white/40 mt-0.5">Skickat till kund@foretaget.se</div>
+        </div>
+        <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+          <span className="text-[9px] font-semibold text-amber-300">Väntar</span>
+        </div>
+      </div>
+
+      {/* Steps */}
+      <div className="space-y-2 pl-1">
+        {[
+          { label: 'Avtal genererat & skickat', done: true },
+          { label: 'Kund signerar med BankID', done: true },
+          { label: 'Signerat avtal levererat', done: true },
+        ].map(({ label, done }) => (
+          <div key={label} className="flex items-center gap-2.5">
+            <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${done ? 'bg-emerald-500/20' : 'bg-white/[0.05]'}`}>
+              {done && <Check className="w-2.5 h-2.5 text-emerald-400" />}
+            </div>
+            <span className={`text-[11px] ${done ? 'text-white/70' : 'text-white/25'}`}>{label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Signed confirmation */}
+      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 flex items-center gap-3">
+        <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+        <div>
+          <div className="text-[11px] font-semibold text-emerald-300">Signerat av kunden</div>
+          <div className="text-[10px] text-white/40 mt-0.5">Båda parter har fått en kopia via e-post</div>
+        </div>
+      </div>
+
+      {/* Bottom stats */}
+      <div className="pt-2 border-t border-white/[0.06] grid grid-cols-3 gap-2">
+        {[
+          { label: 'Signeringstid', value: '< 2 min', color: 'text-indigo-400' },
+          { label: 'Juridiskt giltigt', value: 'BankID', color: 'text-emerald-400' },
+          { label: 'Arkiverat', value: 'Alltid', color: 'text-violet-400' },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="text-center">
+            <div className={`text-[12px] font-bold ${color}`}>{value}</div>
+            <div className="text-[9px] text-white/30 mt-0.5">{label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Page ─────────────────────────────────────────────────────────── */
 export default function LandingPage() {
   return (
@@ -728,6 +790,39 @@ export default function LandingPage() {
               <ROIMockup />
             </AnimateIn>
           </div>
+          {/* Feature 4: Digital signing */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
+            <AnimateIn direction="left" className="order-2 lg:order-1">
+              <SigningMockup />
+            </AnimateIn>
+            <AnimateIn direction="right" className="order-1 lg:order-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-200/80 rounded-full text-indigo-700 text-[11px] font-semibold mb-5">
+                <PenLine className="w-3.5 h-3.5" />
+                Digital signering
+              </div>
+              <h3 className="text-[32px] font-bold text-slate-900 tracking-tight mb-4 leading-tight">
+                Kunden signerar avtalet<br />direkt i mobilen
+              </h3>
+              <p className="text-[15px] text-slate-500 leading-relaxed mb-7">
+                Skicka hyresavtalet för e-signering med ett klick. Kunden signerar med BankID var de än befinner sig – ingen utskrift, ingen skanning. Både uthyrare och kund får det signerade avtalet automatiskt på mail.
+              </p>
+              <div className="space-y-3">
+                {[
+                  { icon: FileSignature, text: 'Avtal genereras och skickas automatiskt från ordern' },
+                  { icon: Shield, text: 'Kunden signerar med BankID – juridiskt bindande' },
+                  { icon: Mail, text: 'Båda parter får signerat avtal direkt på e-post' },
+                ].map(({ icon: Icon, text }) => (
+                  <div key={text} className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
+                      <Icon className="w-4 h-4 text-indigo-600" />
+                    </div>
+                    <span className="text-[14px] text-slate-700 font-medium">{text}</span>
+                  </div>
+                ))}
+              </div>
+            </AnimateIn>
+          </div>
+
         </div>
       </section>
 
