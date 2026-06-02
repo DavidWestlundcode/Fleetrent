@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
         success_callback_url: `${request.nextUrl.origin}/orders/${orderId}?signed=1`,
         issuer: {
           name: (orgRow?.name as string) ?? 'Uthyraren',
-          email: (orgRow?.email as string) ?? '',
+          email: ((orgRow?.email as string) || user.email) as string,
           role: 'observer',
           locale: 'sv-SE',
         },
