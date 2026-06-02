@@ -54,8 +54,13 @@ export async function POST(request: NextRequest) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const agreement = await agreementRes.json() as any;
-    // Return raw agreement data so we can inspect the structure
-    return NextResponse.json({ _debug: agreement?.data });
+    const downloadUrl = agreement?.data?.documents?.signed_document?.data?.url;
+
+    if (!downloadUrl) {
+      return NextResponse.json({ error: 'Signerat dokument inte tillgängligt än' }, { status: 404 });
+    }
+
+    return NextResponse.json({ downloadUrl });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Okänt fel';
     return NextResponse.json({ error: msg }, { status: 500 });
