@@ -17,7 +17,7 @@ async function getSPToken(integrationKey: string): Promise<string | null> {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchAllPages(url: string, token: string, maxPages = 10, lastSync?: string): Promise<any[]> {
+async function fetchAllPages(url: string, token: string, maxPages = 200, lastSync?: string): Promise<any[]> {
   const results = [];
   let skip = 0;
   const take = 100;
@@ -30,12 +30,12 @@ async function fetchAllPages(url: string, token: string, maxPages = 10, lastSync
     });
     if (!res.ok) break;
     const data = await res.json();
-    const total = data.Count ?? 0;
     const items = data.Result ?? [];
     results.push(...items);
     skip += take;
     page++;
-    if (skip >= total || items.length < take) break;
+    // Stop only when we get fewer items than requested — Count is unreliable
+    if (items.length < take) break;
   }
   return results;
 }
@@ -162,34 +162,32 @@ export async function POST(request: NextRequest) {
           };
         });
 
-      // Update existing + insert new, one by one for reliability with partial index
-      for (const record of records) {
-        const { data: existing } = await admin.from('customers')
-          .select('id')
-          .eq('organization_id', orgId)
-          .eq('sp_id', record.sp_id)
-          .maybeSingle();
+      // 1 query to get all existing sp_ids → build a map id lookup
+      const { data: existingRows } = await admin.from('customers')
+        .select('id, sp_id')
+        .eq('organization_id', orgId)
+        .not('sp_id', 'is', null);
+      const existingMap = new Map((existingRows ?? []).map(r => [String(r.sp_id), String(r.id)]));
 
-        if (existing) {
-          // Update with fresh SP data (contacts, facilities, address etc.)
-          const { error } = await admin.from('customers').update({
-            company_name: record.company_name,
-            org_number: record.org_number,
-            email: record.email,
-            phone: record.phone,
-            contact_person: record.contact_person,
-            invoice_address: record.invoice_address,
-            delivery_address: record.delivery_address,
-            contacts: record.contacts,
-            facilities: record.facilities,
-          }).eq('id', existing.id);
-          if (error) errors.push(`Uppdatera ${record.company_name}: ${error.message}`);
-          else customersImported++;
-        } else {
-          const { error } = await admin.from('customers').insert(record);
-          if (error) errors.push(`Ny kund ${record.company_name}: ${error.message}`);
-          else customersImported++;
-        }
+      const toInsert = records.filter(r => !existingMap.has(r.sp_id));
+      const toUpdate = records
+        .filter(r => existingMap.has(r.sp_id))
+        .map(r => ({ ...r, id: existingMap.get(r.sp_id)! }));
+
+      // Bulk insert new customers in batches of 200
+      const BATCH = 200;
+      for (let i = 0; i < toInsert.length; i += BATCH) {
+        const { error } = await admin.from('customers').insert(toInsert.slice(i, i + BATCH));
+        if (error) errors.push(`Insert batch ${i}: ${error.message}`);
+        else customersImported += toInsert.slice(i, i + BATCH).length;
+      }
+
+      // Bulk upsert existing customers (update contacts, facilities etc.) in batches of 200
+      for (let i = 0; i < toUpdate.length; i += BATCH) {
+        const { error } = await admin.from('customers')
+          .upsert(toUpdate.slice(i, i + BATCH), { onConflict: 'id' });
+        if (error) errors.push(`Update batch ${i}: ${error.message}`);
+        else customersImported += toUpdate.slice(i, i + BATCH).length;
       }
     } catch (e) {
       errors.push(`Kunder: ${e instanceof Error ? e.message : String(e)}`);
