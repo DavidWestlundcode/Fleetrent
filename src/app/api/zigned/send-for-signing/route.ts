@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 });
 
-    const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user.id).single();
+    const { data: profile } = await supabase.from('profiles').select('organization_id, full_name').eq('id', user.id).single();
     const orgId = profile?.organization_id;
     if (!orgId) return NextResponse.json({ error: 'Ingen organisation' }, { status: 400 });
 
@@ -124,8 +124,8 @@ export async function POST(request: NextRequest) {
         default_locale: 'sv-SE',
         success_callback_url: `${request.nextUrl.origin}/orders/${orderId}?signed=1`,
         issuer: {
-          name: (orgRow?.name as string) ?? 'Uthyraren',
-          email: ((orgRow?.email as string) || user.email) as string,
+          name: profile?.full_name || user.email || 'Uthyraren',
+          email: user.email as string,
           role: 'observer',
           locale: 'sv-SE',
         },
