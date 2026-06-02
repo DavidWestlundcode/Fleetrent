@@ -42,6 +42,9 @@ async function fetchAllPages(url: string, token: string, maxPages = 10, lastSync
 
 export async function POST(request: NextRequest) {
   try {
+    const body = await request.json().catch(() => ({}));
+    const forceFullSync = body?.force === true;
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 });
@@ -55,7 +58,7 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const integrationKey = (orgRow as any)?.sp_integration_key as string | null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const lastSync = (orgRow as any)?.sp_last_sync as string | null;
+    const lastSync = forceFullSync ? null : ((orgRow as any)?.sp_last_sync as string | null);
 
     if (!integrationKey) {
       return NextResponse.json({ error: 'Ingen Serviceprotokoll-nyckel konfigurerad' }, { status: 400 });
@@ -159,14 +162,34 @@ export async function POST(request: NextRequest) {
           };
         });
 
-      const BATCH = 100;
-      for (let i = 0; i < records.length; i += BATCH) {
-        const batch = records.slice(i, i + BATCH);
-        // ignoreDuplicates: false so we UPDATE existing customers with fresh SP data
-        const { error, count } = await admin.from('customers')
-          .upsert(batch, { onConflict: 'organization_id,sp_id', ignoreDuplicates: false, count: 'exact' });
-        if (error) errors.push(`Kunder batch ${i}: ${error.message}`);
-        else customersImported += count ?? 0;
+      // Update existing + insert new, one by one for reliability with partial index
+      for (const record of records) {
+        const { data: existing } = await admin.from('customers')
+          .select('id')
+          .eq('organization_id', orgId)
+          .eq('sp_id', record.sp_id)
+          .maybeSingle();
+
+        if (existing) {
+          // Update with fresh SP data (contacts, facilities, address etc.)
+          const { error } = await admin.from('customers').update({
+            company_name: record.company_name,
+            org_number: record.org_number,
+            email: record.email,
+            phone: record.phone,
+            contact_person: record.contact_person,
+            invoice_address: record.invoice_address,
+            delivery_address: record.delivery_address,
+            contacts: record.contacts,
+            facilities: record.facilities,
+          }).eq('id', existing.id);
+          if (error) errors.push(`Uppdatera ${record.company_name}: ${error.message}`);
+          else customersImported++;
+        } else {
+          const { error } = await admin.from('customers').insert(record);
+          if (error) errors.push(`Ny kund ${record.company_name}: ${error.message}`);
+          else customersImported++;
+        }
       }
     } catch (e) {
       errors.push(`Kunder: ${e instanceof Error ? e.message : String(e)}`);

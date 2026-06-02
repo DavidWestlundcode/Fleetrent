@@ -273,17 +273,23 @@ function SettingsInner() {
     setTimeout(() => setSpKeySaved(false), 2000);
   };
 
-  const handleSpSync = async () => {
+  const handleSpSync = async (force = false) => {
     setSpSyncing(true);
     setSpSyncError('');
     setSpSyncResult(null);
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
+    const timeout = setTimeout(() => controller.abort(), 60000);
     try {
-      const res = await fetch('/api/serviceprotokoll/sync', { method: 'POST', signal: controller.signal });
+      const res = await fetch('/api/serviceprotokoll/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force }),
+        signal: controller.signal,
+      });
       const data = await res.json();
       if (!res.ok) { setSpSyncError(data.error ?? 'Synken misslyckades'); return; }
       setSpSyncResult({ machinesImported: data.machinesImported, customersImported: data.customersImported });
+      if (data.errors?.length) setSpSyncError(data.errors.slice(0, 3).join(' | '));
       setSpLastSync(new Date().toISOString());
     } catch (e) {
       setSpSyncError(e instanceof Error && e.name === 'AbortError' ? 'Synken tog för lång tid – försök igen' : 'Nätverksfel – försök igen');
@@ -737,12 +743,20 @@ function SettingsInner() {
                     {spKey && (
                       <div className="flex items-center gap-3">
                         <button
-                          onClick={handleSpSync}
+                          onClick={() => handleSpSync(false)}
                           disabled={spSyncing}
                           className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
                         >
                           {spSyncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                           {spSyncing ? 'Synkar...' : 'Synka nu'}
+                        </button>
+                        <button
+                          onClick={() => handleSpSync(true)}
+                          disabled={spSyncing}
+                          className="px-4 py-2 text-sm font-medium bg-slate-600 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 flex items-center gap-2"
+                          title="Hämtar och uppdaterar alla kunder oavsett när de senast synkades"
+                        >
+                          Synka om allt
                         </button>
                         {spSyncResult && (
                           <span className="text-sm text-emerald-700 font-medium">
