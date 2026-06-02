@@ -162,12 +162,21 @@ export async function POST(request: NextRequest) {
           };
         });
 
-      // 1 query to get all existing sp_ids → build a map id lookup
-      const { data: existingRows } = await admin.from('customers')
-        .select('id, sp_id')
-        .eq('organization_id', orgId)
-        .not('sp_id', 'is', null);
-      const existingMap = new Map((existingRows ?? []).map(r => [String(r.sp_id), String(r.id)]));
+      // Fetch ALL existing sp_ids with pagination (Supabase default limit is 1000)
+      const existingAll: { id: string; sp_id: string }[] = [];
+      let exSkip = 0;
+      while (true) {
+        const { data: batch } = await admin.from('customers')
+          .select('id, sp_id')
+          .eq('organization_id', orgId)
+          .not('sp_id', 'is', null)
+          .range(exSkip, exSkip + 999);
+        if (!batch || batch.length === 0) break;
+        existingAll.push(...batch as { id: string; sp_id: string }[]);
+        if (batch.length < 1000) break;
+        exSkip += 1000;
+      }
+      const existingMap = new Map(existingAll.map(r => [String(r.sp_id), String(r.id)]));
 
       const toInsert = records.filter(r => !existingMap.has(r.sp_id));
       const toUpdate = records
