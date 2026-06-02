@@ -27,14 +27,14 @@ export async function GET() {
     const token = tokenData.Token;
     if (!token) return NextResponse.json({ error: 'Auth misslyckades', tokenData }, { status: 400 });
 
-    // First 2 customers
-    const custRes = await fetch(`${SP_API}/Customer/Get?request.skip=0&request.take=2`, {
+    // First 3 customers with full data
+    const custRes = await fetch(`${SP_API}/Customer/Get?request.skip=0&request.take=3`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const customers = custRes.ok ? await custRes.json() : 'failed';
 
-    // First 2 facilities
-    const facRes = await fetch(`${SP_API}/Facility/Get?request.skip=0&request.take=2`, {
+    // First 3 facilities
+    const facRes = await fetch(`${SP_API}/Facility/Get?request.skip=0&request.take=3`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const facilities = facRes.ok ? await facRes.json() : 'failed';

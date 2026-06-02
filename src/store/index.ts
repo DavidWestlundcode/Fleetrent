@@ -574,7 +574,7 @@ export const useStore = create<AppStore>()((set, get) => ({
       const [machinesRes, customersRes, ordersRes, templatesRes, articlesRes, serviceRes, membersRes, orgRes] =
         await Promise.all([
           sb().from('machines').select('*').eq('organization_id', orgId),
-          sb().from('customers').select('*').eq('organization_id', orgId),
+          sb().from('customers').select('*').eq('organization_id', orgId).limit(10000),
           sb().from('orders').select('*, order_events(*)').eq('organization_id', orgId),
           sb().from('templates').select('*').eq('organization_id', orgId),
           sb().from('articles').select('*').eq('organization_id', orgId),
