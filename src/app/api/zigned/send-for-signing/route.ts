@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     if (!orderRow) return NextResponse.json({ error: 'Order hittades inte' }, { status: 404 });
 
-    const { data: orgRow } = await admin.from('organizations').select('name').eq('id', orgId).single();
+    const { data: orgRow } = await admin.from('organizations').select('name, email').eq('id', orgId).single();
 
     const customer = orderRow.customers as Record<string, unknown>;
     const machine = orderRow.machines as Record<string, unknown> | null;
@@ -115,13 +115,20 @@ export async function POST(request: NextRequest) {
     const uploadData = await uploadRes.json();
     const fileId = uploadData.data?.id;
 
-    // 2. Create agreement
+    // 2. Create agreement with issuer (required for send_emails to work)
     const agreementRes = await fetch(`${ZIGNED_API}/agreements`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
         send_emails: true,
+        default_locale: 'sv-SE',
         success_callback_url: `${request.nextUrl.origin}/orders/${orderId}?signed=1`,
+        issuer: {
+          name: (orgRow?.name as string) ?? 'Uthyraren',
+          email: (orgRow?.email as string) ?? '',
+          role: 'observer',
+          locale: 'sv-SE',
+        },
       }),
     });
     if (!agreementRes.ok) {
@@ -160,38 +167,29 @@ export async function POST(request: NextRequest) {
     const participantData = await participantRes.json();
     const participantId = participantData.data?.id;
 
-    // 5. Fetch agreement state to verify it's ready
-    const agreementCheckRes = await fetch(`${ZIGNED_API}/agreements/${agreementId}`, { headers });
-    const agreementCheck = agreementCheckRes.ok ? await agreementCheckRes.json() : null;
-    const currentStatus = agreementCheck?.data?.status;
-    console.log('Agreement state before pending:', currentStatus, JSON.stringify(agreementCheck?.data));
-
-    // 6. Initiate signing — try multiple endpoint patterns
-    const authHeader = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
-    const attempts = [
-      { method: 'PATCH', url: `${ZIGNED_API}/agreements/${agreementId}`, body: { status: 'pending' } },
-      { method: 'PUT',   url: `${ZIGNED_API}/agreements/${agreementId}`, body: { status: 'pending' } },
-      { method: 'POST',  url: `${ZIGNED_API}/agreements/${agreementId}/send`, body: {} },
-      { method: 'POST',  url: `${ZIGNED_API}/agreements/${agreementId}/activate`, body: {} },
-      { method: 'PATCH', url: `https://api.zigned.se/agreements/${agreementId}`, body: { status: 'pending' } },
-    ];
-
-    let pendingOk = false;
-    let lastErr = '';
-    for (const attempt of attempts) {
-      const res = await fetch(attempt.url, {
-        method: attempt.method,
-        headers: authHeader,
-        body: JSON.stringify(attempt.body),
-      });
-      const body = await res.text();
-      console.log(`${attempt.method} ${attempt.url} → ${res.status}: ${body.slice(0, 200)}`);
-      if (res.ok) { pendingOk = true; break; }
-      lastErr = `${attempt.method} ${attempt.url} (${res.status}): ${body}`;
+    // 5. Transition agreement to pending — triggers validation and sends invitations
+    const lifecycleRes = await fetch(`${ZIGNED_API}/agreements/${agreementId}/lifecycle`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ lifecycle_state: { status: 'pending' } }),
+    });
+    const lifecycleRaw = await lifecycleRes.text();
+    console.log('Zigned lifecycle', lifecycleRes.status, lifecycleRaw.slice(0, 500));
+    if (!lifecycleRes.ok) {
+      let errMsg: string;
+      try {
+        const parsed = JSON.parse(lifecycleRaw);
+        errMsg = parsed?.error?.message ?? parsed?.message ?? parsed?.error ?? lifecycleRaw;
+      } catch {
+        errMsg = lifecycleRaw;
+      }
+      return NextResponse.json({
+        error: `Zigned aktivering misslyckades (${lifecycleRes.status}): ${errMsg}`,
+      }, { status: 500 });
     }
-    if (!pendingOk) {
-      return NextResponse.json({ error: `Zigned aktivering misslyckades. Senaste fel: ${lastErr}` }, { status: 500 });
-    }
+    // Return lifecycle response status in success payload for debugging
+    let lifecycleData: Record<string, unknown> = {};
+    try { lifecycleData = JSON.parse(lifecycleRaw); } catch { /* ignore */ }
 
     // 6. Fetch signing URL after pending (only available then)
     let signingUrl: string | null = null;
@@ -210,7 +208,7 @@ export async function POST(request: NextRequest) {
       signing_url: signingUrl,
     }).eq('id', orderId);
 
-    return NextResponse.json({ success: true, agreementId, signingUrl });
+    return NextResponse.json({ success: true, agreementId, signingUrl, _debug: { lifecycleStatus: lifecycleData?.data?.lifecycle_state ?? lifecycleData?.data?.status ?? 'unknown' } });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Okänt fel';
     return NextResponse.json({ error: msg }, { status: 500 });
