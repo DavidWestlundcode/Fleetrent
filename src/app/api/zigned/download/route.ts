@@ -54,27 +54,8 @@ export async function POST(request: NextRequest) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const agreement = await agreementRes.json() as any;
-    const fileId = agreement?.data?.documents?.main?.file_id
-      ?? agreement?.data?.document?.file_id
-      ?? agreement?.data?.documents?.[0]?.file_id;
-
-    if (!fileId) {
-      return NextResponse.json({ error: 'Signerat dokument inte tillgängligt än' }, { status: 404 });
-    }
-
-    // Fetch file download URL
-    const fileRes = await fetch(`${ZIGNED_API}/files/${fileId}`, { headers });
-    if (!fileRes.ok) return NextResponse.json({ error: 'Kunde inte hämta fil från Zigned' }, { status: 500 });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const fileData = await fileRes.json() as any;
-    const downloadUrl = fileData?.data?.url ?? fileData?.data?.download_url ?? fileData?.url;
-
-    if (!downloadUrl) {
-      return NextResponse.json({ error: 'Nedladdningslänk saknas' }, { status: 404 });
-    }
-
-    return NextResponse.json({ downloadUrl });
+    // Return raw agreement data so we can inspect the structure
+    return NextResponse.json({ _debug: agreement?.data });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Okänt fel';
     return NextResponse.json({ error: msg }, { status: 500 });
