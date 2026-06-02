@@ -27,13 +27,19 @@ export async function GET() {
     const token = tokenData.Token;
     if (!token) return NextResponse.json({ error: 'Auth misslyckades', tokenData }, { status: 400 });
 
-    // Fetch first 3 service objects — return raw so we can see the structure
+    // Fetch first 3 service objects
     const res = await fetch(`${SP_API}/ServiceObject/Get?request.skip=0&request.take=3`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const raw = await res.json();
 
-    return NextResponse.json({ raw });
+    // Fetch CSV to see if it has more fields (tags, uthyrningsbar etc)
+    const csvRes = await fetch(`${SP_API}/ServiceObject/GetCSV`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const csvText = csvRes.ok ? (await csvRes.text()).slice(0, 2000) : 'CSV fetch failed';
+
+    return NextResponse.json({ raw, csvPreview: csvText });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
