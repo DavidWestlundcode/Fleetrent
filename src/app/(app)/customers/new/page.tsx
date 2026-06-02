@@ -78,6 +78,7 @@ export default function NewCustomerPage() {
       totalSpent: 0,
       activeOrders: 0,
       contacts: validContacts,
+      facilities: [],
     });
     router.push(`/customers/${id}`);
   };
