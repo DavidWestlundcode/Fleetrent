@@ -37,6 +37,7 @@ export interface CustomerFacility {
   address: string;
   city: string;
   zip?: string;
+  contacts?: ContactPerson[];
 }
 
 export interface Article {

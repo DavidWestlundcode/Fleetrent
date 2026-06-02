@@ -187,14 +187,28 @@ export default function CustomerDetailPage() {
                   <Home className="w-4 h-4 text-slate-500" />
                   <h3 className="font-semibold text-slate-900">Anläggningar</h3>
                 </div>
-                <div className="space-y-2.5">
+                <div className="space-y-4">
                   {customer.facilities.map((f, i) => (
-                    <div key={i} className="flex items-start gap-2 pb-2.5 border-b border-slate-50 last:border-0 last:pb-0">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
-                      <div>
-                        {f.name && <p className="text-sm font-medium text-slate-800">{f.name}</p>}
-                        <p className="text-xs text-slate-500">{[f.address, f.zip, f.city].filter(Boolean).join(' ')}</p>
-                      </div>
+                    <div key={i} className="pb-4 border-b border-slate-50 last:border-0 last:pb-0">
+                      {f.name && <p className="text-sm font-semibold text-slate-800 mb-1">{f.name}</p>}
+                      {(f.address || f.city) && (
+                        <div className="flex items-start gap-1.5 text-xs text-slate-500 mb-2">
+                          <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
+                          {[f.address, f.zip, f.city].filter(Boolean).join(' ')}
+                        </div>
+                      )}
+                      {f.contacts && f.contacts.length > 0 && (
+                        <div className="space-y-1.5 pl-1">
+                          {f.contacts.map((c, j) => (
+                            <div key={j} className="text-xs text-slate-600">
+                              <span className="font-medium">{c.name}</span>
+                              {c.title && <span className="text-slate-400"> · {c.title}</span>}
+                              {c.phone && <div className="flex items-center gap-1 text-slate-500"><Phone className="w-2.5 h-2.5" />{c.phone}</div>}
+                              {c.email && <div className="flex items-center gap-1 text-slate-500"><Mail className="w-2.5 h-2.5" />{c.email}</div>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

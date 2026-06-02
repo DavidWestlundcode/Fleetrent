@@ -122,44 +122,50 @@ export async function POST(request: NextRequest) {
         fetchAllPages(`${SP_API}/Facility/Get`, token, 50).catch(() => []),
       ]);
 
-      // Group facilities by CustomerID for fast lookup
+      // Group facilities by CustomerID — contacts sit on facilities, not on customers
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const facilityByCustomer: Record<string, any[]> = {};
       for (const f of facilities) {
         const cid = String(f.CustomerID ?? f.CustomerId ?? '');
         if (!cid) continue;
         if (!facilityByCustomer[cid]) facilityByCustomer[cid] = [];
+        const facContacts = (f.Contacts ?? []).map((ct: Record<string, string>) => ({
+          name: ct.Name ?? '',
+          phone: ct.MobilePhoneNo ?? ct.PhoneNo ?? '',
+          email: ct.Email ?? '',
+          title: ct.Title ?? '',
+        })).filter((ct: { name: string }) => ct.name);
+
         facilityByCustomer[cid].push({
-          name: f.Name ?? f.FacilityName ?? '',
-          address: f.Address?.Street ?? f.StreetAddress ?? '',
-          city: f.Address?.City ?? f.City ?? '',
-          zip: f.Address?.Zip ?? f.ZipCode ?? '',
+          name: f.Name ?? '',
+          address: f.Address?.AddressRow1 ?? '',
+          city: f.Address?.Place ?? '',
+          zip: f.Address?.PostalCode ?? '',
+          contacts: facContacts,
         });
       }
 
-      // Build records to upsert in batches of 100
+      // Build records
       const records = customers
         .filter(c => c.Name && (c.UniqueID ?? c.CustomerNo))
         .map(c => {
           const spId = String(c.UniqueID ?? c.CustomerNo);
-          const contacts = (c.Contacts ?? []).map((ct: Record<string, string>) => ({
-            name: ct.Name ?? ct.ContactName ?? '',
-            phone: ct.Phone ?? ct.Mobile ?? '',
-            email: ct.Email ?? ct.EmailAddress ?? '',
-            title: ct.Title ?? ct.Role ?? '',
-          })).filter((ct: { name: string }) => ct.name);
+          const customerFacilities = facilityByCustomer[spId] ?? [];
+
+          // All contacts come from facilities (customer.Contacts is null in SP API)
+          const allContacts = customerFacilities.flatMap((f: { contacts?: { name: string; phone: string; email: string; title: string }[] }) => f.contacts ?? []);
 
           return {
             organization_id: orgId,
             company_name: c.Name,
             org_number: c.OrganisationNumber ?? '',
-            email: c.InvoiceEmail ?? (contacts[0]?.email ?? ''),
-            phone: c.Phone ?? (contacts[0]?.phone ?? ''),
-            contact_person: contacts[0]?.name ?? '',
-            invoice_address: [c.InvoiceAddress?.Street, c.InvoiceAddress?.PostalCode, c.InvoiceAddress?.City].filter(Boolean).join(', '),
-            delivery_address: [c.Address?.Street, c.Address?.PostalCode, c.Address?.City].filter(Boolean).join(', '),
-            contacts,
-            facilities: facilityByCustomer[spId] ?? [],
+            email: c.InvoiceEmail ?? (allContacts[0]?.email ?? ''),
+            phone: c.Phone ?? (allContacts[0]?.phone ?? ''),
+            contact_person: allContacts[0]?.name ?? '',
+            invoice_address: [c.InvoiceAddress?.AddressRow1, c.InvoiceAddress?.PostalCode, c.InvoiceAddress?.Place].filter(Boolean).join(', '),
+            delivery_address: [c.Address?.AddressRow1, c.Address?.PostalCode, c.Address?.Place].filter(Boolean).join(', '),
+            contacts: allContacts,
+            facilities: customerFacilities,
             sp_id: spId,
           };
         });
