@@ -27,19 +27,23 @@ export async function GET() {
     const token = tokenData.Token;
     if (!token) return NextResponse.json({ error: 'Auth misslyckades', tokenData }, { status: 400 });
 
-    // First 3 customers with full data
-    const custRes = await fetch(`${SP_API}/Customer/Get?request.skip=0&request.take=3`, {
+    // Find Renta AB specifically
+    const rentaRes = await fetch(`${SP_API}/Customer/Get?request.skip=0&request.take=100`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    const customers = custRes.ok ? await custRes.json() : 'failed';
+    const allCustomers = rentaRes.ok ? await rentaRes.json() : null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const renta = allCustomers?.Result?.find((c: any) => c.Name?.toLowerCase().includes('renta'));
 
-    // First 3 facilities
-    const facRes = await fetch(`${SP_API}/Facility/Get?request.skip=0&request.take=3`, {
+    // Get facilities for first 10 — show CustomerID and UniqueID pattern
+    const facRes = await fetch(`${SP_API}/Facility/Get?request.skip=0&request.take=10`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    const facilities = facRes.ok ? await facRes.json() : 'failed';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const facData = facRes.ok ? await facRes.json() : null;
+    const facilityCustomerIDs = facData?.Result?.map((f: any) => ({ name: f.Name, customerID: f.CustomerID }));
 
-    return NextResponse.json({ customers, facilities });
+    return NextResponse.json({ renta, facilityCustomerIDs });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
