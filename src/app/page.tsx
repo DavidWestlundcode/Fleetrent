@@ -465,8 +465,9 @@ export default function LandingPage() {
             <Link href="/login" className="text-[13px] font-medium text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">
               Logga in
             </Link>
-            <Link href="/kom-igang" className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-700 text-white text-[13px] font-semibold rounded-xl transition-colors shadow-sm">
-              Kom igång gratis
+            <Link href="/kom-igang" className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 bg-slate-900 hover:bg-slate-700 text-white text-[13px] font-semibold rounded-xl transition-colors shadow-sm">
+              <span className="hidden sm:inline">Kom igång gratis</span>
+              <span className="sm:hidden">Kom igång</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -495,7 +496,7 @@ export default function LandingPage() {
             AI-drivet fleet management för maskinuthyrning
           </div>
 
-          <h1 className="text-[52px] md:text-[76px] font-bold text-white leading-[1.02] tracking-[-0.025em] mb-6">
+          <h1 className="text-[34px] sm:text-[52px] md:text-[76px] font-bold text-white leading-[1.02] tracking-[-0.025em] mb-6">
             Automatisera din{' '}
             <span
               className="text-transparent bg-clip-text"
@@ -507,7 +508,7 @@ export default function LandingPage() {
             med AI
           </h1>
 
-          <p className="text-[18px] text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-[15px] sm:text-[18px] text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
             FleetOS ersätter Excel, telefonsamtal och manuellt arbete med ett intelligent system som hanterar flotta, order och lönsamhet automatiskt.
           </p>
 
@@ -522,7 +523,7 @@ export default function LandingPage() {
             </a>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-5 text-slate-500 text-[12px] font-medium mb-20">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-slate-500 text-[12px] font-medium mb-16 sm:mb-20">
             {[
               { icon: CheckCircle, label: 'Ingen bindningstid' },
               { icon: Shield, label: 'GDPR-anpassad' },
@@ -568,11 +569,11 @@ export default function LandingPage() {
 
 
       {/* ── Problem → Solution ── */}
-      <section className="py-28 px-6 bg-slate-50 border-b border-slate-200 overflow-hidden">
+      <section className="py-16 sm:py-28 px-4 sm:px-6 bg-slate-50 border-b border-slate-200 overflow-hidden">
         <div className="max-w-6xl mx-auto">
           <AnimateIn className="text-center mb-16">
             <p className="text-[12px] font-semibold text-red-500 uppercase tracking-widest mb-3">Problemet</p>
-            <h2 className="text-[40px] md:text-[48px] font-bold text-slate-900 tracking-tight mb-4 leading-tight">
+            <h2 className="text-2xl sm:text-[40px] md:text-[48px] font-bold text-slate-900 tracking-tight mb-4 leading-tight">
               Maskinuthyrning utan rätt<br />verktyg är kostsamt
             </h2>
             <p className="text-[16px] text-slate-500 max-w-xl mx-auto leading-relaxed">
@@ -645,7 +646,7 @@ export default function LandingPage() {
       {/* ── Stats ── */}
       <section className="py-20 bg-[#060D1A] border-b border-white/[0.05]">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8">
             <AnimateIn className="text-center" direction="scale">
               <div className="flex items-center justify-center mb-1">
                 <div className="relative inline-flex items-center justify-center w-[52px] h-[52px] text-blue-400">
@@ -680,11 +681,11 @@ export default function LandingPage() {
       </section>
 
       {/* ── Features showcase ── */}
-      <section id="features" className="py-28 px-6">
-        <div className="max-w-6xl mx-auto space-y-28">
+      <section id="features" className="py-16 sm:py-28 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto space-y-16 sm:space-y-28">
           <AnimateIn className="text-center">
             <p className="text-[12px] font-semibold text-blue-600 uppercase tracking-widest mb-3">Funktioner</p>
-            <h2 className="text-[40px] md:text-[48px] font-bold text-slate-900 tracking-tight mb-4">
+            <h2 className="text-2xl sm:text-[40px] md:text-[48px] font-bold text-slate-900 tracking-tight mb-4">
               Allt du behöver,<br />inget du inte behöver
             </h2>
             <p className="text-[16px] text-slate-500 max-w-lg mx-auto leading-relaxed">
@@ -693,13 +694,13 @@ export default function LandingPage() {
           </AnimateIn>
 
           {/* Feature 1: AI Register */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
             <AnimateIn direction="left">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200/80 rounded-full text-blue-600 text-[11px] font-semibold mb-5">
                 <Brain className="w-3.5 h-3.5" />
                 AI-driven
               </div>
-              <h3 className="text-[32px] font-bold text-slate-900 tracking-tight mb-4 leading-tight">
+              <h3 className="text-2xl sm:text-[32px] font-bold text-slate-900 tracking-tight mb-4 leading-tight">
                 Lägg till maskiner<br />på sekunder med AI
               </h3>
               <p className="text-[15px] text-slate-500 leading-relaxed mb-7">
@@ -726,7 +727,7 @@ export default function LandingPage() {
           </div>
 
           {/* Feature 2: Orders */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
             <AnimateIn direction="left" className="order-2 lg:order-1">
               <OrderMockup />
             </AnimateIn>
@@ -735,7 +736,7 @@ export default function LandingPage() {
                 <Zap className="w-3.5 h-3.5" />
                 Automatiserat
               </div>
-              <h3 className="text-[32px] font-bold text-slate-900 tracking-tight mb-4 leading-tight">
+              <h3 className="text-2xl sm:text-[32px] font-bold text-slate-900 tracking-tight mb-4 leading-tight">
                 Skapa uthyrningsorder<br />på under en minut
               </h3>
               <p className="text-[15px] text-slate-500 leading-relaxed mb-7">
@@ -759,13 +760,13 @@ export default function LandingPage() {
           </div>
 
           {/* Feature 3: ROI */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
             <AnimateIn direction="left">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 border border-violet-200/80 rounded-full text-violet-700 text-[11px] font-semibold mb-5">
                 <BarChart3 className="w-3.5 h-3.5" />
                 Realtidsanalys
               </div>
-              <h3 className="text-[32px] font-bold text-slate-900 tracking-tight mb-4 leading-tight">
+              <h3 className="text-2xl sm:text-[32px] font-bold text-slate-900 tracking-tight mb-4 leading-tight">
                 Vet exakt vilka maskiner<br />som lönar sig
               </h3>
               <p className="text-[15px] text-slate-500 leading-relaxed mb-7">
@@ -791,7 +792,7 @@ export default function LandingPage() {
             </AnimateIn>
           </div>
           {/* Feature 4: Digital signing */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
             <AnimateIn direction="left" className="order-2 lg:order-1">
               <SigningMockup />
             </AnimateIn>
@@ -800,7 +801,7 @@ export default function LandingPage() {
                 <PenLine className="w-3.5 h-3.5" />
                 Digital signering
               </div>
-              <h3 className="text-[32px] font-bold text-slate-900 tracking-tight mb-4 leading-tight">
+              <h3 className="text-2xl sm:text-[32px] font-bold text-slate-900 tracking-tight mb-4 leading-tight">
                 Kunden signerar avtalet<br />direkt i mobilen
               </h3>
               <p className="text-[15px] text-slate-500 leading-relaxed mb-7">
@@ -827,7 +828,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── AI Deep Dive ── */}
-      <section className="py-28 px-6 bg-[#060D1A] relative overflow-hidden">
+      <section className="py-16 sm:py-28 px-4 sm:px-6 bg-[#060D1A] relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-1/4 w-[600px] h-[500px] bg-blue-600/[0.06] rounded-full blur-[120px]" />
           <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-violet-600/[0.06] rounded-full blur-[100px]" />
@@ -841,7 +842,7 @@ export default function LandingPage() {
               <Cpu className="w-3.5 h-3.5" />
               AI Automation
             </div>
-            <h2 className="text-[40px] md:text-[48px] font-bold text-white tracking-tight mb-4">
+            <h2 className="text-2xl sm:text-[40px] md:text-[48px] font-bold text-white tracking-tight mb-4">
               Intelligent automatisering<br />i varje steg
             </h2>
             <p className="text-[16px] text-slate-400 max-w-xl mx-auto leading-relaxed">
@@ -915,19 +916,19 @@ export default function LandingPage() {
       </section>
 
       {/* ── QR Feature callout ── */}
-      <section className="py-28 px-6 bg-[#060D1A] relative overflow-hidden border-t border-white/[0.04]">
+      <section className="py-16 sm:py-28 px-4 sm:px-6 bg-[#060D1A] relative overflow-hidden border-t border-white/[0.04]">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 right-1/4 w-[500px] h-[400px] bg-blue-600/[0.05] rounded-full blur-[100px]" />
           <div className="absolute bottom-0 left-1/4 w-[400px] h-[300px] bg-violet-600/[0.05] rounded-full blur-[100px]" />
         </div>
         <div className="max-w-6xl mx-auto relative">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
             <AnimateIn direction="left">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-300 text-[12px] font-semibold mb-6">
                 <QrCode className="w-3.5 h-3.5" />
                 QR-returhantering
               </div>
-              <h2 className="text-[40px] font-bold text-white tracking-tight leading-tight mb-5">
+              <h2 className="text-2xl sm:text-[40px] font-bold text-white tracking-tight leading-tight mb-5">
                 Retur på sekunder,
                 <br />
                 <span className="text-blue-400">inte minuter</span>
@@ -959,17 +960,17 @@ export default function LandingPage() {
       </section>
 
       {/* ── How it works ── */}
-      <section id="how-it-works" className="py-28 px-6 bg-slate-50 border-y border-slate-200">
+      <section id="how-it-works" className="py-16 sm:py-28 px-4 sm:px-6 bg-slate-50 border-y border-slate-200">
         <div className="max-w-5xl mx-auto">
           <AnimateIn className="text-center mb-20">
             <p className="text-[12px] font-semibold text-blue-600 uppercase tracking-widest mb-3">Hur det fungerar</p>
-            <h2 className="text-[40px] font-bold text-slate-900 tracking-tight mb-4">Från signup till full drift på en dag</h2>
+            <h2 className="text-2xl sm:text-[40px] font-bold text-slate-900 tracking-tight mb-4">Från signup till full drift på en dag</h2>
             <p className="text-[16px] text-slate-500 max-w-lg mx-auto">Fyra steg och du har kontroll över hela flottan.</p>
           </AnimateIn>
 
           <div className="relative">
             <div className="absolute top-10 left-[calc(12.5%+20px)] right-[calc(12.5%+20px)] h-px bg-gradient-to-r from-blue-200 via-blue-400 to-blue-200 hidden md:block" />
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
               {[
                 { step: 1, title: 'Skapa konto', desc: 'Registrera ditt företag och bjud in teammedlemmar. Klar på 2 minuter.', icon: Users },
                 { step: 2, title: 'Lägg upp flottan', desc: 'Fotografera maskinen – AI fyller i uppgifterna automatiskt från typskylten.', icon: Truck },
@@ -992,11 +993,11 @@ export default function LandingPage() {
 
 
       {/* ── FAQ ── */}
-      <section className="py-24 px-6 border-t border-slate-100 bg-slate-50">
+      <section className="py-14 sm:py-24 px-4 sm:px-6 border-t border-slate-100 bg-slate-50">
         <div className="max-w-2xl mx-auto">
           <AnimateIn className="text-center mb-14">
             <p className="text-[12px] font-semibold text-blue-600 uppercase tracking-widest mb-3">Vanliga frågor</p>
-            <h2 className="text-[36px] font-bold text-slate-900 tracking-tight">Frågor & svar</h2>
+            <h2 className="text-2xl sm:text-[36px] font-bold text-slate-900 tracking-tight">Frågor & svar</h2>
           </AnimateIn>
           <div className="space-y-4">
             {[
