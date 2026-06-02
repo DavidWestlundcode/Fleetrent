@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
+export const maxDuration = 60;
+
 const SP_API = 'https://app.serviceprotokoll.se/api/v1';
 const RENTABLE_TAG = 'uthyrningsbar';
 
@@ -117,7 +119,7 @@ export async function POST(request: NextRequest) {
     try {
       const [customers, facilities] = await Promise.all([
         fetchAllPages(`${SP_API}/Customer/Get`, token, 200, lastSync ?? undefined),
-        fetchAllPages(`${SP_API}/Facility/Get`, token, 200).catch(() => []),
+        fetchAllPages(`${SP_API}/Facility/Get`, token, 50).catch(() => []),
       ]);
 
       // Group facilities by CustomerID for fast lookup

@@ -278,7 +278,7 @@ function SettingsInner() {
     setSpSyncError('');
     setSpSyncResult(null);
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60000);
+    const timeout = setTimeout(() => controller.abort(), 90000);
     try {
       const res = await fetch('/api/serviceprotokoll/sync', {
         method: 'POST',
