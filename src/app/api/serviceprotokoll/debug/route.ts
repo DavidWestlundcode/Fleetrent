@@ -27,23 +27,30 @@ export async function GET() {
     const token = tokenData.Token;
     if (!token) return NextResponse.json({ error: 'Auth misslyckades', tokenData }, { status: 400 });
 
-    // Find Renta AB specifically
-    const rentaRes = await fetch(`${SP_API}/Customer/Get?request.skip=0&request.take=100`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const allCustomers = rentaRes.ok ? await rentaRes.json() : null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const renta = allCustomers?.Result?.find((c: any) => c.Name?.toLowerCase().includes('renta'));
-
-    // Get facilities for first 10 — show CustomerID and UniqueID pattern
-    const facRes = await fetch(`${SP_API}/Facility/Get?request.skip=0&request.take=10`, {
+    // Fetch all facilities (first 500) and find ones with "renta" or "enköping" in name
+    const facRes = await fetch(`${SP_API}/Facility/Get?request.skip=0&request.take=500`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const facData = facRes.ok ? await facRes.json() : null;
-    const facilityCustomerIDs = facData?.Result?.map((f: any) => ({ name: f.Name, customerID: f.CustomerID }));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rentaFacilities = facData?.Result?.filter((f: any) =>
+      f.Name?.toLowerCase().includes('renta') || f.Name?.toLowerCase().includes('enköping') || f.Name?.toLowerCase().includes('bålsta')
+    ) ?? [];
 
-    return NextResponse.json({ renta, facilityCustomerIDs });
+    // Show unique CustomerIDs to understand the pattern
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const uniqueCustomerIDs = [...new Set(facData?.Result?.map((f: any) => f.CustomerID) ?? [])].slice(0, 20);
+
+    // Find customers with non-null CustomerNo
+    const custRes = await fetch(`${SP_API}/Customer/Get?request.skip=0&request.take=200`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const custData = custRes.ok ? await custRes.json() : null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const withCustomerNo = custData?.Result?.filter((c: any) => c.CustomerNo !== null).slice(0, 5);
+
+    return NextResponse.json({ rentaFacilities, uniqueCustomerIDs, withCustomerNo });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
