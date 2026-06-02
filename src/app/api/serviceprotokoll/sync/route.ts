@@ -112,27 +112,59 @@ export async function POST(request: NextRequest) {
 
     // ── Sync customers — no page limit, use lastSync for incremental updates ──
     try {
-      const customers = await fetchAllPages(`${SP_API}/Customer/Get`, token, 200, lastSync ?? undefined);
+      const [customers, facilities] = await Promise.all([
+        fetchAllPages(`${SP_API}/Customer/Get`, token, 200, lastSync ?? undefined),
+        fetchAllPages(`${SP_API}/Facility/Get`, token, 200).catch(() => []),
+      ]);
+
+      // Group facilities by CustomerID for fast lookup
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const facilityByCustomer: Record<string, any[]> = {};
+      for (const f of facilities) {
+        const cid = String(f.CustomerID ?? f.CustomerId ?? '');
+        if (!cid) continue;
+        if (!facilityByCustomer[cid]) facilityByCustomer[cid] = [];
+        facilityByCustomer[cid].push({
+          name: f.Name ?? f.FacilityName ?? '',
+          address: f.Address?.Street ?? f.StreetAddress ?? '',
+          city: f.Address?.City ?? f.City ?? '',
+          zip: f.Address?.Zip ?? f.ZipCode ?? '',
+        });
+      }
 
       // Build records to upsert in batches of 100
       const records = customers
         .filter(c => c.Name && (c.UniqueID ?? c.CustomerNo))
-        .map(c => ({
-          organization_id: orgId,
-          company_name: c.Name,
-          org_number: c.OrganisationNumber ?? '',
-          email: c.InvoiceEmail ?? '',
-          phone: c.Phone ?? '',
-          invoice_address: [c.InvoiceAddress?.Street, c.InvoiceAddress?.City].filter(Boolean).join(', '),
-          delivery_address: [c.Address?.Street, c.Address?.City].filter(Boolean).join(', '),
-          sp_id: String(c.UniqueID ?? c.CustomerNo),
-        }));
+        .map(c => {
+          const spId = String(c.UniqueID ?? c.CustomerNo);
+          const contacts = (c.Contacts ?? []).map((ct: Record<string, string>) => ({
+            name: ct.Name ?? ct.ContactName ?? '',
+            phone: ct.Phone ?? ct.Mobile ?? '',
+            email: ct.Email ?? ct.EmailAddress ?? '',
+            title: ct.Title ?? ct.Role ?? '',
+          })).filter((ct: { name: string }) => ct.name);
+
+          return {
+            organization_id: orgId,
+            company_name: c.Name,
+            org_number: c.OrganisationNumber ?? '',
+            email: c.InvoiceEmail ?? (contacts[0]?.email ?? ''),
+            phone: c.Phone ?? (contacts[0]?.phone ?? ''),
+            contact_person: contacts[0]?.name ?? '',
+            invoice_address: [c.InvoiceAddress?.Street, c.InvoiceAddress?.PostalCode, c.InvoiceAddress?.City].filter(Boolean).join(', '),
+            delivery_address: [c.Address?.Street, c.Address?.PostalCode, c.Address?.City].filter(Boolean).join(', '),
+            contacts,
+            facilities: facilityByCustomer[spId] ?? [],
+            sp_id: spId,
+          };
+        });
 
       const BATCH = 100;
       for (let i = 0; i < records.length; i += BATCH) {
         const batch = records.slice(i, i + BATCH);
+        // ignoreDuplicates: false so we UPDATE existing customers with fresh SP data
         const { error, count } = await admin.from('customers')
-          .upsert(batch, { onConflict: 'organization_id,sp_id', ignoreDuplicates: true, count: 'exact' });
+          .upsert(batch, { onConflict: 'organization_id,sp_id', ignoreDuplicates: false, count: 'exact' });
         if (error) errors.push(`Kunder batch ${i}: ${error.message}`);
         else customersImported += count ?? 0;
       }

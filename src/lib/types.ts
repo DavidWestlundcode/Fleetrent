@@ -29,6 +29,14 @@ export interface ContactPerson {
   name: string;
   phone: string;
   email: string;
+  title?: string;
+}
+
+export interface CustomerFacility {
+  name: string;
+  address: string;
+  city: string;
+  zip?: string;
 }
 
 export interface Article {
@@ -104,8 +112,10 @@ export interface Customer {
   activeOrders: number;
   fortnoxCustomerNumber?: string;
   contacts: ContactPerson[];
+  facilities: CustomerFacility[];
   isActive?: boolean;
   createdAt: string;
+  spId?: string;
 }
 
 export interface OrderEvent {

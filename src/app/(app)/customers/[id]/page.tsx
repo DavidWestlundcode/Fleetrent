@@ -1,7 +1,7 @@
 'use client';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Building2, Phone, Mail, MapPin, FileText, Plus, Trash2, Ban, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Building2, Phone, Mail, MapPin, FileText, Plus, Trash2, Ban, RotateCcw, Users, Home } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
@@ -151,6 +151,55 @@ export default function CustomerDetailPage() {
                 </div>
               )}
             </div>
+
+            {customer.contacts && customer.contacts.length > 0 && (
+              <div className="bg-white rounded-xl border border-slate-200 p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-4 h-4 text-slate-500" />
+                  <h3 className="font-semibold text-slate-900">Kontaktpersoner</h3>
+                </div>
+                <div className="space-y-3">
+                  {customer.contacts.map((c, i) => (
+                    <div key={i} className="pb-3 border-b border-slate-50 last:border-0 last:pb-0">
+                      <p className="text-sm font-medium text-slate-800">{c.name}</p>
+                      {c.title && <p className="text-xs text-slate-400 mt-0.5">{c.title}</p>}
+                      <div className="mt-1 space-y-0.5">
+                        {c.phone && (
+                          <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                            <Phone className="w-3 h-3 text-slate-400" />{c.phone}
+                          </div>
+                        )}
+                        {c.email && (
+                          <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                            <Mail className="w-3 h-3 text-slate-400" />{c.email}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {customer.facilities && customer.facilities.length > 0 && (
+              <div className="bg-white rounded-xl border border-slate-200 p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Home className="w-4 h-4 text-slate-500" />
+                  <h3 className="font-semibold text-slate-900">Anläggningar</h3>
+                </div>
+                <div className="space-y-2.5">
+                  {customer.facilities.map((f, i) => (
+                    <div key={i} className="flex items-start gap-2 pb-2.5 border-b border-slate-50 last:border-0 last:pb-0">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
+                      <div>
+                        {f.name && <p className="text-sm font-medium text-slate-800">{f.name}</p>}
+                        <p className="text-xs text-slate-500">{[f.address, f.zip, f.city].filter(Boolean).join(' ')}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h3 className="font-semibold text-slate-900 mb-3">Statistik</h3>
