@@ -150,7 +150,9 @@ export async function POST(request: NextRequest) {
         .filter(c => c.Name && (c.UniqueID ?? c.CustomerNo))
         .map(c => {
           const spId = String(c.UniqueID ?? c.CustomerNo);
-          const customerFacilities = facilityByCustomer[spId] ?? [];
+          // Facilities use CustomerNo as CustomerID, not UniqueID
+          const customerNoKey = c.CustomerNo ? String(c.CustomerNo) : null;
+          const customerFacilities = customerNoKey ? (facilityByCustomer[customerNoKey] ?? []) : [];
 
           // All contacts come from facilities (customer.Contacts is null in SP API)
           const allContacts = customerFacilities.flatMap((f: { contacts?: { name: string; phone: string; email: string; title: string }[] }) => f.contacts ?? []);
