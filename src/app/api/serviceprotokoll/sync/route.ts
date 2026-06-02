@@ -17,14 +17,14 @@ async function getSPToken(integrationKey: string): Promise<string | null> {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchAllPages(url: string, token: string): Promise<any[]> {
+async function fetchAllPages(url: string, token: string, maxPages = 10, lastSync?: string): Promise<any[]> {
   const results = [];
   let skip = 0;
   const take = 100;
-  const MAX_PAGES = 10;
   let page = 0;
-  while (page < MAX_PAGES) {
-    const res = await fetch(`${url}?request.skip=${skip}&request.take=${take}`, {
+  const syncParam = lastSync ? `&request.lastSync=${encodeURIComponent(lastSync)}` : '';
+  while (page < maxPages) {
+    const res = await fetch(`${url}?request.skip=${skip}&request.take=${take}${syncParam}`, {
       headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(8000),
     });
@@ -51,9 +51,11 @@ export async function POST(request: NextRequest) {
     if (!orgId) return NextResponse.json({ error: 'Ingen organisation' }, { status: 400 });
 
     const admin = createAdminClient();
-    const { data: orgRow } = await admin.from('organizations').select('sp_integration_key').eq('id', orgId).single();
+    const { data: orgRow } = await admin.from('organizations').select('sp_integration_key, sp_last_sync').eq('id', orgId).single();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const integrationKey = (orgRow as any)?.sp_integration_key as string | null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lastSync = (orgRow as any)?.sp_last_sync as string | null;
 
     if (!integrationKey) {
       return NextResponse.json({ error: 'Ingen Serviceprotokoll-nyckel konfigurerad' }, { status: 400 });
@@ -108,34 +110,31 @@ export async function POST(request: NextRequest) {
       errors.push(`Maskiner: ${e instanceof Error ? e.message : String(e)}`);
     }
 
-    // ── Sync customers ──
+    // ── Sync customers — no page limit, use lastSync for incremental updates ──
     try {
-      const customers = await fetchAllPages(`${SP_API}/Customer/Get`, token);
+      const customers = await fetchAllPages(`${SP_API}/Customer/Get`, token, 200, lastSync ?? undefined);
 
-      for (const c of customers) {
-        const spId = String(c.UniqueID ?? c.CustomerNo ?? '');
-        const name = c.Name ?? '';
-        if (!name || !spId) continue;
+      // Build records to upsert in batches of 100
+      const records = customers
+        .filter(c => c.Name && (c.UniqueID ?? c.CustomerNo))
+        .map(c => ({
+          organization_id: orgId,
+          company_name: c.Name,
+          org_number: c.OrganisationNumber ?? '',
+          email: c.InvoiceEmail ?? '',
+          phone: c.Phone ?? '',
+          invoice_address: [c.InvoiceAddress?.Street, c.InvoiceAddress?.City].filter(Boolean).join(', '),
+          delivery_address: [c.Address?.Street, c.Address?.City].filter(Boolean).join(', '),
+          sp_id: String(c.UniqueID ?? c.CustomerNo),
+        }));
 
-        const { data: existing } = await admin.from('customers')
-          .select('id')
-          .eq('organization_id', orgId)
-          .eq('sp_id', spId)
-          .maybeSingle();
-
-        if (!existing) {
-          const { error } = await admin.from('customers').insert({
-            organization_id: orgId,
-            company_name: name,
-            org_number: c.OrganisationNumber ?? '',
-            email: c.InvoiceEmail ?? '',
-            phone: c.Phone ?? '',
-            invoice_address: [c.InvoiceAddress?.Street, c.InvoiceAddress?.City].filter(Boolean).join(', '),
-            sp_id: spId,
-          });
-          if (!error) customersImported++;
-          else errors.push(`Kund ${name}: ${error.message}`);
-        }
+      const BATCH = 100;
+      for (let i = 0; i < records.length; i += BATCH) {
+        const batch = records.slice(i, i + BATCH);
+        const { error, count } = await admin.from('customers')
+          .upsert(batch, { onConflict: 'organization_id,sp_id', ignoreDuplicates: true, count: 'exact' });
+        if (error) errors.push(`Kunder batch ${i}: ${error.message}`);
+        else customersImported += count ?? 0;
       }
     } catch (e) {
       errors.push(`Kunder: ${e instanceof Error ? e.message : String(e)}`);
