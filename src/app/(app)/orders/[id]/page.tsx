@@ -18,6 +18,7 @@ export default function OrderDetailPage() {
   const [fortnoxError, setFortnoxError] = useState<string | null>(null);
   const [sendingToZigned, setSendingToZigned] = useState(false);
   const [zignedError, setZignedError] = useState<string | null>(null);
+  const [checkingZignedStatus, setCheckingZignedStatus] = useState(false);
   const [showInvoiceForm, setShowInvoiceForm] = useState(false);
   const [invoiceEndDate, setInvoiceEndDate] = useState('');
   const [savingInvoice, setSavingInvoice] = useState(false);
@@ -74,6 +75,23 @@ export default function OrderDetailPage() {
     if (confirm(`Radera order ${order.orderNumber}? Detta går inte att ångra.`)) {
       deleteOrder(order.id);
       router.push('/orders');
+    }
+  };
+
+  const handleCheckZignedStatus = async () => {
+    setCheckingZignedStatus(true);
+    try {
+      const res = await fetch('/api/zigned/check-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+      const data = await res.json();
+      if (res.ok && data.signingStatus) {
+        updateOrder(order.id, { signingStatus: data.signingStatus });
+      }
+    } finally {
+      setCheckingZignedStatus(false);
     }
   };
 
@@ -262,17 +280,28 @@ export default function OrderDetailPage() {
           </div>
         )}
 
-        {order.signingStatus === 'pending' && order.signingUrl && (
+        {order.signingStatus === 'pending' && (
           <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-center gap-3">
             <FileSignature className="w-5 h-5 text-indigo-500 shrink-0" />
             <div className="flex-1">
               <p className="text-sm font-semibold text-indigo-800">Väntar på kundens signering</p>
               <p className="text-sm text-indigo-600 mt-0.5">Kunden har fått ett e-postmeddelande med signeringslänken.</p>
             </div>
-            <a href={order.signingUrl} target="_blank" rel="noopener noreferrer"
-              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors">
-              <ExternalLink className="w-3.5 h-3.5" /> Öppna signeringsrum
-            </a>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={handleCheckZignedStatus}
+                disabled={checkingZignedStatus}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors disabled:opacity-50">
+                {checkingZignedStatus ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                Kontrollera status
+              </button>
+              {order.signingUrl && (
+                <a href={order.signingUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors">
+                  <ExternalLink className="w-3.5 h-3.5" /> Öppna signeringsrum
+                </a>
+              )}
+            </div>
           </div>
         )}
 
