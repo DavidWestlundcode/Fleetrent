@@ -11,7 +11,12 @@ export async function POST(request: NextRequest) {
 
     const admin = createAdminClient();
 
-    if (event === 'agreement.lifecycle.finalized' || event?.includes('finalized')) {
+    if (
+      event === 'agreement.lifecycle.fulfilled' ||
+      event === 'agreement.lifecycle.finalized' ||
+      event?.includes('fulfilled') ||
+      event?.includes('finalized')
+    ) {
       await admin.from('orders')
         .update({ signing_status: 'signed' })
         .eq('zigned_agreement_id', agreementId);
