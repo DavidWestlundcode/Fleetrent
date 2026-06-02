@@ -208,7 +208,9 @@ export async function POST(request: NextRequest) {
       signing_url: signingUrl,
     }).eq('id', orderId);
 
-    return NextResponse.json({ success: true, agreementId, signingUrl, _debug: { lifecycleStatus: lifecycleData?.data?.lifecycle_state ?? lifecycleData?.data?.status ?? 'unknown' } });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ld = lifecycleData as any;
+    return NextResponse.json({ success: true, agreementId, signingUrl, _debug: { lifecycleStatus: ld?.data?.lifecycle_state ?? ld?.data?.status ?? 'unknown' } });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Okänt fel';
     return NextResponse.json({ error: msg }, { status: 500 });
