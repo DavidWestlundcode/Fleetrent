@@ -72,6 +72,8 @@ export async function POST(request: NextRequest) {
     let machinesImported = 0;
     let customersImported = 0;
     const errors: string[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let facilityByCustomer: Record<string, any[]> = {};
 
     // ── Sync machines (ServiceObjects with tag "uthyrningsbar") ──
     try {
@@ -123,8 +125,6 @@ export async function POST(request: NextRequest) {
       ]);
 
       // Group facilities by CustomerID — contacts sit on facilities, not on customers
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const facilityByCustomer: Record<string, any[]> = {};
       for (const f of facilities) {
         const cid = String(f.CustomerID ?? f.CustomerId ?? '');
         if (!cid) continue;
@@ -213,7 +213,8 @@ export async function POST(request: NextRequest) {
     // Update last sync timestamp
     await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', orgId);
 
-    return NextResponse.json({ machinesImported, customersImported, errors });
+    const facilitiesTotal = Object.values(facilityByCustomer ?? {}).flat().length;
+    return NextResponse.json({ machinesImported, customersImported, errors, _debug: { facilitiesTotal, customersWithFacilities: Object.keys(facilityByCustomer ?? {}).length } });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Okänt fel' }, { status: 500 });
   }

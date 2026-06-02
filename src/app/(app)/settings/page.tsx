@@ -291,6 +291,8 @@ function SettingsInner() {
       setSpSyncResult({ machinesImported: data.machinesImported, customersImported: data.customersImported });
       if (data.errors?.length) setSpSyncError(data.errors.slice(0, 3).join(' | '));
       setSpLastSync(new Date().toISOString());
+      // Refresh store so new customers/data shows immediately
+      await useStore.getState().initialize();
     } catch (e) {
       setSpSyncError(e instanceof Error && e.name === 'AbortError' ? 'Synken tog för lång tid – försök igen' : 'Nätverksfel – försök igen');
     } finally {
