@@ -82,6 +82,10 @@ function NewOrderForm() {
     insuranceArticleId: '',
     transportArticleId: '',
     depositArticleId: '',
+    facilityName: '',
+    ordererName: '',
+    ordererPhone: '',
+    ordererEmail: '',
   });
   const [includeInsurance, setIncludeInsurance] = useState(false);
   const [rentalType, setRentalType] = useState<'short' | 'long'>('short');
@@ -243,12 +247,17 @@ function NewOrderForm() {
       rentalDiscount: dailyDiscount || undefined,
       transportDiscount: transportDiscount || undefined,
       insuranceDiscount: insuranceDiscount || undefined,
+      facilityName: form.facilityName || undefined,
+      ordererName: form.ordererName || undefined,
+      ordererPhone: form.ordererPhone || undefined,
+      ordererEmail: form.ordererEmail || undefined,
     });
     router.push(`/orders/${id}`);
   };
 
   const selectedMachine = machines.find((m) => m.id === form.machineId);
   const selectedCustomer = customers.find((c) => c.id === form.customerId);
+  const selectedFacility = selectedCustomer?.facilities?.find((f) => f.name === form.facilityName);
 
   return (
     <div className="flex flex-col flex-1 overflow-auto bg-slate-50/60">
@@ -265,9 +274,20 @@ function NewOrderForm() {
               <h2 className="text-[14px] font-semibold text-slate-900 mb-4">Kund och maskin</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="Kund *" required>
-                  <select required value={form.customerId} onChange={(e) => set('customerId', e.target.value)} className={inputClass}>
+                  <select
+                    required
+                    value={form.customerId}
+                    onChange={(e) => {
+                      set('customerId', e.target.value);
+                      set('facilityName', '');
+                      set('ordererName', '');
+                      set('ordererPhone', '');
+                      set('ordererEmail', '');
+                    }}
+                    className={inputClass}
+                  >
                     <option value="">Välj kund...</option>
-                    {customers.map((c) => (
+                    {customers.filter(c => c.isActive !== false).map((c) => (
                       <option key={c.id} value={c.id}>{c.companyName}</option>
                     ))}
                   </select>
@@ -281,6 +301,46 @@ function NewOrderForm() {
                     ))}
                   </select>
                 </Field>
+
+                {selectedCustomer?.facilities && selectedCustomer.facilities.length > 0 && (
+                  <Field label="Anläggning">
+                    <select
+                      value={form.facilityName}
+                      onChange={(e) => {
+                        set('facilityName', e.target.value);
+                        set('ordererName', '');
+                        set('ordererPhone', '');
+                        set('ordererEmail', '');
+                      }}
+                      className={inputClass}
+                    >
+                      <option value="">Välj anläggning (valfritt)...</option>
+                      {selectedCustomer.facilities.map((f, i) => (
+                        <option key={i} value={f.name}>{f.name}{f.city ? ` – ${f.city}` : ''}</option>
+                      ))}
+                    </select>
+                  </Field>
+                )}
+
+                {selectedFacility?.contacts && selectedFacility.contacts.length > 0 && (
+                  <Field label="Beställare">
+                    <select
+                      value={form.ordererName}
+                      onChange={(e) => {
+                        const contact = selectedFacility.contacts!.find((c) => c.name === e.target.value);
+                        set('ordererName', e.target.value);
+                        set('ordererPhone', contact?.phone ?? '');
+                        set('ordererEmail', contact?.email ?? '');
+                      }}
+                      className={inputClass}
+                    >
+                      <option value="">Välj beställare (valfritt)...</option>
+                      {selectedFacility.contacts.map((c, i) => (
+                        <option key={i} value={c.name}>{c.name}{c.title ? ` – ${c.title}` : ''}</option>
+                      ))}
+                    </select>
+                  </Field>
+                )}
 
                 <div className="md:col-span-2">
                   <Field label="Maskin *" required>

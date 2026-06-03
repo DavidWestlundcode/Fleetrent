@@ -1,0 +1,5 @@
+ALTER TABLE orders
+  ADD COLUMN IF NOT EXISTS facility_name TEXT,
+  ADD COLUMN IF NOT EXISTS orderer_name TEXT,
+  ADD COLUMN IF NOT EXISTS orderer_phone TEXT,
+  ADD COLUMN IF NOT EXISTS orderer_email TEXT;

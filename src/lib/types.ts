@@ -158,6 +158,10 @@ export interface Order {
   internalNotes: string;
   customerNotes: string;
   accessories: string[];
+  facilityName?: string;
+  ordererName?: string;
+  ordererPhone?: string;
+  ordererEmail?: string;
   insuranceCost?: number;
   returnCondition?: ReturnCondition;
   returnNotes?: string;

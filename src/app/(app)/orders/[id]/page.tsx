@@ -367,6 +367,26 @@ export default function OrderDetailPage() {
                   </Link>
                   <p className="text-xs text-slate-500">{customer?.contactPerson}</p>
                 </div>
+                {order.facilityName && (
+                  <div>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                      <Building2 className="w-3.5 h-3.5" /> Anläggning
+                    </div>
+                    <p className="text-sm font-medium text-slate-800">{order.facilityName}</p>
+                  </div>
+                )}
+                {order.ordererName && (
+                  <div>
+                    <p className="text-xs text-slate-400 mb-1">Beställare</p>
+                    <p className="text-sm font-medium text-slate-800">{order.ordererName}</p>
+                    {order.ordererPhone && (
+                      <a href={`tel:${order.ordererPhone}`} className="text-xs text-blue-600 hover:underline block">{order.ordererPhone}</a>
+                    )}
+                    {order.ordererEmail && (
+                      <a href={`mailto:${order.ordererEmail}`} className="text-xs text-blue-600 hover:underline block">{order.ordererEmail}</a>
+                    )}
+                  </div>
+                )}
                 <div>
                   <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
                     <Truck className="w-3.5 h-3.5" /> Maskin
