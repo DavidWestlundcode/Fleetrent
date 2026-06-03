@@ -76,6 +76,8 @@ export async function POST(request: NextRequest) {
     let facilityByCustomer: Record<string, any[]> = {};
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let _sampleCustomer: any = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let _rawFacility: any = null;
 
     // ── Sync machines (ServiceObjects with tag "uthyrningsbar") ──
     try {
@@ -128,6 +130,7 @@ export async function POST(request: NextRequest) {
 
       // Group facilities by CustomerID — contacts sit on facilities, not on customers
       for (const f of facilities) {
+        if (!_rawFacility) _rawFacility = f;
         const cid = String(f.CustomerID ?? f.CustomerId ?? '');
         if (!cid) continue;
         if (!facilityByCustomer[cid]) facilityByCustomer[cid] = [];
@@ -236,8 +239,7 @@ export async function POST(request: NextRequest) {
     await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', orgId);
 
     const facilitiesTotal = Object.values(facilityByCustomer ?? {}).flat().length;
-    const sampleFacility = Object.values(facilityByCustomer ?? {})[0]?.[0] ?? null;
-    return NextResponse.json({ machinesImported, customersImported, errors, _debug: { facilitiesTotal, customersWithFacilities: Object.keys(facilityByCustomer ?? {}).length, sampleCustomer: _sampleCustomer, sampleFacility } });
+    return NextResponse.json({ machinesImported, customersImported, errors, _debug: { facilitiesTotal, customersWithFacilities: Object.keys(facilityByCustomer ?? {}).length, sampleCustomer: _sampleCustomer, rawFacility: _rawFacility } });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Okänt fel' }, { status: 500 });
   }
