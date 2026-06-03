@@ -92,6 +92,8 @@ export async function POST(request: NextRequest) {
     const errors: string[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let facilityByCustomer: Record<string, any[]> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let _debugCustomers: any[] = [];
 
     // ── Sync machines (ServiceObjects with tag "uthyrningsbar") ──
     try {
@@ -165,7 +167,7 @@ export async function POST(request: NextRequest) {
 
       // Debug: find specific customers to inspect their raw address data
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const _debugCustomers = customers.filter((c: any) =>
+      _debugCustomers = customers.filter((c: any) =>
         c.Name?.toLowerCase().includes('kriminal') || c.Name?.toLowerCase().includes('norra skog') || c.Name?.toLowerCase().includes('skogsägarna')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ).map((c: any) => ({ Name: c.Name, CustomerNo: c.CustomerNo, Address: c.Address, InvoiceAddress: c.InvoiceAddress, mappedInvoice: mapCustomerAddresses(c).invoice_address }));
