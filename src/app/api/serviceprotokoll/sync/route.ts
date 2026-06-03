@@ -163,6 +163,13 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // Debug: find specific customers to inspect their raw address data
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const _debugCustomers = customers.filter((c: any) =>
+        c.Name?.toLowerCase().includes('kriminal') || c.Name?.toLowerCase().includes('norra skog') || c.Name?.toLowerCase().includes('skogsägarna')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ).map((c: any) => ({ Name: c.Name, CustomerNo: c.CustomerNo, Address: c.Address, InvoiceAddress: c.InvoiceAddress, mappedInvoice: mapCustomerAddresses(c).invoice_address }));
+
       // Build records
       const records = customers
         .filter((c: { Name: string; UniqueID: unknown; CustomerNo: unknown }) => c.Name && (c.UniqueID ?? c.CustomerNo))
@@ -249,7 +256,7 @@ export async function POST(request: NextRequest) {
     await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', orgId);
 
     const facilitiesTotal = Object.values(facilityByCustomer ?? {}).flat().length;
-    return NextResponse.json({ machinesImported, customersImported, errors });
+    return NextResponse.json({ machinesImported, customersImported, errors, _debugCustomers });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Okänt fel' }, { status: 500 });
   }
