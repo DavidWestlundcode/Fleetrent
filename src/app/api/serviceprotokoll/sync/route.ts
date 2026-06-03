@@ -9,18 +9,19 @@ const RENTABLE_TAG = 'uthyrningsbar';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapAddress(addr: any): string {
-  if (!addr?.IsFilled) return '';
+  if (!addr) return '';
   return [addr.AddressRow1, addr.AddressRow2, addr.PostalCode, addr.Place].filter(Boolean).join(', ');
 }
 
-// SP stores the main address in Address; InvoiceAddress is only set when it differs.
-// Fall back to Address for invoice when InvoiceAddress is not explicitly set.
+// SP has InvoiceAddress (faktureringsadress) and Address (postadress).
+// Use InvoiceAddress when it has any data, otherwise fall back to Address.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapCustomerAddresses(c: any) {
-  const invoiceAddr = c.InvoiceAddress?.IsFilled ? c.InvoiceAddress : c.Address;
+  const invoiceAddrStr = mapAddress(c.InvoiceAddress);
+  const physAddrStr = mapAddress(c.Address);
   return {
-    invoice_address: mapAddress(invoiceAddr),
-    delivery_address: mapAddress(c.Address),
+    invoice_address: invoiceAddrStr || physAddrStr,
+    delivery_address: physAddrStr,
   };
 }
 
