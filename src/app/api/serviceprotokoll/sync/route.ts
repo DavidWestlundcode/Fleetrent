@@ -92,8 +92,6 @@ export async function POST(request: NextRequest) {
     const errors: string[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let facilityByCustomer: Record<string, any[]> = {};
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let _debug: any[] = [];
 
     // ── Sync machines (ServiceObjects with tag "uthyrningsbar") ──
     try {
@@ -164,11 +162,6 @@ export async function POST(request: NextRequest) {
           contacts: facContacts,
         });
       }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      _debug = customers.filter((c: any) => c.Name?.toLowerCase().includes('timrå') || c.Name?.toLowerCase().includes('timra'))
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .map((c: any) => ({ Name: c.Name, CustomerNo: c.CustomerNo, Address: c.Address, InvoiceAddress: c.InvoiceAddress }));
 
       // Build records
       const records = customers
@@ -256,7 +249,7 @@ export async function POST(request: NextRequest) {
     await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', orgId);
 
     const facilitiesTotal = Object.values(facilityByCustomer ?? {}).flat().length;
-    return NextResponse.json({ machinesImported, customersImported, errors, _debug });
+    return NextResponse.json({ machinesImported, customersImported, errors });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Okänt fel' }, { status: 500 });
   }
