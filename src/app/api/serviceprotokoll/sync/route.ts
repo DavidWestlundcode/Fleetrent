@@ -7,6 +7,23 @@ export const maxDuration = 60;
 const SP_API = 'https://app.serviceprotokoll.se/api/v1';
 const RENTABLE_TAG = 'uthyrningsbar';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapAddress(addr: any): string {
+  if (!addr?.IsFilled) return '';
+  return [addr.AddressRow1, addr.AddressRow2, addr.PostalCode, addr.Place].filter(Boolean).join(', ');
+}
+
+// SP stores the main address in Address; InvoiceAddress is only set when it differs.
+// Fall back to Address for invoice when InvoiceAddress is not explicitly set.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapCustomerAddresses(c: any) {
+  const invoiceAddr = c.InvoiceAddress?.IsFilled ? c.InvoiceAddress : c.Address;
+  return {
+    invoice_address: mapAddress(invoiceAddr),
+    delivery_address: mapAddress(c.Address),
+  };
+}
+
 async function getSPToken(integrationKey: string): Promise<string | null> {
   const res = await fetch(`${SP_API}/Auth/GetToken`, {
     method: 'POST',
@@ -117,13 +134,6 @@ export async function POST(request: NextRequest) {
       errors.push(`Maskiner: ${e instanceof Error ? e.message : String(e)}`);
     }
 
-    // ── Test: does individual customer detail endpoint return address? ──
-    let _detailTest = null;
-    try {
-      const testRes = await fetch(`${SP_API}/Customer/Get/74337`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) });
-      if (testRes.ok) _detailTest = await testRes.json();
-    } catch {}
-
     // ── Sync customers — no page limit, use lastSync for incremental updates ──
     try {
       const [customers, facilities] = await Promise.all([
@@ -171,12 +181,7 @@ export async function POST(request: NextRequest) {
             email: c.InvoiceEmail ?? (allContacts[0]?.email ?? ''),
             phone: c.Phone ?? (allContacts[0]?.phone ?? ''),
             contact_person: allContacts[0]?.name ?? '',
-            invoice_address: c.InvoiceAddress?.IsFilled
-              ? [c.InvoiceAddress.AddressRow1, c.InvoiceAddress.AddressRow2, c.InvoiceAddress.PostalCode, c.InvoiceAddress.Place].filter(Boolean).join(', ')
-              : '',
-            delivery_address: c.Address?.IsFilled
-              ? [c.Address.AddressRow1, c.Address.AddressRow2, c.Address.PostalCode, c.Address.Place].filter(Boolean).join(', ')
-              : '',
+            ...mapCustomerAddresses(c),
             fortnox_customer_number: c.CustomerNo ? String(c.CustomerNo) : null,
             contacts: allContacts,
             facilities: customerFacilities,
@@ -243,7 +248,7 @@ export async function POST(request: NextRequest) {
     await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', orgId);
 
     const facilitiesTotal = Object.values(facilityByCustomer ?? {}).flat().length;
-    return NextResponse.json({ machinesImported, customersImported, errors, _debug: { facilitiesTotal, customersWithFacilities: Object.keys(facilityByCustomer ?? {}).length, detailTest: _detailTest } });
+    return NextResponse.json({ machinesImported, customersImported, errors });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Okänt fel' }, { status: 500 });
   }
@@ -337,12 +342,7 @@ export async function GET(request: NextRequest) {
         email: c.InvoiceEmail ?? (allContacts[0]?.email ?? ''),
         phone: c.Phone ?? (allContacts[0]?.phone ?? ''),
         contact_person: allContacts[0]?.name ?? '',
-        invoice_address: c.InvoiceAddress?.IsFilled
-          ? [c.InvoiceAddress.AddressRow1, c.InvoiceAddress.AddressRow2, c.InvoiceAddress.PostalCode, c.InvoiceAddress.Place].filter(Boolean).join(', ')
-          : '',
-        delivery_address: c.Address?.IsFilled
-          ? [c.Address.AddressRow1, c.Address.AddressRow2, c.Address.PostalCode, c.Address.Place].filter(Boolean).join(', ')
-          : '',
+        ...mapCustomerAddresses(c),
         fortnox_customer_number: c.CustomerNo ? String(c.CustomerNo) : null,
         contacts: allContacts,
         facilities: customerFacilities,
