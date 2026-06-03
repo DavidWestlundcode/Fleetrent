@@ -13,15 +13,15 @@ function mapAddress(addr: any): string {
   return [addr.AddressRow1, addr.AddressRow2, addr.PostalCode, addr.Place].filter(Boolean).join(', ');
 }
 
-// SP has InvoiceAddress (faktureringsadress) and Address (postadress).
-// Use InvoiceAddress when it has any data, otherwise fall back to Address.
+// SP:s Address-fält = faktureringsadress. Leveransadresser hanteras via anläggningar.
+// InvoiceAddress används när den har data, annars Address som fallback.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapCustomerAddresses(c: any) {
   const invoiceAddrStr = mapAddress(c.InvoiceAddress);
   const physAddrStr = mapAddress(c.Address);
   return {
     invoice_address: invoiceAddrStr || physAddrStr,
-    delivery_address: physAddrStr,
+    delivery_address: '',
   };
 }
 
