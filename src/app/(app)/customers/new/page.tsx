@@ -103,7 +103,7 @@ export default function NewCustomerPage() {
               <Field label="Organisationsnummer">
                 <input value={form.orgNumber} onChange={(e) => set('orgNumber', e.target.value)} className={inputClass} placeholder="556000-0000" />
               </Field>
-              <Field label="Faktureringse-post">
+              <Field label="Fakturaepost">
                 <input type="email" value={form.invoiceEmail} onChange={(e) => set('invoiceEmail', e.target.value)} className={inputClass} placeholder="faktura@foretag.se" />
               </Field>
               <Field label="Kundnummer">

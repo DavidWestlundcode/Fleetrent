@@ -165,7 +165,7 @@ export default function EditCustomerPage() {
               <Field label="Organisationsnummer">
                 <input value={form.orgNumber} onChange={(e) => set('orgNumber', e.target.value)} className={inputClass} placeholder="556000-0000" />
               </Field>
-              <Field label="E-post">
+              <Field label="Fakturaepost">
                 <input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} className={inputClass} />
               </Field>
               <Field label="Telefon">

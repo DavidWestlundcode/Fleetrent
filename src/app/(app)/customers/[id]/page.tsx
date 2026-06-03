@@ -144,9 +144,12 @@ export default function CustomerDetailPage() {
                   <Phone className="w-4 h-4 text-slate-400 shrink-0" />
                   <a href={`tel:${customer.phone}`} className="hover:text-blue-600">{customer.phone}</a>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-slate-700">
-                  <Mail className="w-4 h-4 text-slate-400 shrink-0" />
-                  <a href={`mailto:${customer.email}`} className="hover:text-blue-600">{customer.email}</a>
+                <div>
+                  <p className="text-xs text-slate-400 mb-0.5">Fakturaepost</p>
+                  <div className="flex items-center gap-2 text-sm text-slate-700">
+                    <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                    <a href={`mailto:${customer.email}`} className="hover:text-blue-600">{customer.email}</a>
+                  </div>
                 </div>
               </div>
               <div className="space-y-3">

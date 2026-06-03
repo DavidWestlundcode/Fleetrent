@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
             organization_id: orgId,
             company_name: c.Name,
             org_number: c.OrganisationNumber ?? '',
-            email: c.InvoiceEmail ?? (allContacts[0]?.email ?? ''),
+            email: c.InvoiceEmail ?? '',
             phone: c.Phone ?? (allContacts[0]?.phone ?? ''),
             contact_person: allContacts[0]?.name ?? '',
             ...mapCustomerAddresses(c),
