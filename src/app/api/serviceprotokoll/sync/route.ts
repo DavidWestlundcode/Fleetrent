@@ -154,7 +154,8 @@ export async function POST(request: NextRequest) {
       const records = customers
         .filter(c => c.Name && (c.UniqueID ?? c.CustomerNo))
         .map((c, idx) => {
-          if (!_sampleCustomer && (c.InvoiceAddress || c.Address || c.CustomerNo)) _sampleCustomer = c;
+          if (!_sampleCustomer && c.Name?.toLowerCase().includes('testa renta')) _sampleCustomer = c;
+          if (!_sampleCustomer && idx === 0) _sampleCustomer = c;
 
           const spId = String(c.UniqueID ?? c.CustomerNo);
           // Facilities use CustomerNo as CustomerID, not UniqueID
