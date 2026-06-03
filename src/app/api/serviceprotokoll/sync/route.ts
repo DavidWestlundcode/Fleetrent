@@ -78,6 +78,8 @@ export async function POST(request: NextRequest) {
     let _sampleCustomer: any = null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let _rawFacility: any = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let _allCustomers: any[] = [];
 
     // ── Sync machines (ServiceObjects with tag "uthyrningsbar") ──
     try {
@@ -151,8 +153,8 @@ export async function POST(request: NextRequest) {
       }
 
       // Build records
-      const records = customers
-        .filter(c => c.Name && (c.UniqueID ?? c.CustomerNo))
+      _allCustomers = customers.filter((c: { Name: string; UniqueID: unknown; CustomerNo: unknown }) => c.Name && (c.UniqueID ?? c.CustomerNo));
+      const records = _allCustomers
         .map((c, idx) => {
           if (!_sampleCustomer && (c.InvoiceAddress?.IsFilled || c.InvoiceAddress?.AddressRow1)) _sampleCustomer = c;
 
@@ -239,10 +241,9 @@ export async function POST(request: NextRequest) {
     await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', orgId);
 
     const facilitiesTotal = Object.values(facilityByCustomer ?? {}).flat().length;
-    const allCustomers = customers.filter((c: { Name: string; UniqueID: unknown; CustomerNo: unknown }) => c.Name && (c.UniqueID ?? c.CustomerNo));
-    const withInvoiceAddr = allCustomers.filter((c: { InvoiceAddress: { IsFilled?: boolean; AddressRow1?: string } | null }) => c.InvoiceAddress?.IsFilled || c.InvoiceAddress?.AddressRow1).length;
-    const sampleNames = allCustomers.slice(0, 5).map((c: { Name: string }) => c.Name);
-    return NextResponse.json({ machinesImported, customersImported, errors, _debug: { facilitiesTotal, customersWithFacilities: Object.keys(facilityByCustomer ?? {}).length, customersWithInvoiceAddress: withInvoiceAddr, totalCustomers: allCustomers.length, sampleNames, sampleCustomerWithAddress: _sampleCustomer, rawFacility: _rawFacility } });
+    const withInvoiceAddr = _allCustomers.filter((c) => c.InvoiceAddress?.IsFilled || c.InvoiceAddress?.AddressRow1).length;
+    const sampleNames = _allCustomers.slice(0, 5).map((c) => c.Name);
+    return NextResponse.json({ machinesImported, customersImported, errors, _debug: { facilitiesTotal, customersWithFacilities: Object.keys(facilityByCustomer ?? {}).length, customersWithInvoiceAddress: withInvoiceAddr, totalCustomers: _allCustomers.length, sampleNames, sampleCustomerWithAddress: _sampleCustomer, rawFacility: _rawFacility } });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Okänt fel' }, { status: 500 });
   }
