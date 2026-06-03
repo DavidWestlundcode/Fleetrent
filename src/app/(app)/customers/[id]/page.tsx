@@ -2,7 +2,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Building2, Phone, Mail, MapPin, FileText, Plus, Trash2, Ban, RotateCcw, Users, Home, ChevronDown, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Building2, Phone, Mail, MapPin, FileText, Plus, Trash2, Ban, RotateCcw, Users, Home, ChevronDown, ChevronRight, Edit } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
@@ -59,6 +59,13 @@ export default function CustomerDetailPage() {
         subtitle={`Org.nr ${customer.orgNumber}`}
         actions={
           <div className="flex items-center gap-2">
+            <Link
+              href={`/customers/${customer.id}/edit`}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              <Edit className="w-4 h-4" />
+              Redigera
+            </Link>
             {isActive ? (
               <>
                 <Link
@@ -163,13 +170,15 @@ export default function CustomerDetailPage() {
           <div className="bg-white rounded-xl border border-slate-200 p-5">
             <h3 className="font-semibold text-slate-900 mb-4">Statistik</h3>
             <div className="space-y-3">
-              {[
+              {([
+                customer.fortnoxCustomerNumber
+                  ? { label: 'Kundnummer', value: customer.fortnoxCustomerNumber, color: 'text-slate-700' }
+                  : null,
                 { label: 'Total hyresintäkt', value: formatCurrency(customer.totalSpent), color: 'text-emerald-600' },
                 { label: 'Aktiva order', value: activeOrders.length.toString(), color: 'text-blue-600' },
                 { label: 'Avslutade order', value: completedOrders.length.toString(), color: 'text-slate-700' },
                 { label: 'Totalt antal order', value: customerOrders.length.toString(), color: 'text-slate-700' },
-                { label: 'Kreditgräns', value: formatCurrency(customer.creditLimit), color: 'text-slate-700' },
-              ].map(({ label, value, color }) => (
+              ] as ({ label: string; value: string; color: string } | null)[]).filter((x): x is { label: string; value: string; color: string } => x !== null).map(({ label, value, color }) => (
                 <div key={label} className="flex justify-between items-center">
                   <span className="text-xs text-slate-500">{label}</span>
                   <span className={`text-sm font-semibold ${color}`}>{value}</span>

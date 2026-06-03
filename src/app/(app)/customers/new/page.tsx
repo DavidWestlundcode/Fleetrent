@@ -28,6 +28,7 @@ export default function NewCustomerPage() {
     companyName: '',
     orgNumber: '',
     invoiceEmail: '',
+    fortnoxCustomerNumber: '',
     invoiceStreet: '',
     invoiceZip: '',
     invoiceCity: '',
@@ -35,7 +36,6 @@ export default function NewCustomerPage() {
     deliveryZip: '',
     deliveryCity: '',
     notes: '',
-    creditLimit: 100000,
   });
 
   const [contacts, setContacts] = useState<ContactPerson[]>([{ name: '', phone: '', email: '' }]);
@@ -74,7 +74,8 @@ export default function NewCustomerPage() {
       invoiceAddress,
       deliveryAddress,
       notes: form.notes,
-      creditLimit: form.creditLimit,
+      creditLimit: 0,
+      fortnoxCustomerNumber: form.fortnoxCustomerNumber || undefined,
       totalSpent: 0,
       activeOrders: 0,
       contacts: validContacts,
@@ -105,8 +106,8 @@ export default function NewCustomerPage() {
               <Field label="Faktureringse-post">
                 <input type="email" value={form.invoiceEmail} onChange={(e) => set('invoiceEmail', e.target.value)} className={inputClass} placeholder="faktura@foretag.se" />
               </Field>
-              <Field label="Kreditgräns (kr)">
-                <input type="number" value={form.creditLimit} onChange={(e) => set('creditLimit', Number(e.target.value))} className={inputClass} min={0} />
+              <Field label="Kundnummer">
+                <input value={form.fortnoxCustomerNumber} onChange={(e) => set('fortnoxCustomerNumber', e.target.value)} className={inputClass} placeholder="T.ex. 1042" />
               </Field>
             </div>
           </div>
