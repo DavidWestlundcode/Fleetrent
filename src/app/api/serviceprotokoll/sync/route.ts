@@ -135,6 +135,29 @@ export async function POST(request: NextRequest) {
       errors.push(`Maskiner: ${e instanceof Error ? e.message : String(e)}`);
     }
 
+    // ── Test: fetch 3 individual customers to check if detail endpoint returns addresses ──
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let _detailTest: any[] = [];
+    try {
+      const listSample = await fetch(`${SP_API}/Customer/Get?request.skip=0&request.take=3`, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (listSample.ok) {
+        const listData = await listSample.json();
+        const sampleIds: number[] = (listData.Result ?? []).map((c: { UniqueID: number }) => c.UniqueID).filter(Boolean);
+        _detailTest = await Promise.all(sampleIds.map(async (uid) => {
+          const r = await fetch(`${SP_API}/Customer/Get/${uid}`, {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: AbortSignal.timeout(8000),
+          });
+          if (!r.ok) return { uid, error: r.status };
+          const d = await r.json();
+          return { uid, InvoiceAddress: d.InvoiceAddress, Address: d.Address, Name: d.Name };
+        }));
+      }
+    } catch {}
+
     // ── Sync customers — no page limit, use lastSync for incremental updates ──
     try {
       const [customers, facilities] = await Promise.all([
@@ -249,7 +272,7 @@ export async function POST(request: NextRequest) {
     await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', orgId);
 
     const facilitiesTotal = Object.values(facilityByCustomer ?? {}).flat().length;
-    return NextResponse.json({ machinesImported, customersImported, errors });
+    return NextResponse.json({ machinesImported, customersImported, errors, _detailTest });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Okänt fel' }, { status: 500 });
   }
