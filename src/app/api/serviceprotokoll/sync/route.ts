@@ -92,8 +92,6 @@ export async function POST(request: NextRequest) {
     const errors: string[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let facilityByCustomer: Record<string, any[]> = {};
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let _debugCustomers: any[] = [];
 
     // ── Sync machines (ServiceObjects with tag "uthyrningsbar") ──
     try {
@@ -164,13 +162,6 @@ export async function POST(request: NextRequest) {
           contacts: facContacts,
         });
       }
-
-      // Debug: find specific customers to inspect their raw address data
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      _debugCustomers = customers.filter((c: any) =>
-        c.Name?.toLowerCase().includes('kriminal') || c.Name?.toLowerCase().includes('norra skog') || c.Name?.toLowerCase().includes('skogsägarna')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ).map((c: any) => ({ Name: c.Name, CustomerNo: c.CustomerNo, Address: c.Address, InvoiceAddress: c.InvoiceAddress, mappedInvoice: mapCustomerAddresses(c).invoice_address }));
 
       // Build records
       const records = customers
@@ -258,7 +249,7 @@ export async function POST(request: NextRequest) {
     await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', orgId);
 
     const facilitiesTotal = Object.values(facilityByCustomer ?? {}).flat().length;
-    return NextResponse.json({ machinesImported, customersImported, errors, _debugCustomers });
+    return NextResponse.json({ machinesImported, customersImported, errors });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Okänt fel' }, { status: 500 });
   }

@@ -28,8 +28,16 @@ function parseAddress(addr: string) {
     return { street, zip: match?.[1]?.trim() ?? '', city: match?.[2] ?? rest.trim() };
   }
   const parts = addr.split(',').map((s) => s.trim()).filter(Boolean);
-  if (parts.length >= 3) return { street: parts[0], zip: parts[1], city: parts[2] };
-  if (parts.length === 2) return { street: parts[0], zip: '', city: parts[1] };
+  // Find postal code (5 digits, possibly with space like "721 32") by position
+  const zipIdx = parts.findIndex(p => /^\d[\d\s]{3}\d$/.test(p));
+  if (zipIdx !== -1) {
+    return {
+      street: parts.slice(0, zipIdx).join(', '),
+      zip: parts[zipIdx],
+      city: parts.slice(zipIdx + 1).join(', '),
+    };
+  }
+  if (parts.length >= 2) return { street: parts[0], zip: '', city: parts[parts.length - 1] };
   return { street: addr, zip: '', city: '' };
 }
 
