@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
       const records = customers
         .filter(c => c.Name && (c.UniqueID ?? c.CustomerNo))
         .map((c, idx) => {
-          if (idx === 0) _sampleCustomer = { CustomerNo: c.CustomerNo, UniqueID: c.UniqueID, InvoiceAddress: c.InvoiceAddress, Address: c.Address };
+          if (idx === 0) _sampleCustomer = c;
 
           const spId = String(c.UniqueID ?? c.CustomerNo);
           // Facilities use CustomerNo as CustomerID, not UniqueID
@@ -236,7 +236,8 @@ export async function POST(request: NextRequest) {
     await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', orgId);
 
     const facilitiesTotal = Object.values(facilityByCustomer ?? {}).flat().length;
-    return NextResponse.json({ machinesImported, customersImported, errors, _debug: { facilitiesTotal, customersWithFacilities: Object.keys(facilityByCustomer ?? {}).length, sampleCustomer: _sampleCustomer } });
+    const sampleFacility = Object.values(facilityByCustomer ?? {})[0]?.[0] ?? null;
+    return NextResponse.json({ machinesImported, customersImported, errors, _debug: { facilitiesTotal, customersWithFacilities: Object.keys(facilityByCustomer ?? {}).length, sampleCustomer: _sampleCustomer, sampleFacility } });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Okänt fel' }, { status: 500 });
   }
