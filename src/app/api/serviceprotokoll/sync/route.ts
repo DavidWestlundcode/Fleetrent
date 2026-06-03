@@ -146,15 +146,13 @@ export async function POST(request: NextRequest) {
       if (listSample.ok) {
         const listData = await listSample.json();
         const sampleIds: number[] = (listData.Result ?? []).map((c: { UniqueID: number }) => c.UniqueID).filter(Boolean);
-        _detailTest = await Promise.all(sampleIds.map(async (uid) => {
-          const r = await fetch(`${SP_API}/Customer/Get/${uid}`, {
-            headers: { Authorization: `Bearer ${token}` },
-            signal: AbortSignal.timeout(8000),
-          });
-          if (!r.ok) return { uid, error: r.status };
-          const d = await r.json();
-          return { uid, InvoiceAddress: d.InvoiceAddress, Address: d.Address, Name: d.Name };
-        }));
+        // Only test the first customer — return full raw response to inspect structure
+        const uid = sampleIds[0];
+        const r = await fetch(`${SP_API}/Customer/Get/${uid}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: AbortSignal.timeout(8000),
+        });
+        _detailTest = [{ uid, status: r.status, body: r.ok ? await r.json() : null }];
       }
     } catch {}
 
