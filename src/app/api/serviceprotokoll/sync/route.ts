@@ -154,8 +154,7 @@ export async function POST(request: NextRequest) {
       const records = customers
         .filter(c => c.Name && (c.UniqueID ?? c.CustomerNo))
         .map((c, idx) => {
-          if (!_sampleCustomer && c.Name?.toLowerCase().includes('testa renta')) _sampleCustomer = c;
-          if (!_sampleCustomer && idx === 0) _sampleCustomer = c;
+          if (!_sampleCustomer && (c.InvoiceAddress?.IsFilled || c.InvoiceAddress?.AddressRow1)) _sampleCustomer = c;
 
           const spId = String(c.UniqueID ?? c.CustomerNo);
           // Facilities use CustomerNo as CustomerID, not UniqueID
@@ -240,7 +239,10 @@ export async function POST(request: NextRequest) {
     await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', orgId);
 
     const facilitiesTotal = Object.values(facilityByCustomer ?? {}).flat().length;
-    return NextResponse.json({ machinesImported, customersImported, errors, _debug: { facilitiesTotal, customersWithFacilities: Object.keys(facilityByCustomer ?? {}).length, sampleCustomer: _sampleCustomer, rawFacility: _rawFacility } });
+    const allCustomers = customers.filter((c: { Name: string; UniqueID: unknown; CustomerNo: unknown }) => c.Name && (c.UniqueID ?? c.CustomerNo));
+    const withInvoiceAddr = allCustomers.filter((c: { InvoiceAddress: { IsFilled?: boolean; AddressRow1?: string } | null }) => c.InvoiceAddress?.IsFilled || c.InvoiceAddress?.AddressRow1).length;
+    const sampleNames = allCustomers.slice(0, 5).map((c: { Name: string }) => c.Name);
+    return NextResponse.json({ machinesImported, customersImported, errors, _debug: { facilitiesTotal, customersWithFacilities: Object.keys(facilityByCustomer ?? {}).length, customersWithInvoiceAddress: withInvoiceAddr, totalCustomers: allCustomers.length, sampleNames, sampleCustomerWithAddress: _sampleCustomer, rawFacility: _rawFacility } });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Okänt fel' }, { status: 500 });
   }
