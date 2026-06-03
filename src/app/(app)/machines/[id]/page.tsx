@@ -7,7 +7,7 @@ import {
 } from 'recharts';
 import {
   ArrowLeft, Edit, QrCode, Wrench, TrendingUp, Calendar, Hash,
-  Zap, MapPin, Clock, BarChart2, Trash2, AlertTriangle, CalendarPlus,
+  Zap, MapPin, Clock, BarChart2, Trash2, AlertTriangle, CalendarPlus, Building2,
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { MachineStatusBadge } from '@/components/ui/StatusBadge';
@@ -26,6 +26,11 @@ export default function MachineDetailPage() {
 
   const machine = machines.find((m) => m.id === id);
   const today = new Date().toISOString().split('T')[0];
+  const activeOrder = useMemo(
+    () => orders.find((o) => o.machineId === id && (o.status === 'aktiv' || o.status === 'reserverad') && o.startDate <= today),
+    [orders, id, today]
+  );
+  const currentCustomer = activeOrder ? customers.find((c) => c.id === activeOrder.customerId) : null;
   const machineOrders = useMemo(
     () => orders.filter((o) => o.machineId === id).sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()),
     [orders, id]
@@ -245,7 +250,14 @@ export default function MachineDetailPage() {
                           <td className="px-4 py-3">
                             <Link href={`/orders/${order.id}`} className="text-blue-600 hover:underline font-medium">{order.orderNumber}</Link>
                           </td>
-                          <td className="px-4 py-3 text-slate-600">{customer?.companyName}</td>
+                          <td className="px-4 py-3">
+                            {customer ? (
+                              <Link href={`/customers/${customer.id}`} className="hover:text-blue-600 transition-colors">
+                                <p className="text-sm text-slate-700 font-medium">{customer.companyName}</p>
+                                <p className="text-xs text-slate-400">{customer.orgNumber}</p>
+                              </Link>
+                            ) : '–'}
+                          </td>
                           <td className="px-4 py-3 text-slate-600 text-xs">
                             {formatDate(order.startDate)} – {formatDate(order.plannedReturnDate)}
                           </td>
@@ -291,6 +303,28 @@ export default function MachineDetailPage() {
 
           {/* Sidebar - Financial Stats */}
           <div className="space-y-4">
+            {/* Current customer */}
+            {currentCustomer && (
+              <div className="bg-white rounded-xl border border-slate-200 p-5">
+                <h3 className="font-semibold text-slate-900 mb-3">Nuvarande kund</h3>
+                <Link href={`/customers/${currentCustomer.id}`} className="flex items-center gap-3 group">
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                    <Building2 className="w-4 h-4 text-blue-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors truncate">{currentCustomer.companyName}</p>
+                    <p className="text-xs text-slate-400">Org.nr {currentCustomer.orgNumber}</p>
+                  </div>
+                </Link>
+                {activeOrder && (
+                  <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500">
+                    Order <Link href={`/orders/${activeOrder.id}`} className="text-blue-600 hover:underline font-medium">{activeOrder.orderNumber}</Link>
+                    {' '}· sedan {formatDate(activeOrder.startDate)}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Profitability */}
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h3 className="font-semibold text-slate-900 mb-4">Lönsamhet</h3>

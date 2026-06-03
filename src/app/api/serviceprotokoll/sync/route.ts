@@ -282,23 +282,62 @@ export async function GET(request: NextRequest) {
     }
 
     // customers
-    const customers = await fetchAllPages(`${SP_API}/Customer/Get`, token);
+    const [customers, facilities] = await Promise.all([
+      fetchAllPages(`${SP_API}/Customer/Get`, token),
+      fetchAllPages(`${SP_API}/Facility/Get`, token, 50).catch(() => []),
+    ]);
+
+    // Group facilities by CustomerNo (same as POST handler)
+    const facilityByCustomer: Record<string, unknown[]> = {};
+    for (const f of facilities) {
+      const cid = String(f.CustomerID ?? f.CustomerId ?? '');
+      if (!cid) continue;
+      if (!facilityByCustomer[cid]) facilityByCustomer[cid] = [];
+      const facContacts = (f.Contacts ?? []).map((ct: Record<string, string>) => ({
+        name: ct.Name ?? '',
+        phone: ct.MobilePhoneNo ?? ct.PhoneNo ?? '',
+        email: ct.Email ?? '',
+        title: ct.Title ?? '',
+      })).filter((ct: { name: string }) => ct.name);
+      facilityByCustomer[cid].push({
+        name: f.Name ?? '',
+        address: f.Address?.AddressRow1 ?? '',
+        city: f.Address?.Place ?? '',
+        zip: f.Address?.PostalCode ?? '',
+        contacts: facContacts,
+      });
+    }
+
     for (const c of customers) {
       const spId = String(c.UniqueID ?? c.CustomerNo ?? '');
       if (!spId || !c.Name) continue;
+
+      const customerNoKey = c.CustomerNo ? String(c.CustomerNo) : null;
+      const customerFacilities = customerNoKey ? (facilityByCustomer[customerNoKey] ?? []) : [];
+      const allContacts = (customerFacilities as { contacts?: { name: string; phone: string; email: string; title: string }[] }[])
+        .flatMap(f => f.contacts ?? []);
+
+      const record = {
+        organization_id: org.id,
+        company_name: c.Name,
+        org_number: c.OrganisationNumber ?? '',
+        email: c.InvoiceEmail ?? (allContacts[0]?.email ?? ''),
+        phone: c.Phone ?? (allContacts[0]?.phone ?? ''),
+        contact_person: allContacts[0]?.name ?? '',
+        invoice_address: [c.InvoiceAddress?.AddressRow1, c.InvoiceAddress?.PostalCode, c.InvoiceAddress?.Place].filter(Boolean).join(', '),
+        delivery_address: [c.Address?.AddressRow1, c.Address?.PostalCode, c.Address?.Place].filter(Boolean).join(', '),
+        contacts: allContacts,
+        facilities: customerFacilities,
+        sp_id: spId,
+      };
+
       const { data: existing } = await admin.from('customers').select('id').eq('organization_id', org.id).eq('sp_id', spId).maybeSingle();
       if (!existing) {
-        await admin.from('customers').insert({
-          organization_id: org.id,
-          company_name: c.Name,
-          org_number: c.OrganisationNumber ?? '',
-          email: c.InvoiceEmail ?? '',
-          phone: c.Phone ?? '',
-          invoice_address: [c.InvoiceAddress?.Street, c.InvoiceAddress?.City].filter(Boolean).join(', '),
-          sp_id: spId,
-        });
-        total.customers++;
+        await admin.from('customers').insert(record);
+      } else {
+        await admin.from('customers').update(record).eq('id', existing.id);
       }
+      total.customers++;
     }
 
     await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', org.id);
