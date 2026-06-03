@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const SP_API = 'https://app.serviceprotokoll.se/api/v1';
 const RENTABLE_TAG = 'uthyrningsbar';
