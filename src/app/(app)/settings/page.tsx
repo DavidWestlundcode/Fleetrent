@@ -770,7 +770,7 @@ function SettingsInner() {
                     )}
 
                     <p className="text-xs text-slate-400">
-                      Kunder och maskiner (med taggen <span className="font-mono bg-slate-100 px-1 rounded">uthyrningsbar</span>) synkas automatiskt från Serviceprotokoll var 30:e minut.
+                      Kunder och maskiner synkas automatiskt från Serviceprotokoll var 30:e minut.
                     </p>
                   </div>
                   {[
