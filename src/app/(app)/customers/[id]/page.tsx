@@ -1,7 +1,8 @@
 'use client';
 import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Building2, Phone, Mail, MapPin, FileText, Plus, Trash2, Ban, RotateCcw, Users, Home } from 'lucide-react';
+import { ArrowLeft, Building2, Phone, Mail, MapPin, FileText, Plus, Trash2, Ban, RotateCcw, Users, Home, ChevronDown, ChevronRight } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
@@ -25,6 +26,7 @@ export default function CustomerDetailPage() {
     );
   }
 
+  const [openFacility, setOpenFacility] = useState<number | null>(null);
   const activeOrders = customerOrders.filter((o) => o.status === 'aktiv' || o.status === 'reserverad');
   const completedOrders = customerOrders.filter((o) => o.status === 'avslutad');
   const isActive = customer.isActive !== false;
@@ -113,172 +115,193 @@ export default function CustomerDetailPage() {
           </div>
         )}
 
+        {/* Företagsinfo + Statistik */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left: Info */}
-          <div className="space-y-4">
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 text-blue-600">
-                  <Building2 className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="font-semibold text-slate-900">{customer.companyName}</h2>
-                  <p className="text-sm text-slate-500">{customer.orgNumber}</p>
-                </div>
+          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 text-blue-600">
+                <Building2 className="w-6 h-6" />
               </div>
+              <div>
+                <h2 className="font-semibold text-slate-900">{customer.companyName}</h2>
+                <p className="text-sm text-slate-500">{customer.orgNumber}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <div>
                   <p className="text-xs text-slate-400 mb-0.5">Kontaktperson</p>
                   <p className="text-sm font-medium text-slate-800">{customer.contactPerson}</p>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-slate-700">
-                  <Phone className="w-4 h-4 text-slate-400" />
-                  {customer.phone}
+                  <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+                  <a href={`tel:${customer.phone}`} className="hover:text-blue-600">{customer.phone}</a>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-slate-700">
-                  <Mail className="w-4 h-4 text-slate-400" />
-                  {customer.email}
-                </div>
-                <div className="flex items-start gap-2 text-sm text-slate-700">
-                  <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                  <span>{customer.invoiceAddress}</span>
+                  <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                  <a href={`mailto:${customer.email}`} className="hover:text-blue-600">{customer.email}</a>
                 </div>
               </div>
-              {customer.notes && (
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <p className="text-xs text-slate-400 mb-1">Anteckningar</p>
-                  <p className="text-sm text-slate-700">{customer.notes}</p>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-slate-400 mb-0.5">Fakturaadress</p>
+                  <div className="flex items-start gap-2 text-sm text-slate-700">
+                    <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                    <span>{customer.invoiceAddress}</span>
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
-
-            {customer.contacts && customer.contacts.length > 0 && (
-              <div className="bg-white rounded-xl border border-slate-200 p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Users className="w-4 h-4 text-slate-500" />
-                  <h3 className="font-semibold text-slate-900">Kontaktpersoner</h3>
-                </div>
-                <div className="space-y-3">
-                  {customer.contacts.map((c, i) => (
-                    <div key={i} className="pb-3 border-b border-slate-50 last:border-0 last:pb-0">
-                      <p className="text-sm font-medium text-slate-800">{c.name}</p>
-                      {c.title && <p className="text-xs text-slate-400 mt-0.5">{c.title}</p>}
-                      <div className="mt-1 space-y-0.5">
-                        {c.phone && (
-                          <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                            <Phone className="w-3 h-3 text-slate-400" />{c.phone}
-                          </div>
-                        )}
-                        {c.email && (
-                          <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                            <Mail className="w-3 h-3 text-slate-400" />{c.email}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            {customer.notes && (
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <p className="text-xs text-slate-400 mb-1">Anteckningar</p>
+                <p className="text-sm text-slate-700">{customer.notes}</p>
               </div>
             )}
+          </div>
 
-            {customer.facilities && customer.facilities.length > 0 && (
-              <div className="bg-white rounded-xl border border-slate-200 p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Home className="w-4 h-4 text-slate-500" />
-                  <h3 className="font-semibold text-slate-900">Anläggningar</h3>
+          <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <h3 className="font-semibold text-slate-900 mb-4">Statistik</h3>
+            <div className="space-y-3">
+              {[
+                { label: 'Total hyresintäkt', value: formatCurrency(customer.totalSpent), color: 'text-emerald-600' },
+                { label: 'Aktiva order', value: activeOrders.length.toString(), color: 'text-blue-600' },
+                { label: 'Avslutade order', value: completedOrders.length.toString(), color: 'text-slate-700' },
+                { label: 'Totalt antal order', value: customerOrders.length.toString(), color: 'text-slate-700' },
+                { label: 'Kreditgräns', value: formatCurrency(customer.creditLimit), color: 'text-slate-700' },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="flex justify-between items-center">
+                  <span className="text-xs text-slate-500">{label}</span>
+                  <span className={`text-sm font-semibold ${color}`}>{value}</span>
                 </div>
-                <div className="space-y-4">
-                  {customer.facilities.map((f, i) => (
-                    <div key={i} className="pb-4 border-b border-slate-50 last:border-0 last:pb-0">
-                      {f.name && <p className="text-sm font-semibold text-slate-800 mb-1">{f.name}</p>}
-                      {(f.address || f.city) && (
-                        <div className="flex items-start gap-1.5 text-xs text-slate-500 mb-2">
-                          <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
-                          {[f.address, f.zip, f.city].filter(Boolean).join(' ')}
-                        </div>
-                      )}
-                      {f.contacts && f.contacts.length > 0 && (
-                        <div className="space-y-1.5 pl-1">
-                          {f.contacts.map((c, j) => (
-                            <div key={j} className="text-xs text-slate-600">
-                              <span className="font-medium">{c.name}</span>
-                              {c.title && <span className="text-slate-400"> · {c.title}</span>}
-                              {c.phone && <div className="flex items-center gap-1 text-slate-500"><Phone className="w-2.5 h-2.5" />{c.phone}</div>}
-                              {c.email && <div className="flex items-center gap-1 text-slate-500"><Mail className="w-2.5 h-2.5" />{c.email}</div>}
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Anläggningar */}
+        {customer.facilities && customer.facilities.length > 0 && (
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+              <Home className="w-4 h-4 text-slate-500" />
+              <h3 className="font-semibold text-slate-900">Anläggningar</h3>
+              <span className="ml-auto text-xs font-medium text-slate-400">{customer.facilities.length} st</span>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {customer.facilities.map((f, i) => {
+                const isOpen = openFacility === i;
+                const hasContacts = f.contacts && f.contacts.length > 0;
+                return (
+                  <div key={i}>
+                    <button
+                      onClick={() => setOpenFacility(isOpen ? null : i)}
+                      className="w-full flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition-colors text-left group"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
+                        <MapPin className="w-4.5 h-4.5 text-blue-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800">{f.name || 'Okänd anläggning'}</p>
+                        {(f.address || f.city) && (
+                          <p className="text-xs text-slate-400 mt-0.5">{[f.address, f.zip, f.city].filter(Boolean).join(', ')}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        {hasContacts ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 bg-slate-100 rounded-full px-2.5 py-1">
+                            <Users className="w-3 h-3" />
+                            {f.contacts!.length} kontakt{f.contacts!.length !== 1 ? 'er' : ''}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-300">Inga kontakter</span>
+                        )}
+                        {hasContacts
+                          ? isOpen
+                            ? <ChevronDown className="w-4 h-4 text-slate-400" />
+                            : <ChevronRight className="w-4 h-4 text-slate-400" />
+                          : null
+                        }
+                      </div>
+                    </button>
+
+                    {isOpen && hasContacts && (
+                      <div className="bg-slate-50 border-t border-slate-100 px-5 py-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {f.contacts!.map((c, j) => (
+                            <div key={j} className="bg-white rounded-xl border border-slate-200 p-4 flex gap-3">
+                              <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center text-sm font-semibold text-blue-600 shrink-0">
+                                {c.name?.charAt(0)?.toUpperCase() ?? '?'}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-slate-800">{c.name}</p>
+                                {c.title && <p className="text-xs text-slate-400">{c.title}</p>}
+                                <div className="mt-1.5 space-y-1">
+                                  {c.phone && (
+                                    <a href={`tel:${c.phone}`} className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline">
+                                      <Phone className="w-3 h-3" />{c.phone}
+                                    </a>
+                                  )}
+                                  {c.email && (
+                                    <a href={`mailto:${c.email}`} className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline">
+                                      <Mail className="w-3 h-3" />{c.email}
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           ))}
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h3 className="font-semibold text-slate-900 mb-3">Statistik</h3>
-              <div className="space-y-3">
-                {[
-                  { label: 'Total hyresintäkt', value: formatCurrency(customer.totalSpent), color: 'text-emerald-600' },
-                  { label: 'Aktiva order', value: activeOrders.length.toString(), color: 'text-blue-600' },
-                  { label: 'Avslutade order', value: completedOrders.length.toString(), color: 'text-slate-700' },
-                  { label: 'Totalt antal order', value: customerOrders.length.toString(), color: 'text-slate-700' },
-                  { label: 'Kreditgräns', value: formatCurrency(customer.creditLimit), color: 'text-slate-700' },
-                ].map(({ label, value, color }) => (
-                  <div key={label} className="flex justify-between items-center">
-                    <span className="text-xs text-slate-500">{label}</span>
-                    <span className={`text-sm font-semibold ${color}`}>{value}</span>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
+        )}
 
-          {/* Right: Orders */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl border border-slate-200">
-              <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
-                <FileText className="w-4 h-4 text-slate-500" />
-                <h2 className="font-semibold text-slate-900">Orderhistorik</h2>
-                <span className="ml-auto text-xs font-medium text-slate-500">{customerOrders.length} order totalt</span>
-              </div>
-              {customerOrders.length === 0 ? (
-                <p className="px-5 py-8 text-center text-slate-400 text-sm">Inga order registrerade</p>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-100">
-                      <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500">Order</th>
-                      <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500">Maskin</th>
-                      <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500">Period</th>
-                      <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500">Belopp</th>
-                      <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {customerOrders.map((order) => {
-                      const machine = machines.find((m) => m.id === order.machineId);
-                      return (
-                        <tr key={order.id} className="hover:bg-slate-50">
-                          <td className="px-4 py-3">
-                            <Link href={`/orders/${order.id}`} className="text-blue-600 hover:underline font-medium">
-                              {order.orderNumber}
-                            </Link>
-                          </td>
-                          <td className="px-4 py-3 text-slate-600">{machine?.name ?? '–'}</td>
-                          <td className="px-4 py-3 text-slate-600 text-xs">
-                            {formatDate(order.startDate)} – {formatDate(order.plannedReturnDate)}
-                          </td>
-                          <td className="px-4 py-3 font-medium">{formatCurrency(order.totalPrice)}</td>
-                          <td className="px-4 py-3"><OrderStatusBadge status={order.status} /></td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
+        {/* Orderhistorik */}
+        <div className="bg-white rounded-xl border border-slate-200">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+            <FileText className="w-4 h-4 text-slate-500" />
+            <h2 className="font-semibold text-slate-900">Orderhistorik</h2>
+            <span className="ml-auto text-xs font-medium text-slate-500">{customerOrders.length} order totalt</span>
           </div>
+          {customerOrders.length === 0 ? (
+            <p className="px-5 py-8 text-center text-slate-400 text-sm">Inga order registrerade</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500">Order</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500">Maskin</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500">Period</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500">Belopp</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {customerOrders.map((order) => {
+                  const machine = machines.find((m) => m.id === order.machineId);
+                  return (
+                    <tr key={order.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3">
+                        <Link href={`/orders/${order.id}`} className="text-blue-600 hover:underline font-medium">
+                          {order.orderNumber}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">{machine?.name ?? '–'}</td>
+                      <td className="px-4 py-3 text-slate-600 text-xs">
+                        {formatDate(order.startDate)} – {formatDate(order.plannedReturnDate)}
+                      </td>
+                      <td className="px-4 py-3 font-medium">{formatCurrency(order.totalPrice)}</td>
+                      <td className="px-4 py-3"><OrderStatusBadge status={order.status} /></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
