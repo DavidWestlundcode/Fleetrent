@@ -74,6 +74,8 @@ export async function POST(request: NextRequest) {
     const errors: string[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let facilityByCustomer: Record<string, any[]> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let _sampleCustomer: any = null;
 
     // ── Sync machines (ServiceObjects with tag "uthyrningsbar") ──
     try {
@@ -148,7 +150,9 @@ export async function POST(request: NextRequest) {
       // Build records
       const records = customers
         .filter(c => c.Name && (c.UniqueID ?? c.CustomerNo))
-        .map(c => {
+        .map((c, idx) => {
+          if (idx === 0) _sampleCustomer = { CustomerNo: c.CustomerNo, UniqueID: c.UniqueID, InvoiceAddress: c.InvoiceAddress, Address: c.Address };
+
           const spId = String(c.UniqueID ?? c.CustomerNo);
           // Facilities use CustomerNo as CustomerID, not UniqueID
           const customerNoKey = c.CustomerNo ? String(c.CustomerNo) : null;
@@ -166,6 +170,7 @@ export async function POST(request: NextRequest) {
             contact_person: allContacts[0]?.name ?? '',
             invoice_address: [c.InvoiceAddress?.AddressRow1, c.InvoiceAddress?.PostalCode, c.InvoiceAddress?.Place].filter(Boolean).join(', '),
             delivery_address: [c.Address?.AddressRow1, c.Address?.PostalCode, c.Address?.Place].filter(Boolean).join(', '),
+            fortnox_customer_number: c.CustomerNo ? String(c.CustomerNo) : null,
             contacts: allContacts,
             facilities: customerFacilities,
             sp_id: spId,
@@ -212,6 +217,7 @@ export async function POST(request: NextRequest) {
           contact_person: r.contact_person,
           invoice_address: r.invoice_address,
           delivery_address: r.delivery_address,
+          fortnox_customer_number: r.fortnox_customer_number,
           contacts: r.contacts,
           facilities: r.facilities,
           sp_id: r.sp_id,
@@ -230,7 +236,7 @@ export async function POST(request: NextRequest) {
     await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', orgId);
 
     const facilitiesTotal = Object.values(facilityByCustomer ?? {}).flat().length;
-    return NextResponse.json({ machinesImported, customersImported, errors, _debug: { facilitiesTotal, customersWithFacilities: Object.keys(facilityByCustomer ?? {}).length } });
+    return NextResponse.json({ machinesImported, customersImported, errors, _debug: { facilitiesTotal, customersWithFacilities: Object.keys(facilityByCustomer ?? {}).length, sampleCustomer: _sampleCustomer } });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Okänt fel' }, { status: 500 });
   }
@@ -326,6 +332,7 @@ export async function GET(request: NextRequest) {
         contact_person: allContacts[0]?.name ?? '',
         invoice_address: [c.InvoiceAddress?.AddressRow1, c.InvoiceAddress?.PostalCode, c.InvoiceAddress?.Place].filter(Boolean).join(', '),
         delivery_address: [c.Address?.AddressRow1, c.Address?.PostalCode, c.Address?.Place].filter(Boolean).join(', '),
+        fortnox_customer_number: c.CustomerNo ? String(c.CustomerNo) : null,
         contacts: allContacts,
         facilities: customerFacilities,
         sp_id: spId,
