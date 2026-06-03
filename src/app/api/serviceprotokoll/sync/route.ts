@@ -74,12 +74,6 @@ export async function POST(request: NextRequest) {
     const errors: string[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let facilityByCustomer: Record<string, any[]> = {};
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let _sampleCustomer: any = null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let _rawFacility: any = null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let _allCustomers: any[] = [];
 
     // ── Sync machines (ServiceObjects with tag "uthyrningsbar") ──
     try {
@@ -132,7 +126,6 @@ export async function POST(request: NextRequest) {
 
       // Group facilities by CustomerID — contacts sit on facilities, not on customers
       for (const f of facilities) {
-        if (!_rawFacility) _rawFacility = f;
         const cid = String(f.CustomerID ?? f.CustomerId ?? '');
         if (!cid) continue;
         if (!facilityByCustomer[cid]) facilityByCustomer[cid] = [];
@@ -153,11 +146,9 @@ export async function POST(request: NextRequest) {
       }
 
       // Build records
-      _allCustomers = customers.filter((c: { Name: string; UniqueID: unknown; CustomerNo: unknown }) => c.Name && (c.UniqueID ?? c.CustomerNo));
-      const records = _allCustomers
-        .map((c, idx) => {
-          if (!_sampleCustomer && (c.InvoiceAddress?.IsFilled || c.InvoiceAddress?.AddressRow1)) _sampleCustomer = c;
-
+      const records = customers
+        .filter((c: { Name: string; UniqueID: unknown; CustomerNo: unknown }) => c.Name && (c.UniqueID ?? c.CustomerNo))
+        .map((c) => {
           const spId = String(c.UniqueID ?? c.CustomerNo);
           // Facilities use CustomerNo as CustomerID, not UniqueID
           const customerNoKey = c.CustomerNo ? String(c.CustomerNo) : null;
@@ -173,8 +164,12 @@ export async function POST(request: NextRequest) {
             email: c.InvoiceEmail ?? (allContacts[0]?.email ?? ''),
             phone: c.Phone ?? (allContacts[0]?.phone ?? ''),
             contact_person: allContacts[0]?.name ?? '',
-            invoice_address: [c.InvoiceAddress?.AddressRow1, c.InvoiceAddress?.PostalCode, c.InvoiceAddress?.Place].filter(Boolean).join(', '),
-            delivery_address: [c.Address?.AddressRow1, c.Address?.PostalCode, c.Address?.Place].filter(Boolean).join(', '),
+            invoice_address: c.InvoiceAddress?.IsFilled
+              ? [c.InvoiceAddress.AddressRow1, c.InvoiceAddress.AddressRow2, c.InvoiceAddress.PostalCode, c.InvoiceAddress.Place].filter(Boolean).join(', ')
+              : '',
+            delivery_address: c.Address?.IsFilled
+              ? [c.Address.AddressRow1, c.Address.AddressRow2, c.Address.PostalCode, c.Address.Place].filter(Boolean).join(', ')
+              : '',
             fortnox_customer_number: c.CustomerNo ? String(c.CustomerNo) : null,
             contacts: allContacts,
             facilities: customerFacilities,
@@ -241,9 +236,7 @@ export async function POST(request: NextRequest) {
     await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', orgId);
 
     const facilitiesTotal = Object.values(facilityByCustomer ?? {}).flat().length;
-    const withInvoiceAddr = _allCustomers.filter((c) => c.InvoiceAddress?.IsFilled || c.InvoiceAddress?.AddressRow1).length;
-    const sampleNames = _allCustomers.slice(0, 5).map((c) => c.Name);
-    return NextResponse.json({ machinesImported, customersImported, errors, _debug: { facilitiesTotal, customersWithFacilities: Object.keys(facilityByCustomer ?? {}).length, customersWithInvoiceAddress: withInvoiceAddr, totalCustomers: _allCustomers.length, sampleNames, sampleCustomerWithAddress: _sampleCustomer, rawFacility: _rawFacility } });
+    return NextResponse.json({ machinesImported, customersImported, errors, _debug: { facilitiesTotal, customersWithFacilities: Object.keys(facilityByCustomer ?? {}).length } });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Okänt fel' }, { status: 500 });
   }
@@ -337,8 +330,12 @@ export async function GET(request: NextRequest) {
         email: c.InvoiceEmail ?? (allContacts[0]?.email ?? ''),
         phone: c.Phone ?? (allContacts[0]?.phone ?? ''),
         contact_person: allContacts[0]?.name ?? '',
-        invoice_address: [c.InvoiceAddress?.AddressRow1, c.InvoiceAddress?.PostalCode, c.InvoiceAddress?.Place].filter(Boolean).join(', '),
-        delivery_address: [c.Address?.AddressRow1, c.Address?.PostalCode, c.Address?.Place].filter(Boolean).join(', '),
+        invoice_address: c.InvoiceAddress?.IsFilled
+          ? [c.InvoiceAddress.AddressRow1, c.InvoiceAddress.AddressRow2, c.InvoiceAddress.PostalCode, c.InvoiceAddress.Place].filter(Boolean).join(', ')
+          : '',
+        delivery_address: c.Address?.IsFilled
+          ? [c.Address.AddressRow1, c.Address.AddressRow2, c.Address.PostalCode, c.Address.Place].filter(Boolean).join(', ')
+          : '',
         fortnox_customer_number: c.CustomerNo ? String(c.CustomerNo) : null,
         contacts: allContacts,
         facilities: customerFacilities,
