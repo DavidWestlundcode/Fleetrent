@@ -1108,6 +1108,11 @@ export default function LandingPage() {
                 { label: 'Press', href: '/press' },
                 { label: 'Kontakt', href: '/kontakt' },
               ]},
+              { title: 'Branscher', links: [
+                { label: 'Byggmaskiner', href: '/uthyrning/byggmaskiner' },
+                { label: 'Truckar', href: '/uthyrning/truckar' },
+                { label: 'Liftar & skylift', href: '/uthyrning/liftar' },
+              ]},
               { title: 'Juridik', links: [
                 { label: 'Integritetspolicy', href: '/integritetspolicy' },
                 { label: 'Villkor', href: '/villkor' },
