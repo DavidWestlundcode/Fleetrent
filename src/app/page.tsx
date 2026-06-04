@@ -523,13 +523,13 @@ export default function LandingPage() {
 
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-slate-500 text-[12px] font-medium mb-16 sm:mb-20">
             {[
-              { icon: CheckCircle, label: 'Ingen bindningstid' },
-              { icon: Shield, label: 'GDPR-anpassad' },
-              { icon: Zap, label: 'Kom igång på < 1 dag' },
-              { icon: Users, label: 'Fullständig dashboard' },
-            ].map(({ icon: Icon, label }) => (
+              { emoji: '🚜', label: 'Full kontroll' },
+              { emoji: '📋', label: 'Slipp Excel' },
+              { emoji: '⚡', label: 'Automatisera flödet' },
+              { emoji: '📈', label: 'Öka lönsamheten' },
+            ].map(({ emoji, label }) => (
               <span key={label} className="flex items-center gap-1.5">
-                <Icon className="w-3.5 h-3.5 text-emerald-500" />
+                <span>{emoji}</span>
                 {label}
               </span>
             ))}
