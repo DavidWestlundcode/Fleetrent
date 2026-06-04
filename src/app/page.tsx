@@ -688,40 +688,29 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Stats ── */}
-      <section className="py-20 bg-[#060D1A] border-b border-white/[0.05]">
+      {/* ── Demo CTA ── */}
+      <section className="py-10 bg-[#060D1A] border-b border-white/[0.05]">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8">
-            <AnimateIn className="text-center" direction="scale">
-              <div className="flex items-center justify-center mb-1">
-                <div className="relative inline-flex items-center justify-center w-[52px] h-[52px] text-blue-400">
-                  <Monitor className="w-10 h-10" strokeWidth={1.5} />
-                  <Upload className="absolute bottom-0 right-0 w-4 h-4 text-blue-300 animate-bounce" strokeWidth={2} />
-                </div>
-              </div>
-              <p className="text-[14px] font-semibold text-white mt-1">AI-drivna flöden</p>
-              <p className="text-[12px] text-slate-500 mt-0.5">Automatisera uthyrning och administration</p>
-            </AnimateIn>
-            <AnimateIn className="text-center" direction="scale">
-              <p className="text-[40px] font-bold tracking-tight text-emerald-400">
-                <CountUp end={100} suffix="%" />
-              </p>
-              <p className="text-[14px] font-semibold text-white mt-1">Full kontroll</p>
-              <p className="text-[12px] text-slate-500 mt-0.5">Se status på alla maskiner i realtid</p>
-            </AnimateIn>
-            {[
-              { end: 1, suffix: ' dag', label: 'Onboarding-tid', sub: 'Från konto till full drift', color: 'text-violet-400' },
-              { end: 40, suffix: '%', label: 'Minskad admin', sub: 'Genomsnitt för våra kunder', color: 'text-amber-400' },
-            ].map(({ end, suffix, label, sub, color }) => (
-              <AnimateIn key={label} className="text-center" direction="scale">
-                <p className={`text-[40px] font-bold tracking-tight ${color}`}>
-                  <CountUp end={end} suffix={suffix} />
+          <AnimateIn>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-5 bg-white/[0.04] border border-white/[0.08] rounded-2xl px-6 py-5">
+              <div className="text-center sm:text-left">
+                <p className="text-[12px] font-semibold text-blue-400 uppercase tracking-widest mb-1">Interaktiv demo</p>
+                <h3 className="text-[18px] font-bold text-white leading-snug">
+                  Se dashboarden live – utan att skapa konto
+                </h3>
+                <p className="text-[13px] text-slate-400 mt-1">
+                  Klicka runt i en riktig FleetOS-vy med exempeldata. Maskiner, kunder, order och statistik.
                 </p>
-                <p className="text-[14px] font-semibold text-white mt-1">{label}</p>
-                <p className="text-[12px] text-slate-500 mt-0.5">{sub}</p>
-              </AnimateIn>
-            ))}
-          </div>
+              </div>
+              <Link
+                href="/demo"
+                className="shrink-0 flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all text-[14px] shadow-lg shadow-blue-900/30 hover:-translate-y-0.5 whitespace-nowrap"
+              >
+                Öppna demo
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </AnimateIn>
         </div>
       </section>
 
