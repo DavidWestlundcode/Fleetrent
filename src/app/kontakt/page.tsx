@@ -22,7 +22,7 @@ export default function KontaktPage() {
       </div>
       <div className="not-prose mt-8 p-5 bg-slate-50 rounded-xl border border-slate-200">
         <p className="text-sm font-semibold text-slate-900 mb-1">DSE ENTERPRISE AB</p>
-        <p className="text-sm text-slate-500">Sverige · Org.nr xxxxxxxxxx</p>
+        <p className="text-sm text-slate-500">Sverige · Org.nr 559510-0248</p>
       </div>
     </PublicLayout>
   );
