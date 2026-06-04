@@ -512,7 +512,7 @@ export default function LandingPage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-12">
             <Link href="/kom-igang" className="flex items-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all text-[14px] shadow-xl shadow-blue-900/40 hover:shadow-blue-700/30 hover:-translate-y-0.5">
-              Kom igång – kontakta oss
+              Boka gratis demo
               <ArrowRight className="w-4 h-4" />
             </Link>
             <a href="#how-it-works" className="flex items-center gap-2 px-6 py-3.5 bg-white/[0.06] hover:bg-white/[0.1] text-white font-medium rounded-xl border border-white/10 transition-all text-[14px] hover:-translate-y-0.5">
