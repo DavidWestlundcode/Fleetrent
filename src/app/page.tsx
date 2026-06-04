@@ -332,14 +332,14 @@ function OrderMockup() {
 function ROIMockup() {
   return (
     <div className="bg-[#0B1120] rounded-2xl border border-white/[0.08] p-5 shadow-2xl">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <div className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">Lönsamhet per maskin</div>
-        <div className="flex items-center gap-1 text-emerald-400 text-[10px] font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full">
+        <div className="flex items-center gap-1 text-emerald-400 text-[10px] font-medium">
           <TrendingUp className="w-3 h-3" />
           +14% vs förra mån
         </div>
       </div>
-      <div className="space-y-3.5">
+      <div className="space-y-2.5">
         {[
           { name: 'Toyota 8FBN25', roi: 127, bar: 'bg-blue-500', rev: '42 000 kr' },
           { name: 'Volvo L60H', roi: 89, bar: 'bg-emerald-500', rev: '38 500 kr' },
@@ -347,20 +347,20 @@ function ROIMockup() {
           { name: 'Manitou MLT845', roi: 22, bar: 'bg-violet-500', rev: '17 200 kr' },
         ].map(({ name, roi, bar, rev }) => (
           <div key={name}>
-            <div className="flex justify-between text-[11px] mb-1.5">
+            <div className="flex justify-between text-[10px] mb-1">
               <span className="text-white/70">{name}</span>
               <div className="flex items-center gap-2">
                 <span className="text-white/40">{rev}</span>
                 <span className="font-bold text-emerald-400">+{roi}%</span>
               </div>
             </div>
-            <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden">
+            <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
               <div className={`h-full ${bar} rounded-full`} style={{ width: `${Math.min(100, roi)}%` }} />
             </div>
           </div>
         ))}
       </div>
-      <div className="mt-4 pt-4 border-t border-white/[0.06] grid grid-cols-3 gap-2">
+      <div className="mt-3 pt-3 border-t border-white/[0.06] grid grid-cols-3 gap-2">
         {[
           { label: 'Total intäkt', value: '127k kr', icon: 'text-emerald-400' },
           { label: 'Beläggning', value: '71%', icon: 'text-blue-400' },
