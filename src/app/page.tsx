@@ -507,7 +507,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-[15px] sm:text-[18px] text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-            FleetOS ersätter Excel, telefonsamtal och manuellt arbete med ett intelligent system som hanterar flotta, order och lönsamhet automatiskt.
+            FleetOS samlar maskiner, kunder, order, fakturering och lönsamhet i ett enda system – och ersätter Excel-filer, telefonsamtal och manuella rutiner med en digital och automatiserad uthyrningsprocess.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-12">
