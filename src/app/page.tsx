@@ -738,28 +738,28 @@ export default function LandingPage() {
             </p>
           </AnimateIn>
 
-          {/* Feature 1: AI Register */}
+          {/* Feature 1: ROI */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
             <AnimateIn direction="left">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200/80 rounded-full text-blue-600 text-[11px] font-semibold mb-5">
-                <Brain className="w-3.5 h-3.5" />
-                AI-driven
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 border border-violet-200/80 rounded-full text-violet-700 text-[11px] font-semibold mb-5">
+                <BarChart3 className="w-3.5 h-3.5" />
+                Realtidsanalys
               </div>
               <h3 className="text-2xl sm:text-[32px] font-bold text-slate-900 tracking-tight mb-4 leading-tight">
-                Lägg till maskiner<br />på sekunder med AI
+                Vet exakt vilka maskiner<br />som lönar sig
               </h3>
               <p className="text-[15px] text-slate-500 leading-relaxed mb-7">
-                Fotografera maskinens typskylt med mobilen. FleetOSs AI identifierar märke, modell, kapacitet och serienummer automatiskt – utan att du behöver skriva ett enda tecken manuellt.
+                Fullständig ROI-analys per maskin i realtid. Se intäkt, kostnad, beläggningsgrad och återbetalningstid för varje tillgång – och fatta bättre beslut om köp, service och utfasning.
               </p>
               <div className="space-y-3">
                 {[
-                  { icon: Camera, text: 'Fotografera typskylten – det tar 3 sekunder' },
-                  { icon: Sparkles, text: 'AI analyserar och fyller i alla fält' },
-                  { icon: CheckCircle, text: 'Granska och spara – klart på under 30 sekunder' },
+                  { icon: TrendingUp, text: 'ROI och nettoresultat per maskin och period' },
+                  { icon: Target, text: 'Beläggningsgrad och återbetalningstid' },
+                  { icon: Database, text: 'Fullständig kostnadsanalys inklusive service' },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
-                      <Icon className="w-4 h-4 text-blue-600" />
+                    <div className="w-8 h-8 bg-violet-50 rounded-xl flex items-center justify-center shrink-0">
+                      <Icon className="w-4 h-4 text-violet-600" />
                     </div>
                     <span className="text-[14px] text-slate-700 font-medium">{text}</span>
                   </div>
@@ -767,7 +767,7 @@ export default function LandingPage() {
               </div>
             </AnimateIn>
             <AnimateIn direction="right">
-              <AIAnalysisMockup />
+              <ROIMockup />
             </AnimateIn>
           </div>
 
@@ -804,28 +804,28 @@ export default function LandingPage() {
             </AnimateIn>
           </div>
 
-          {/* Feature 3: ROI */}
+          {/* Feature 3: AI Register */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
             <AnimateIn direction="left">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 border border-violet-200/80 rounded-full text-violet-700 text-[11px] font-semibold mb-5">
-                <BarChart3 className="w-3.5 h-3.5" />
-                Realtidsanalys
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200/80 rounded-full text-blue-600 text-[11px] font-semibold mb-5">
+                <Brain className="w-3.5 h-3.5" />
+                AI-driven
               </div>
               <h3 className="text-2xl sm:text-[32px] font-bold text-slate-900 tracking-tight mb-4 leading-tight">
-                Vet exakt vilka maskiner<br />som lönar sig
+                Lägg till maskiner<br />på sekunder med AI
               </h3>
               <p className="text-[15px] text-slate-500 leading-relaxed mb-7">
-                Fullständig ROI-analys per maskin i realtid. Se intäkt, kostnad, beläggningsgrad och återbetalningstid för varje tillgång – och fatta bättre beslut om köp, service och utfasning.
+                Fotografera maskinens typskylt med mobilen. FleetOSs AI identifierar märke, modell, kapacitet och serienummer automatiskt – utan att du behöver skriva ett enda tecken manuellt.
               </p>
               <div className="space-y-3">
                 {[
-                  { icon: TrendingUp, text: 'ROI och nettoresultat per maskin och period' },
-                  { icon: Target, text: 'Beläggningsgrad och återbetalningstid' },
-                  { icon: Database, text: 'Fullständig kostnadsanalys inklusive service' },
+                  { icon: Camera, text: 'Fotografera typskylten – det tar 3 sekunder' },
+                  { icon: Sparkles, text: 'AI analyserar och fyller i alla fält' },
+                  { icon: CheckCircle, text: 'Granska och spara – klart på under 30 sekunder' },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-violet-50 rounded-xl flex items-center justify-center shrink-0">
-                      <Icon className="w-4 h-4 text-violet-600" />
+                    <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
+                      <Icon className="w-4 h-4 text-blue-600" />
                     </div>
                     <span className="text-[14px] text-slate-700 font-medium">{text}</span>
                   </div>
@@ -833,7 +833,7 @@ export default function LandingPage() {
               </div>
             </AnimateIn>
             <AnimateIn direction="right">
-              <ROIMockup />
+              <AIAnalysisMockup />
             </AnimateIn>
           </div>
           {/* Feature 4: Digital signing */}
