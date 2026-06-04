@@ -739,7 +739,7 @@ export default function LandingPage() {
           </AnimateIn>
 
           {/* Feature 1: ROI */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-start">
             <AnimateIn direction="left">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 border border-violet-200/80 rounded-full text-violet-700 text-[11px] font-semibold mb-5">
                 <BarChart3 className="w-3.5 h-3.5" />
@@ -767,7 +767,12 @@ export default function LandingPage() {
               </div>
             </AnimateIn>
             <AnimateIn direction="right">
-              <ROIMockup />
+              <div className="relative">
+                <div className="absolute -inset-3 bg-violet-500/10 rounded-3xl blur-2xl pointer-events-none" />
+                <div className="relative p-2 bg-gradient-to-br from-violet-600/5 to-blue-600/5 rounded-3xl border border-violet-500/10">
+                  <ROIMockup />
+                </div>
+              </div>
             </AnimateIn>
           </div>
 
