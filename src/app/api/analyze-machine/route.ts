@@ -1,11 +1,17 @@
 import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse, type NextRequest } from 'next/server';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 });
+
+  // Rate limit: 10 AI calls per minute per user
+  if (!rateLimit(`ai:${user.id}`, 10, 60_000)) {
+    return NextResponse.json({ error: 'För många AI-anrop. Försök igen om en minut.' }, { status: 429 });
+  }
 
   if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json({ error: 'API-nyckel för AI saknas.' }, { status: 503 });

@@ -32,14 +32,26 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 });
 
+    // Get user's organization
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single();
+    if (!profile?.organization_id) return NextResponse.json({ error: 'Ingen organisation' }, { status: 403 });
+
     const admin = createAdminClient();
+
+    // Verify order belongs to user's organization
     const { data: orderRow } = await admin
       .from('orders')
       .select('zigned_agreement_id, organization_id')
       .eq('id', orderId)
+      .eq('organization_id', profile.organization_id)
       .single();
 
-    if (!orderRow?.zigned_agreement_id) {
+    if (!orderRow) return NextResponse.json({ error: 'Order hittades inte' }, { status: 404 });
+    if (!orderRow.zigned_agreement_id) {
       return NextResponse.json({ error: 'Inget Zigned-avtal kopplat till denna order' }, { status: 400 });
     }
 
@@ -51,7 +63,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!res.ok) {
-      return NextResponse.json({ error: 'Kunde inte hämta avtalsstatus från Zigned' }, { status: 500 });
+      return NextResponse.json({ error: 'Kunde inte hämta avtalsstatus' }, { status: 500 });
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -66,12 +78,12 @@ export async function POST(request: NextRequest) {
     if (signingStatus) {
       await admin.from('orders')
         .update({ signing_status: signingStatus })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .eq('organization_id', profile.organization_id);
     }
 
     return NextResponse.json({ status, signingStatus });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Okänt fel';
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Något gick fel' }, { status: 500 });
   }
 }

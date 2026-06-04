@@ -9,11 +9,16 @@ export async function POST() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id')
+    .select('organization_id, role')
     .eq('id', user.id)
     .single();
 
   if (!profile?.organization_id) return NextResponse.json({ error: 'Ingen organisation' }, { status: 400 });
+
+  // Only admins can disconnect integrations
+  if (profile.role !== 'admin') {
+    return NextResponse.json({ error: 'Du har inte behörighet att koppla bort integrationer' }, { status: 403 });
+  }
 
   const admin = createAdminClient();
   await admin
