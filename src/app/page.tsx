@@ -493,7 +493,7 @@ export default function LandingPage() {
         <div className="relative max-w-5xl mx-auto px-6 text-center pb-16">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-300 text-[12px] font-semibold mb-8 backdrop-blur-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-            AI-drivet fleet management för maskinuthyrning
+            Fleet management för maskinuthyrning
           </div>
 
           <h1 className="text-[34px] sm:text-[52px] md:text-[76px] font-bold text-white leading-[1.02] tracking-[-0.025em] mb-6">
@@ -504,8 +504,6 @@ export default function LandingPage() {
             >
               maskinuthyrning
             </span>
-            <br />
-            med AI
           </h1>
 
           <p className="text-[15px] sm:text-[18px] text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
