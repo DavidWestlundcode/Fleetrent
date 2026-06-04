@@ -4,7 +4,7 @@ import {
   ArrowRight, Shield, Clock, TrendingUp, Bell, Search,
   LayoutDashboard, FileText, Tag, Star, Activity, ChevronRight,
   Camera, Sparkles, X, Check, Brain, ArrowUpRight, Database,
-  Target, RefreshCw, Cpu, Monitor, Upload, FileSignature, Mail, PenLine,
+  Target, RefreshCw, Cpu, Monitor, Upload, FileSignature, Mail, PenLine, Gauge, FileX2,
 } from 'lucide-react';
 import { AnimateIn, CountUp } from '@/components/ui/AnimateIn';
 import { Logo } from '@/components/ui/Logo';
@@ -523,13 +523,13 @@ export default function LandingPage() {
 
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-slate-500 text-[12px] font-medium mb-16 sm:mb-20">
             {[
-              { emoji: '🚜', label: 'Full kontroll' },
-              { emoji: '📋', label: 'Slipp Excel' },
-              { emoji: '⚡', label: 'Automatisera flödet' },
-              { emoji: '📈', label: 'Öka lönsamheten' },
-            ].map(({ emoji, label }) => (
+              { icon: Gauge, label: 'Full kontroll' },
+              { icon: FileX2, label: 'Slipp Excel' },
+              { icon: Zap, label: 'Automatisera flödet' },
+              { icon: TrendingUp, label: 'Öka lönsamheten' },
+            ].map(({ icon: Icon, label }) => (
               <span key={label} className="flex items-center gap-1.5">
-                <span>{emoji}</span>
+                <Icon className="w-3.5 h-3.5 text-emerald-500" />
                 {label}
               </span>
             ))}
