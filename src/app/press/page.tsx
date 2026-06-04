@@ -10,7 +10,7 @@ export default function PressPage() {
         <div className="p-5 bg-slate-50 rounded-xl border border-slate-200">
           <p className="text-sm font-semibold text-slate-900 mb-1">Presskontakt</p>
           <p className="text-sm text-slate-500">
-            <a href="mailto:press@FleetOS.se" className="text-blue-600 hover:underline">press@FleetOS.se</a>
+            <a href="mailto:info@dseenterprise.se" className="text-blue-600 hover:underline">info@dseenterprise.se</a>
           </p>
         </div>
         <div className="p-5 bg-slate-50 rounded-xl border border-slate-200">

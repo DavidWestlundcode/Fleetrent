@@ -42,7 +42,7 @@ export default function GdprPage() {
         <p>Sverige</p>
         <p className="pt-2">
           Dataskyddsfrågor:{' '}
-          <a href="mailto:gdpr@fleetos.se" className="text-blue-600 hover:underline">gdpr@fleetos.se</a>
+          <a href="mailto:info@dseenterprise.se" className="text-blue-600 hover:underline">info@dseenterprise.se</a>
         </p>
       </div>
 
@@ -193,7 +193,7 @@ export default function GdprPage() {
         <div className="p-5 bg-slate-50 border border-slate-200 rounded-xl">
           <p className="text-sm font-semibold text-slate-900 mb-2">Kontakta oss</p>
           <p className="text-sm text-slate-500 mb-3">Skicka din begäran till vår dataskyddskontakt. Vi svarar inom 30 dagar.</p>
-          <a href="mailto:gdpr@fleetos.se" className="text-sm text-blue-600 hover:underline font-medium">gdpr@fleetos.se</a>
+          <a href="mailto:info@dseenterprise.se" className="text-sm text-blue-600 hover:underline font-medium">info@dseenterprise.se</a>
         </div>
         <div className="p-5 bg-slate-50 border border-slate-200 rounded-xl">
           <p className="text-sm font-semibold text-slate-900 mb-2">Tillsynsmyndighet</p>

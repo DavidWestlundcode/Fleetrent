@@ -8,10 +8,10 @@ export default function KontaktPage() {
       </p>
       <div className="not-prose grid grid-cols-1 md:grid-cols-2 gap-5">
         {[
-          { title: 'Support', desc: 'Frågor om plattformen eller ditt konto.', email: 'support@FleetOS.se' },
-          { title: 'Försäljning', desc: 'Frågor om priser eller att komma igång.', email: 'sales@FleetOS.se' },
-          { title: 'Press', desc: 'Medieförfrågningar och intervjuer.', email: 'press@FleetOS.se' },
-          { title: 'Övrigt', desc: 'Allt annat — vi hjälper gärna.', email: 'info@FleetOS.se' },
+          { title: 'Support', desc: 'Frågor om plattformen eller ditt konto.', email: 'info@dseenterprise.se' },
+          { title: 'Försäljning', desc: 'Frågor om priser eller att komma igång.', email: 'info@dseenterprise.se' },
+          { title: 'Press', desc: 'Medieförfrågningar och intervjuer.', email: 'info@dseenterprise.se' },
+          { title: 'Övrigt', desc: 'Allt annat — vi hjälper gärna.', email: 'info@dseenterprise.se' },
         ].map(({ title, desc, email }) => (
           <div key={title} className="p-5 bg-slate-50 rounded-xl border border-slate-200">
             <p className="font-semibold text-slate-900 text-sm mb-1">{title}</p>

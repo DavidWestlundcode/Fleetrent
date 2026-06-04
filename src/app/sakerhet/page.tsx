@@ -101,8 +101,8 @@ export default function SakerhetPage() {
             <p className="text-sm text-amber-800 leading-relaxed mb-3">
               Har du hittat en säkerhetsbrist i FleetOS? Vi uppskattar ansvarsfull rapportering. Kontakta oss direkt med en beskrivning av problemet — vi svarar inom 48 timmar och hanterar det skyndsamt.
             </p>
-            <a href="mailto:security@fleetos.se" className="text-sm font-medium text-amber-900 hover:underline">
-              security@fleetos.se →
+            <a href="mailto:info@dseenterprise.se" className="text-sm font-medium text-amber-900 hover:underline">
+              info@dseenterprise.se →
             </a>
           </div>
         </div>
@@ -110,7 +110,7 @@ export default function SakerhetPage() {
 
       <p className="text-sm text-slate-400">
         Frågor om vår säkerhetsarkitektur? Kontakta oss på{' '}
-        <a href="mailto:security@fleetos.se" className="text-blue-600 hover:underline">security@fleetos.se</a>.
+        <a href="mailto:info@dseenterprise.se" className="text-blue-600 hover:underline">info@dseenterprise.se</a>.
       </p>
     </PublicLayout>
   );

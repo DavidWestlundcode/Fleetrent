@@ -27,7 +27,7 @@ export default function VillkorPage() {
       <p className="mb-4">Dessa villkor regleras av svensk lag. Tvister ska i första hand lösas genom förhandling och i andra hand via allmän domstol med Stockholm som forum.</p>
 
       <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">8. Kontakt</h2>
-      <p className="mb-4">Frågor om dessa villkor skickas till <a href="mailto:info@FleetOS.se" className="text-blue-600 hover:underline">info@FleetOS.se</a>.</p>
+      <p className="mb-4">Frågor om dessa villkor skickas till <a href="mailto:info@dseenterprise.se" className="text-blue-600 hover:underline">info@dseenterprise.se</a>.</p>
     </PublicLayout>
   );
 }
