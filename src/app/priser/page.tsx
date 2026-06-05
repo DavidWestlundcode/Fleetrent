@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Check, ArrowRight, Zap } from 'lucide-react';
+import { Check, ArrowRight, Zap, PenLine } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 
 const BASIC_FEATURES = [
@@ -12,6 +12,7 @@ const BASIC_FEATURES = [
   'QR-koder för maskiner',
   'Statistik & rapporter',
   'AI-sökning i maskinflotta',
+  'E-signering av hyresavtal*',
 ];
 
 const PREMIUM_FEATURES = [
@@ -19,6 +20,7 @@ const PREMIUM_FEATURES = [
   'Obegränsat antal användare',
   'Obegränsat antal maskiner',
   'Prioriterad support',
+  'E-signering av hyresavtal*',
 ];
 
 export default function PriserPage() {
@@ -135,6 +137,14 @@ export default function PriserPage() {
             </div>
           </div>
 
+          {/* E-signing note */}
+          <div className="mt-8 max-w-3xl mx-auto flex items-start gap-3 px-5 py-4 bg-blue-50 border border-blue-100 rounded-2xl">
+            <PenLine className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+            <p className="text-[13px] text-blue-700 leading-relaxed">
+              <span className="font-semibold">* E-signering ingår i båda planerna</span> — kunden signerar hyresavtalet digitalt direkt från FleetOS. En rörlig kostnad tillkommer per skickat avtal. Kontakta oss för aktuell prislista.
+            </p>
+          </div>
+
           {/* FAQ */}
           <div className="mt-20 max-w-2xl mx-auto">
             <h2 className="text-[24px] font-bold text-slate-900 text-center mb-10">Vanliga frågor</h2>
@@ -151,6 +161,10 @@ export default function PriserPage() {
                 {
                   q: 'Ingår support?',
                   a: 'Ja, support via e-post ingår i båda planerna. Premium-kunder får prioriterad hantering.',
+                },
+                {
+                  q: 'Hur fungerar e-signeringen?',
+                  a: 'E-signering ingår i båda planerna. Du skickar hyresavtalet direkt från FleetOS och kunden signerar digitalt via e-post. En rörlig kostnad tillkommer per skickat avtal — kontakta oss för aktuell prislista.',
                 },
               ].map(({ q, a }) => (
                 <div key={q} className="border-b border-slate-100 pb-6">
