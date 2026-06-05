@@ -515,10 +515,10 @@ export default function LandingPage() {
               Boka gratis demo
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <a href="#how-it-works" className="flex items-center gap-2 px-6 py-3.5 bg-white/[0.06] hover:bg-white/[0.1] text-white font-medium rounded-xl border border-white/10 transition-all text-[14px] hover:-translate-y-0.5">
-              Se hur det fungerar
+            <Link href="/demo" className="flex items-center gap-2 px-6 py-3.5 bg-white/[0.06] hover:bg-white/[0.1] text-white font-medium rounded-xl border border-white/10 transition-all text-[14px] hover:-translate-y-0.5">
+              Prova dashboarden
               <ChevronRight className="w-4 h-4 text-white/50" />
-            </a>
+            </Link>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-slate-500 text-[12px] font-medium mb-16 sm:mb-20">
