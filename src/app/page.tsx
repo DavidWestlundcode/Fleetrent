@@ -1116,7 +1116,7 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
               {[
                 { step: 1, title: 'Skapa konto', desc: 'Registrera ditt företag och bjud in teammedlemmar. Klar på 2 minuter.', icon: Users },
-                { step: 2, title: 'Lägg upp flottan', desc: 'Fotografera maskinen – AI fyller i uppgifterna automatiskt från typskylten.', icon: Truck },
+                { step: 2, title: 'Lägg upp flottan', desc: 'Fotografera typskylten så fyller AI i uppgifterna automatiskt — eller importera direkt från ert befintliga system.', icon: Truck },
                 { step: 3, title: 'Skapa order', desc: 'Välj kund, maskin och prismall. Systemet beräknar pris och genererar avtal.', icon: FileText },
                 { step: 4, title: 'Följ & analysera', desc: 'Realtidsdashboard med beläggning, försenade returer och lönsamhet.', icon: BarChart3 },
               ].map(({ step, title, desc, icon: Icon }, i) => (
