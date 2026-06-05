@@ -1,5 +1,7 @@
 import PublicLayout from '@/components/layout/PublicLayout';
 
+export const revalidate = 86400;
+
 const rights = [
   { title: 'Rätt till tillgång (art. 15)', desc: 'Du kan begära ut en kopia av de personuppgifter vi behandlar om dig, inklusive information om ändamål, kategorier och mottagare.' },
   { title: 'Rätt till rättelse (art. 16)', desc: 'Du kan begära att felaktiga eller ofullständiga uppgifter om dig korrigeras utan onödigt dröjsmål.' },

@@ -2,6 +2,8 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import PublicLayout from '@/components/layout/PublicLayout';
 
+export const revalidate = 86400;
+
 export const metadata: Metadata = {
   title: 'Uthyrningssystem för liftar och skylift | FleetOS',
   description: 'Hantera uthyrning av skylift, saxlift och bomlift med digitala avtal, besiktningshistorik och automatisk fakturering. Prova FleetOS gratis.',

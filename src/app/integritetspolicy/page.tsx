@@ -1,5 +1,7 @@
 ﻿import PublicLayout from '@/components/layout/PublicLayout';
 
+export const revalidate = 86400;
+
 export default function IntegritetspolicyPage() {
   return (
     <PublicLayout title="Integritetspolicy">

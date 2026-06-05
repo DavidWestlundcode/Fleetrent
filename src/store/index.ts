@@ -581,12 +581,12 @@ export const useStore = create<AppStore>()((set, get) => ({
 
       const [machinesRes, customersRes, ordersRes, templatesRes, articlesRes, serviceRes, membersRes, orgRes] =
         await Promise.all([
-          sb().from('machines').select('*').eq('organization_id', orgId),
-          sb().from('customers').select('*').eq('organization_id', orgId).limit(10000),
-          sb().from('orders').select('*, order_events(*)').eq('organization_id', orgId),
-          sb().from('templates').select('*').eq('organization_id', orgId),
-          sb().from('articles').select('*').eq('organization_id', orgId),
-          sb().from('service_records').select('*').eq('organization_id', orgId),
+          sb().from('machines').select('*').eq('organization_id', orgId).limit(1000).order('created_at', { ascending: false }),
+          sb().from('customers').select('*').eq('organization_id', orgId).limit(1000).order('created_at', { ascending: false }),
+          sb().from('orders').select('*, order_events(*)').eq('organization_id', orgId).limit(500).order('created_at', { ascending: false }),
+          sb().from('templates').select('*').eq('organization_id', orgId).limit(200),
+          sb().from('articles').select('*').eq('organization_id', orgId).limit(200),
+          sb().from('service_records').select('*').eq('organization_id', orgId).limit(500).order('created_at', { ascending: false }),
           sb().from('profiles').select('id, full_name').eq('organization_id', orgId),
           sb().from('organizations').select('plan, max_machines, max_users').eq('id', orgId).single(),
         ]);

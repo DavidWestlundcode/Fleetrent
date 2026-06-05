@@ -23,5 +23,8 @@ export async function GET() {
     .eq('provider', 'fortnox')
     .single();
 
-  return NextResponse.json({ connected: !!data, connectedAt: data?.updated_at ?? null });
+  return NextResponse.json(
+    { connected: !!data, connectedAt: data?.updated_at ?? null },
+    { headers: { 'Cache-Control': 'private, max-age=60, stale-while-revalidate=30' } }
+  );
 }

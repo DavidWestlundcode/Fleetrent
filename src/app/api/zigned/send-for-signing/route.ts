@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { renderToBuffer } from '@react-pdf/renderer';
 import RentalAgreementPDF from '@/lib/pdf/rental-agreement';
 import React from 'react';
+import { LIMITS } from '@/lib/rate-limit';
 
 const ZIGNED_API = 'https://api.zigned.se/rest/v3';
 
@@ -34,6 +35,10 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 });
+
+    if (!LIMITS.pdf(user.id)) {
+      return NextResponse.json({ error: 'För många signeringsförfrågningar. Försök igen om en minut.' }, { status: 429 });
+    }
 
     const { data: profile } = await supabase.from('profiles').select('organization_id, full_name').eq('id', user.id).single();
     const orgId = profile?.organization_id;

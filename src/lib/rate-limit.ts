@@ -29,12 +29,18 @@ export function getClientIp(req: NextRequest): string {
 
 // Pre-built limiters for common patterns
 export const LIMITS = {
-  // Expensive AI calls — 10 per minute per IP
-  ai: (ip: string) => rateLimit(`ai:${ip}`, 10, 60_000),
+  // Expensive AI calls — 10 per minute per user
+  ai: (userId: string) => rateLimit(`ai:${userId}`, 10, 60_000),
   // Lead/contact form — 5 per 10 min per IP
   lead: (ip: string) => rateLimit(`lead:${ip}`, 5, 600_000),
-  // Fortnox/Zigned actions — 20 per minute per user
+  // Fortnox/Zigned integration actions — 20 per minute per user
   integration: (userId: string) => rateLimit(`integration:${userId}`, 20, 60_000),
+  // PDF generation — 5 per minute per user (CPU intensive)
+  pdf: (userId: string) => rateLimit(`pdf:${userId}`, 5, 60_000),
+  // User admin actions (create/invite user) — 10 per minute per user
+  userAdmin: (userId: string) => rateLimit(`userAdmin:${userId}`, 10, 60_000),
+  // Sync operations — 5 per 5 minutes per user
+  sync: (userId: string) => rateLimit(`sync:${userId}`, 5, 300_000),
   // Generic authenticated mutation — 60 per minute per user
   mutation: (userId: string) => rateLimit(`mutation:${userId}`, 60, 60_000),
   // Webhook endpoints — 100 per minute per IP

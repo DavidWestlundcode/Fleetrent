@@ -2,6 +2,8 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import PublicLayout from '@/components/layout/PublicLayout';
 
+export const revalidate = 86400;
+
 export const metadata: Metadata = {
   title: 'Uthyrningssystem för truckar och gaffeltruckar | FleetOS',
   description: 'Administrera uthyrning av truckar och gaffeltruckar effektivt. Hyresavtal, serviceprotokoll, certifikathantering och automatisk fakturering i ett system.',

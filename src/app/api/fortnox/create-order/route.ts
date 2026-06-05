@@ -2,6 +2,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { countBusinessDays } from '@/lib/utils';
 import { NextResponse, type NextRequest } from 'next/server';
+import { LIMITS } from '@/lib/rate-limit';
 
 const FORTNOX_API = 'https://api.fortnox.se/3';
 
@@ -96,6 +97,10 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 });
+
+    if (!LIMITS.integration(user.id)) {
+      return NextResponse.json({ error: 'För många förfrågningar. Försök igen om en minut.' }, { status: 429 });
+    }
 
     const { data: profile } = await supabase
       .from('profiles')

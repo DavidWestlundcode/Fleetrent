@@ -2,6 +2,8 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import PublicLayout from '@/components/layout/PublicLayout';
 
+export const revalidate = 86400;
+
 export const metadata: Metadata = {
   title: 'Uthyrningssystem för byggmaskiner och grävmaskiner | FleetOS',
   description: 'Hantera hela flottan av byggmaskiner och grävmaskiner i ett system. Hyresavtal, servicehistorik, digital signering och fakturering — utan papper.',

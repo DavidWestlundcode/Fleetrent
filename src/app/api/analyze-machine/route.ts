@@ -18,7 +18,25 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { nameplateImage, machineImage } = await request.json();
+    const body = await request.json();
+    const { nameplateImage, machineImage } = body ?? {};
+
+    // Validate image URLs — accept only data: or https:// URLs, max 10 MB base64
+    const MAX_B64_LEN = 14_000_000; // ~10 MB
+    for (const [field, val] of [['nameplateImage', nameplateImage], ['machineImage', machineImage]] as const) {
+      if (!val) continue;
+      if (typeof val !== 'string') return NextResponse.json({ error: `Ogiltigt fält: ${field}` }, { status: 400 });
+      if (!val.startsWith('data:image/') && !val.startsWith('https://')) {
+        return NextResponse.json({ error: `Otillåtet bildformat i ${field}` }, { status: 400 });
+      }
+      if (val.length > MAX_B64_LEN) {
+        return NextResponse.json({ error: `Bilden i ${field} är för stor (max 10 MB)` }, { status: 400 });
+      }
+    }
+
+    if (!nameplateImage && !machineImage) {
+      return NextResponse.json({ error: 'Minst en bild krävs' }, { status: 400 });
+    }
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 

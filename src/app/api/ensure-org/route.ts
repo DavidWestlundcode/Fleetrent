@@ -1,16 +1,21 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { LIMITS } from '@/lib/rate-limit';
 
 // Creates a profile row + organization for users who signed up before the schema was in place,
 // or when the email confirmation callback was never triggered.
-export async function POST() {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    if (!LIMITS.mutation(user.id)) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const admin = createAdminClient();
