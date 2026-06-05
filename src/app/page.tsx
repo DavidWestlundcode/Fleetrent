@@ -438,6 +438,82 @@ function SigningMockup() {
   );
 }
 
+function QRReturnMockup() {
+  return (
+    <div className="bg-[#0B1120] rounded-2xl border border-white/[0.08] p-5 shadow-2xl space-y-3">
+      <div className="text-[11px] font-semibold text-white/60 uppercase tracking-wider mb-2">QR-returhantering</div>
+
+      {/* Machine card */}
+      <div className="flex items-center gap-3 bg-white/[0.04] border border-white/[0.06] rounded-xl p-3">
+        <div className="w-9 h-9 bg-blue-600/20 rounded-xl flex items-center justify-center shrink-0">
+          <Truck className="w-4 h-4 text-blue-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[12px] font-medium text-white/90 truncate">Toyota Motviktstruck 2.5T</div>
+          <div className="text-[10px] text-white/40 mt-0.5">Scannad via QR-kod · Internt nr: TR-044</div>
+        </div>
+        <div className="flex items-center gap-1 bg-blue-500/10 border border-blue-500/20 rounded-full px-2 py-0.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+          <span className="text-[9px] font-semibold text-blue-300">Uthyrd</span>
+        </div>
+      </div>
+
+      {/* Active order info */}
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 space-y-1.5">
+        <div className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Aktiv order</div>
+        <div className="flex justify-between">
+          <span className="text-[11px] text-white/50">Kund</span>
+          <span className="text-[11px] text-white/80 font-medium">Svensson Bygg AB</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-[11px] text-white/50">Planerad retur</span>
+          <span className="text-[11px] text-amber-300 font-medium">Idag</span>
+        </div>
+      </div>
+
+      {/* Condition selection */}
+      <div className="space-y-1.5">
+        <div className="text-[10px] font-semibold text-white/40 uppercase tracking-wider pl-1">Skick vid retur</div>
+        {[
+          { label: 'Bra skick', selected: true, color: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300' },
+          { label: 'Kräver service', selected: false, color: 'border-white/[0.08] bg-white/[0.03] text-white/40' },
+          { label: 'Skadad', selected: false, color: 'border-white/[0.08] bg-white/[0.03] text-white/40' },
+        ].map(({ label, selected, color }) => (
+          <div key={label} className={`flex items-center gap-2.5 px-3 py-2 rounded-xl border text-[11px] font-medium ${color}`}>
+            <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${selected ? 'border-emerald-400' : 'border-white/20'}`}>
+              {selected && <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+            </div>
+            {label}
+          </div>
+        ))}
+      </div>
+
+      {/* Confirmed */}
+      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 flex items-center gap-3">
+        <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+        <div>
+          <div className="text-[11px] font-semibold text-emerald-300">Retur registrerad</div>
+          <div className="text-[10px] text-white/40 mt-0.5">Maskin uppdaterad till I lager automatiskt</div>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="pt-2 border-t border-white/[0.06] grid grid-cols-3 gap-2">
+        {[
+          { label: 'Registreringstid', value: '< 1 min', color: 'text-blue-400' },
+          { label: 'Ingen inloggning', value: 'QR', color: 'text-emerald-400' },
+          { label: 'Uppdateras', value: 'Direkt', color: 'text-violet-400' },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="text-center">
+            <div className={`text-[12px] font-bold ${color}`}>{value}</div>
+            <div className="text-[9px] text-white/30 mt-0.5">{label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Page ─────────────────────────────────────────────────────────── */
 export default function LandingPage() {
   return (
@@ -855,6 +931,39 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
+            </AnimateIn>
+          </div>
+
+          {/* Feature 5: QR return */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
+            <AnimateIn direction="left">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200/80 rounded-full text-emerald-700 text-[11px] font-semibold mb-5">
+                <QrCode className="w-3.5 h-3.5" />
+                QR-returhantering
+              </div>
+              <h3 className="text-2xl sm:text-[32px] font-bold text-slate-900 tracking-tight mb-4 leading-tight">
+                Registrera retur på<br />under en minut
+              </h3>
+              <p className="text-[15px] text-slate-500 leading-relaxed mb-7">
+                Fäst en QR-kod på maskinen. Lagerpersonal scannar den med mobilen när maskinen kommer in — väljer skick, anger drifttimmar och skickar. Systemet uppdaterar orderstatus och maskinens tillgänglighet direkt, utan att någon behöver logga in.
+              </p>
+              <div className="space-y-3">
+                {[
+                  { icon: QrCode, text: 'Scanna QR-koden — se maskin, order och kundinfo direkt' },
+                  { icon: CheckCircle, text: 'Registrera skick, drifttimmar och notering på plats' },
+                  { icon: RefreshCw, text: 'Order och maskinstatus uppdateras automatiskt i systemet' },
+                ].map(({ icon: Icon, text }) => (
+                  <div key={text} className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0">
+                      <Icon className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <span className="text-[14px] text-slate-700 font-medium">{text}</span>
+                  </div>
+                ))}
+              </div>
+            </AnimateIn>
+            <AnimateIn direction="right">
+              <QRReturnMockup />
             </AnimateIn>
           </div>
 
