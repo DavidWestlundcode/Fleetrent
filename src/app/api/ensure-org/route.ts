@@ -14,7 +14,7 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    if (!LIMITS.mutation(user.id)) {
+    if (!await LIMITS.mutation(user.id)) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 

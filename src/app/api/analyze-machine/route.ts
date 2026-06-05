@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 });
 
   // Rate limit: 10 AI calls per minute per user
-  if (!rateLimit(`ai:${user.id}`, 10, 60_000)) {
+  if (!await rateLimit(`ai:${user.id}`, 10, 60_000)) {
     return NextResponse.json({ error: 'För många AI-anrop. Försök igen om en minut.' }, { status: 429 });
   }
 

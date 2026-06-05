@@ -1,20 +1,37 @@
 import type { NextRequest } from 'next/server';
+import { Redis } from '@upstash/redis';
 
-// In-memory store — protects within a single serverless instance.
-// For multi-instance production hardening, replace with Upstash Redis.
-const store = new Map<string, { count: number; resetAt: number }>();
+// Use Upstash Redis when env vars are present, otherwise fall back to in-memory.
+// In-memory only protects within a single serverless instance — use Redis in production.
+const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    })
+  : null;
 
-export function rateLimit(key: string, maxRequests: number, windowMs: number): boolean {
-  const now = Date.now();
-  const record = store.get(key);
+// In-memory fallback (dev / missing env vars)
+const memStore = new Map<string, { count: number; resetAt: number }>();
 
-  if (!record || now > record.resetAt) {
-    store.set(key, { count: 1, resetAt: now + windowMs });
-    return true;
+export async function rateLimit(key: string, maxRequests: number, windowMs: number): Promise<boolean> {
+  if (redis) {
+    const now = Date.now();
+    const windowKey = `rl:${key}:${Math.floor(now / windowMs)}`;
+    const count = await redis.incr(windowKey);
+    if (count === 1) {
+      await redis.pexpire(windowKey, windowMs);
+    }
+    return count <= maxRequests;
   }
 
+  // In-memory fallback
+  const now = Date.now();
+  const record = memStore.get(key);
+  if (!record || now > record.resetAt) {
+    memStore.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
   if (record.count >= maxRequests) return false;
-
   record.count++;
   return true;
 }

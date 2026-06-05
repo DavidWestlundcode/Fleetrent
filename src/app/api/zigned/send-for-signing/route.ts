@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 });
 
-    if (!LIMITS.pdf(user.id)) {
+    if (!await LIMITS.pdf(user.id)) {
       return NextResponse.json({ error: 'För många signeringsförfrågningar. Försök igen om en minut.' }, { status: 429 });
     }
 

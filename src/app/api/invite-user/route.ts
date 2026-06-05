@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 });
 
-    if (!LIMITS.userAdmin(user.id)) {
+    if (!await LIMITS.userAdmin(user.id)) {
       return NextResponse.json({ error: 'För många förfrågningar. Försök igen om en minut.' }, { status: 429 });
     }
 

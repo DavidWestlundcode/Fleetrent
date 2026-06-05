@@ -4,7 +4,7 @@ import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   // Rate limit: 100 req/min per IP
-  if (!rateLimit(`webhook:${getClientIp(request)}`, 100, 60_000)) {
+  if (!await rateLimit(`webhook:${getClientIp(request)}`, 100, 60_000)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 

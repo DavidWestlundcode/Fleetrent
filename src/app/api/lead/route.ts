@@ -8,7 +8,7 @@ const PHONE_RE = /^[+\d\s\-()]{6,20}$/;
 export async function POST(request: NextRequest) {
   // Rate limit: 5 submissions per 10 minutes per IP
   const ip = getClientIp(request);
-  if (!rateLimit(`lead:${ip}`, 5, 600_000)) {
+  if (!await rateLimit(`lead:${ip}`, 5, 600_000)) {
     return NextResponse.json({ error: 'För många försök. Försök igen senare.' }, { status: 429 });
   }
 

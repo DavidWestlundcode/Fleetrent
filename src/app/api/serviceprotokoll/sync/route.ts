@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Ej inloggad' }, { status: 401 });
 
-    if (!LIMITS.sync(user.id)) {
+    if (!await LIMITS.sync(user.id)) {
       return NextResponse.json({ error: 'För många synkroniseringar. Vänta 5 minuter och försök igen.' }, { status: 429 });
     }
 
