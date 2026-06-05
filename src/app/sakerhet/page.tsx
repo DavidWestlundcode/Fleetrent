@@ -10,7 +10,8 @@ const layers = [
     title: 'Infrastruktur',
     items: [
       { label: 'Vercel Edge Network', desc: 'Applikationen körs på Vercels globala edge-nätverk med inbyggt DDoS-skydd och automatisk skalning.' },
-      { label: 'Supabase (PostgreSQL)', desc: 'Databasen driftas av Supabase på AWS eu-central-1 (Frankfurt) — inom EU/EES.' },
+      { label: 'Supabase (PostgreSQL)', desc: 'Databasen driftas av Supabase på AWS eu-west-1 (Irland) — inom EU/EES.' },
+      { label: 'Upstash Redis', desc: 'Hastighetsbegränsning hanteras av Upstash Redis på AWS eu-west-1 (Irland) — inom EU/EES.' },
       { label: 'Miljövariabler', desc: 'Alla API-nycklar och hemligheter lagras som krypterade miljövariabler i Vercel — aldrig i källkoden.' },
     ],
   },
