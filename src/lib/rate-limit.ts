@@ -1,19 +1,26 @@
 import type { NextRequest } from 'next/server';
 import { Redis } from '@upstash/redis';
 
-// Use Upstash Redis when env vars are present, otherwise fall back to in-memory.
-// In-memory only protects within a single serverless instance — use Redis in production.
-const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-  ? new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
-    })
-  : null;
+// Lazy-initialized — only created on first rateLimit() call, not at build time.
+let _redis: Redis | null | undefined;
+
+function getRedis(): Redis | null {
+  if (_redis !== undefined) return _redis;
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (url?.startsWith('https://') && token) {
+    _redis = new Redis({ url, token });
+  } else {
+    _redis = null;
+  }
+  return _redis;
+}
 
 // In-memory fallback (dev / missing env vars)
 const memStore = new Map<string, { count: number; resetAt: number }>();
 
 export async function rateLimit(key: string, maxRequests: number, windowMs: number): Promise<boolean> {
+  const redis = getRedis();
   if (redis) {
     const now = Date.now();
     const windowKey = `rl:${key}:${Math.floor(now / windowMs)}`;
