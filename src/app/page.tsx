@@ -1037,7 +1037,7 @@ export default function LandingPage() {
             {[
               { q: 'Hur lång tid tar det att komma igång?', a: 'De flesta kunder är igång med full drift inom en arbetsdag. Vi hjälper dig att lägga upp flottan och onboarda teamet.' },
               { q: 'Fungerar det i mobilen?', a: 'Ja, FleetOS är fullt responsivt och optimerat för mobila enheter. QR-funktionen kräver bara en webbläsare.' },
-              { q: 'Hur säker är datan?', a: 'All data lagras krypterad i EU-baserade datacenter (Supabase/AWS Frankfurt). Vi följer GDPR fullt ut.' },
+              { q: 'Hur säker är datan?', a: 'All data lagras krypterad i EU-baserade datacenter (Supabase/AWS Irland). Vi följer GDPR fullt ut.' },
               { q: 'Kan jag bjuda in hela teamet?', a: 'Ja, alla planer inkluderar obegränsat antal användare. Du styr vilka roller och behörigheter varje person har.' },
               { q: 'Vad händer med mina befintliga data i Excel?', a: 'Vi hjälper dig migrera din befintliga data. Kontakta oss så sätter vi upp en import anpassad för din situation.' },
             ].map(({ q, a }, i) => (
