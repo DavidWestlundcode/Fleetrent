@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Search, Trash2 } from 'lucide-react';
 import Header from '@/components/layout/Header';
@@ -7,11 +7,15 @@ import { OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
 import { formatCurrency, formatDate, daysUntil } from '@/lib/utils';
 import type { OrderStatus } from '@/lib/types';
+import Pagination from '@/components/ui/Pagination';
+
+const PAGE_SIZE = 50;
 
 export default function OrdersPage() {
   const { orders, machines, customers, deleteOrder } = useStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
+  const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
     return orders
@@ -28,6 +32,11 @@ export default function OrdersPage() {
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [orders, machines, customers, search, statusFilter]);
+
+  useEffect(() => { setPage(1); }, [search, statusFilter]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { all: orders.length };
@@ -112,7 +121,7 @@ export default function OrdersPage() {
                   <td colSpan={8} className="px-4 py-14 text-center text-[13px] text-slate-400">Inga order hittades</td>
                 </tr>
               )}
-              {filtered.map((order) => {
+              {paginated.map((order) => {
                 const machine = machines.find((m) => m.id === order.machineId);
                 const customer = customers.find((c) => c.id === order.customerId);
                 const isOverdue = order.status === 'aktiv' && !!order.plannedReturnDate && new Date(order.plannedReturnDate) < new Date();
@@ -166,6 +175,9 @@ export default function OrdersPage() {
               })}
             </tbody>
           </table>
+          </div>
+          <div className="px-5 py-3">
+            <Pagination page={page} totalPages={totalPages} totalItems={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
           </div>
         </div>
       </div>

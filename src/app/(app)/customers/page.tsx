@@ -1,15 +1,19 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Search, Building2, Phone, Mail, TrendingUp, Ban } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
 import { formatCurrency } from '@/lib/utils';
+import Pagination from '@/components/ui/Pagination';
+
+const PAGE_SIZE = 48;
 
 export default function CustomersPage() {
   const { customers, orders } = useStore();
   const [search, setSearch] = useState('');
   const [showInactive, setShowInactive] = useState(false);
+  const [page, setPage] = useState(1);
 
   const filtered = useMemo(
     () => customers.filter((c) => {
@@ -24,6 +28,11 @@ export default function CustomersPage() {
     }),
     [customers, search, showInactive]
   );
+
+  useEffect(() => { setPage(1); }, [search, showInactive]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const inactiveCount = customers.filter((c) => c.isActive === false).length;
 
@@ -73,7 +82,7 @@ export default function CustomersPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((customer) => {
+          {paginated.map((customer) => {
             const activeOrders = getActiveOrders(customer.id);
             const inactive = customer.isActive === false;
             return (
@@ -132,6 +141,7 @@ export default function CustomersPage() {
             <div className="col-span-3 py-14 text-center text-[13px] text-slate-400">Inga kunder hittades</div>
           )}
         </div>
+        <Pagination page={page} totalPages={totalPages} totalItems={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, LayoutGrid, LayoutList, Truck, Sparkles, X, Loader2, Search, Lock } from 'lucide-react';
 import Header from '@/components/layout/Header';
@@ -8,6 +8,9 @@ import { useStore } from '@/store';
 import { formatCurrency } from '@/lib/utils';
 import { CATEGORY_LABELS, FUEL_LABELS, type MachineStatus, type Machine } from '@/lib/types';
 import type { SearchCriteria } from '@/app/api/search-machines/route';
+import Pagination from '@/components/ui/Pagination';
+
+const PAGE_SIZE = 50;
 
 const EXAMPLES = [
   'Motviktstruck, el, kapacitet max 2000 kg',
@@ -102,6 +105,7 @@ export default function MachinesPage() {
   const atMachineLimit = machines.length >= maxMachines;
   const [statusFilter, setStatusFilter] = useState<MachineStatus | 'all'>('all');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [page, setPage] = useState(1);
 
   // Text search (name/brand/model)
   const [textSearch, setTextSearch] = useState('');
@@ -179,6 +183,11 @@ export default function MachinesPage() {
     }
     return result;
   }, [machines, statusFilter, aiActive, aiCriteria, textSearch]);
+
+  useEffect(() => { setPage(1); }, [statusFilter, aiActive, textSearch]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const statusLabels: Record<string, string> = {
     all: 'Alla', i_lager: 'I lager', uthyrd: 'Uthyrd',
@@ -360,7 +369,7 @@ export default function MachinesPage() {
                     <td colSpan={9} className="px-4 py-14 text-center text-[13px] text-slate-400">Inga maskiner hittades</td>
                   </tr>
                 )}
-                {filtered.map((machine) => (
+                {paginated.map((machine) => (
                   <tr key={machine.id} className="hover:bg-slate-50/80 transition-colors group">
                     <td className="px-5 py-3.5">
                       <div>
@@ -402,13 +411,16 @@ export default function MachinesPage() {
               </tbody>
             </table>
             </div>
+            <div className="px-5 py-3">
+              <Pagination page={page} totalPages={totalPages} totalItems={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
+            </div>
           </div>
         )}
 
         {/* Grid View */}
         {viewMode === 'grid' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filtered.map((machine) => (
+            {paginated.map((machine) => (
               <Link key={machine.id} href={`/machines/${machine.id}`} className="bg-white rounded-2xl border border-slate-200/80 p-5 hover:shadow-md hover:-translate-y-0.5 hover:border-blue-200 transition-all duration-200 cursor-pointer">
                 <div className="flex items-start justify-between mb-3.5">
                   <div className="p-2 bg-slate-100 rounded-xl">
@@ -448,6 +460,11 @@ export default function MachinesPage() {
             ))}
             {filtered.length === 0 && (
               <div className="col-span-4 py-14 text-center text-[13px] text-slate-400">Inga maskiner hittades</div>
+            )}
+            {filtered.length > 0 && (
+              <div className="col-span-full mt-2">
+                <Pagination page={page} totalPages={totalPages} totalItems={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
+              </div>
             )}
           </div>
         )}
