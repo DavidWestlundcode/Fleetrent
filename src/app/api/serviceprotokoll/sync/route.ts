@@ -259,111 +259,152 @@ export async function POST(request: NextRequest) {
 
 // Cron-triggered version — Vercel sends Authorization: Bearer <CRON_SECRET>
 export async function GET(request: NextRequest) {
+  const startedAt = Date.now();
+  console.log('[SP-sync] Cron triggered at', new Date().toISOString());
+
   const auth = request.headers.get('authorization') ?? '';
   const secret = auth.startsWith('Bearer ') ? auth.slice(7) : auth;
   if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+    console.error('[SP-sync] Unauthorized — CRON_SECRET mismatch');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const admin = createAdminClient();
-  // Sync all orgs that have an SP integration key
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: orgs } = await admin.from('organizations').select('id, sp_integration_key').not('sp_integration_key' as any, 'is', null);
+  const { data: orgs, error: orgsError } = await admin.from('organizations').select('id, sp_integration_key, name').not('sp_integration_key' as any, 'is', null);
 
-  let total = { machines: 0, customers: 0 };
+  if (orgsError) {
+    console.error('[SP-sync] Failed to fetch organizations:', orgsError.message);
+    return NextResponse.json({ error: 'DB error' }, { status: 500 });
+  }
+
+  console.log(`[SP-sync] Found ${orgs?.length ?? 0} organization(s) with SP integration`);
+
+  let total = { machines: 0, customers: 0, orgs: 0, errors: 0 };
+
   for (const org of orgs ?? []) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const key = (org as any).sp_integration_key as string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const orgName = (org as any).name ?? org.id;
     if (!key) continue;
+
+    console.log(`[SP-sync] Syncing org: ${orgName} (${org.id})`);
+
     const token = await getSPToken(key);
-    if (!token) continue;
-
-    // machines
-    const serviceObjects = await fetchAllPages(`${SP_API}/ServiceObject/Get`, token);
-    const rentable = serviceObjects.filter((obj) => {
-      const tags: string[] = obj.Tags ?? obj.tags ?? [];
-      return tags.some((t: string) => t.toLowerCase() === RENTABLE_TAG);
-    });
-    for (const obj of rentable) {
-      const spId = String(obj.Id ?? obj.id ?? obj.SerialNo ?? '');
-      if (!spId) continue;
-      const { data: existing } = await admin.from('machines').select('id').eq('organization_id', org.id).eq('sp_id', spId).maybeSingle();
-      if (!existing) {
-        await admin.from('machines').insert({
-          organization_id: org.id,
-          name: obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
-          brand: obj.Brand ?? obj.Manufacturer ?? '',
-          model: obj.Model ?? obj.Type ?? '',
-          serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
-          internal_code: obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
-          status: 'i_lager',
-          sp_id: spId,
-        });
-        total.machines++;
-      }
+    if (!token) {
+      console.error(`[SP-sync] Could not get SP token for org ${orgName} — check integration key`);
+      total.errors++;
+      continue;
     }
 
-    // customers
-    const [customers, facilities] = await Promise.all([
-      fetchAllPages(`${SP_API}/Customer/Get`, token),
-      fetchAllPages(`${SP_API}/Facility/Get`, token, 50).catch(() => []),
-    ]);
+    try {
+      // machines
+      const serviceObjects = await fetchAllPages(`${SP_API}/ServiceObject/Get`, token);
+      console.log(`[SP-sync] ${orgName}: fetched ${serviceObjects.length} service objects from SP`);
 
-    // Group facilities by CustomerNo (same as POST handler)
-    const facilityByCustomer: Record<string, unknown[]> = {};
-    for (const f of facilities) {
-      const cid = String(f.CustomerID ?? f.CustomerId ?? '');
-      if (!cid) continue;
-      if (!facilityByCustomer[cid]) facilityByCustomer[cid] = [];
-      const facContacts = (f.Contacts ?? []).map((ct: Record<string, string>) => ({
-        name: ct.Name ?? '',
-        phone: ct.MobilePhoneNo ?? ct.PhoneNo ?? '',
-        email: ct.Email ?? '',
-        title: ct.Title ?? '',
-      })).filter((ct: { name: string }) => ct.name);
-      facilityByCustomer[cid].push({
-        name: f.Name ?? '',
-        address: f.Address?.AddressRow1 ?? '',
-        city: f.Address?.Place ?? '',
-        zip: f.Address?.PostalCode ?? '',
-        contacts: facContacts,
+      const rentable = serviceObjects.filter((obj) => {
+        const tags: string[] = obj.Tags ?? obj.tags ?? [];
+        return tags.some((t: string) => t.toLowerCase() === RENTABLE_TAG);
       });
-    }
+      console.log(`[SP-sync] ${orgName}: ${rentable.length} tagged as '${RENTABLE_TAG}'`);
 
-    for (const c of customers) {
-      const spId = String(c.UniqueID ?? c.CustomerNo ?? '');
-      if (!spId || !c.Name) continue;
-
-      const customerNoKey = c.CustomerNo ? String(c.CustomerNo) : null;
-      const customerFacilities = customerNoKey ? (facilityByCustomer[customerNoKey] ?? []) : [];
-      const allContacts = (customerFacilities as { contacts?: { name: string; phone: string; email: string; title: string }[] }[])
-        .flatMap(f => f.contacts ?? []);
-
-      const record = {
-        organization_id: org.id,
-        company_name: c.Name,
-        org_number: c.OrganisationNumber ?? '',
-        email: c.InvoiceEmail ?? (allContacts[0]?.email ?? ''),
-        phone: c.Phone ?? (allContacts[0]?.phone ?? ''),
-        contact_person: allContacts[0]?.name ?? '',
-        ...mapCustomerAddresses(c),
-        fortnox_customer_number: c.CustomerNo ? String(c.CustomerNo) : null,
-        contacts: allContacts,
-        facilities: customerFacilities,
-        sp_id: spId,
-      };
-
-      const { data: existing } = await admin.from('customers').select('id').eq('organization_id', org.id).eq('sp_id', spId).maybeSingle();
-      if (!existing) {
-        await admin.from('customers').insert(record);
-      } else {
-        await admin.from('customers').update(record).eq('id', existing.id);
+      let newMachines = 0;
+      for (const obj of rentable) {
+        const spId = String(obj.Id ?? obj.id ?? obj.SerialNo ?? '');
+        if (!spId) continue;
+        const { data: existing } = await admin.from('machines').select('id').eq('organization_id', org.id).eq('sp_id', spId).maybeSingle();
+        if (!existing) {
+          await admin.from('machines').insert({
+            organization_id: org.id,
+            name: obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
+            brand: obj.Brand ?? obj.Manufacturer ?? '',
+            model: obj.Model ?? obj.Type ?? '',
+            serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
+            internal_code: obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
+            status: 'i_lager',
+            sp_id: spId,
+          });
+          newMachines++;
+          total.machines++;
+        }
       }
-      total.customers++;
-    }
+      console.log(`[SP-sync] ${orgName}: ${newMachines} new machines inserted`);
 
-    await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', org.id);
+      // customers
+      const [customers, facilities] = await Promise.all([
+        fetchAllPages(`${SP_API}/Customer/Get`, token),
+        fetchAllPages(`${SP_API}/Facility/Get`, token, 50).catch(() => []),
+      ]);
+      console.log(`[SP-sync] ${orgName}: fetched ${customers.length} customers, ${facilities.length} facilities`);
+
+      const facilityByCustomer: Record<string, unknown[]> = {};
+      for (const f of facilities) {
+        const cid = String(f.CustomerID ?? f.CustomerId ?? '');
+        if (!cid) continue;
+        if (!facilityByCustomer[cid]) facilityByCustomer[cid] = [];
+        const facContacts = (f.Contacts ?? []).map((ct: Record<string, string>) => ({
+          name: ct.Name ?? '',
+          phone: ct.MobilePhoneNo ?? ct.PhoneNo ?? '',
+          email: ct.Email ?? '',
+          title: ct.Title ?? '',
+        })).filter((ct: { name: string }) => ct.name);
+        facilityByCustomer[cid].push({
+          name: f.Name ?? '',
+          address: f.Address?.AddressRow1 ?? '',
+          city: f.Address?.Place ?? '',
+          zip: f.Address?.PostalCode ?? '',
+          contacts: facContacts,
+        });
+      }
+
+      let upsertedCustomers = 0;
+      for (const c of customers) {
+        const spId = String(c.UniqueID ?? c.CustomerNo ?? '');
+        if (!spId || !c.Name) continue;
+
+        const customerNoKey = c.CustomerNo ? String(c.CustomerNo) : null;
+        const customerFacilities = customerNoKey ? (facilityByCustomer[customerNoKey] ?? []) : [];
+        const allContacts = (customerFacilities as { contacts?: { name: string; phone: string; email: string; title: string }[] }[])
+          .flatMap(f => f.contacts ?? []);
+
+        const record = {
+          organization_id: org.id,
+          company_name: c.Name,
+          org_number: c.OrganisationNumber ?? '',
+          email: c.InvoiceEmail ?? (allContacts[0]?.email ?? ''),
+          phone: c.Phone ?? (allContacts[0]?.phone ?? ''),
+          contact_person: allContacts[0]?.name ?? '',
+          ...mapCustomerAddresses(c),
+          fortnox_customer_number: c.CustomerNo ? String(c.CustomerNo) : null,
+          contacts: allContacts,
+          facilities: customerFacilities,
+          sp_id: spId,
+        };
+
+        const { data: existing } = await admin.from('customers').select('id').eq('organization_id', org.id).eq('sp_id', spId).maybeSingle();
+        if (!existing) {
+          await admin.from('customers').insert(record);
+        } else {
+          await admin.from('customers').update(record).eq('id', existing.id);
+        }
+        upsertedCustomers++;
+        total.customers++;
+      }
+      console.log(`[SP-sync] ${orgName}: ${upsertedCustomers} customers upserted`);
+
+      await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', org.id);
+      total.orgs++;
+      console.log(`[SP-sync] ${orgName}: sync complete ✓`);
+
+    } catch (err) {
+      console.error(`[SP-sync] Error syncing org ${orgName}:`, err instanceof Error ? err.message : err);
+      total.errors++;
+    }
   }
 
-  return NextResponse.json({ ok: true, ...total });
+  const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
+  console.log(`[SP-sync] Done in ${elapsed}s — orgs: ${total.orgs}, machines: ${total.machines}, customers: ${total.customers}, errors: ${total.errors}`);
+
+  return NextResponse.json({ ok: true, elapsed: `${elapsed}s`, ...total });
 }
