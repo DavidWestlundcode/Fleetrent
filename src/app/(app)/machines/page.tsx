@@ -1,12 +1,12 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, LayoutGrid, LayoutList, Truck, Sparkles, X, Loader2, Search, Lock } from 'lucide-react';
+import { Plus, LayoutGrid, LayoutList, Truck, Sparkles, X, Loader2, Search, Lock, SlidersHorizontal, ChevronDown } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { MachineStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
 import { formatCurrency } from '@/lib/utils';
-import { CATEGORY_LABELS, FUEL_LABELS, type MachineStatus, type Machine } from '@/lib/types';
+import { CATEGORY_LABELS, FUEL_LABELS, type MachineStatus, type Machine, type MachineCategory, type FuelType } from '@/lib/types';
 import type { SearchCriteria } from '@/app/api/search-machines/route';
 import Pagination from '@/components/ui/Pagination';
 
@@ -106,6 +106,51 @@ export default function MachinesPage() {
   const [statusFilter, setStatusFilter] = useState<MachineStatus | 'all'>('all');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [page, setPage] = useState(1);
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Manual filters
+  type NumRange = { min: string; max: string };
+  const emptyRange = (): NumRange => ({ min: '', max: '' });
+  const [categories, setCategories] = useState<Set<MachineCategory>>(new Set());
+  const [fuels, setFuels] = useState<Set<FuelType>>(new Set());
+  const [capacity, setCapacity] = useState<NumRange>(emptyRange());
+  const [liftHeight, setLiftHeight] = useState<NumRange>(emptyRange());
+  const [buildHeight, setBuildHeight] = useState<NumRange>(emptyRange());
+  const [forkLength, setForkLength] = useState<NumRange>(emptyRange());
+  const [freeLift, setFreeLift] = useState<NumRange>(emptyRange());
+  const [maxReach, setMaxReach] = useState<NumRange>(emptyRange());
+  const [digDepth, setDigDepth] = useState<NumRange>(emptyRange());
+  const [bucketVolume, setBucketVolume] = useState<NumRange>(emptyRange());
+  const [workingWeight, setWorkingWeight] = useState<NumRange>(emptyRange());
+  const [enginePower, setEnginePower] = useState<NumRange>(emptyRange());
+  const [year, setYear] = useState<NumRange>(emptyRange());
+
+  const activeManualFilterCount = [
+    categories.size > 0, fuels.size > 0,
+    capacity.min || capacity.max, liftHeight.min || liftHeight.max,
+    buildHeight.min || buildHeight.max, forkLength.min || forkLength.max,
+    freeLift.min || freeLift.max, maxReach.min || maxReach.max,
+    digDepth.min || digDepth.max, bucketVolume.min || bucketVolume.max,
+    workingWeight.min || workingWeight.max, enginePower.min || enginePower.max,
+    year.min || year.max,
+  ].filter(Boolean).length;
+
+  function clearManualFilters() {
+    setCategories(new Set()); setFuels(new Set());
+    setCapacity(emptyRange()); setLiftHeight(emptyRange());
+    setBuildHeight(emptyRange()); setForkLength(emptyRange());
+    setFreeLift(emptyRange()); setMaxReach(emptyRange());
+    setDigDepth(emptyRange()); setBucketVolume(emptyRange());
+    setWorkingWeight(emptyRange()); setEnginePower(emptyRange());
+    setYear(emptyRange());
+  }
+
+  function applyRange(val: number | undefined, range: NumRange): boolean {
+    if (val == null) return true;
+    if (range.min && val < Number(range.min)) return false;
+    if (range.max && val > Number(range.max)) return false;
+    return true;
+  }
 
   // Text search (name/brand/model)
   const [textSearch, setTextSearch] = useState('');
@@ -181,10 +226,30 @@ export default function MachinesPage() {
         m.serialNumber.toLowerCase().includes(q)
       );
     }
+    // Manual filters
+    if (categories.size > 0) result = result.filter((m) => categories.has(m.category));
+    if (fuels.size > 0) result = result.filter((m) => fuels.has(m.fuelType));
+    result = result.filter((m) =>
+      applyRange(m.capacity, capacity) &&
+      applyRange(m.liftHeight, liftHeight) &&
+      applyRange(m.buildHeight, buildHeight) &&
+      applyRange(m.forkLength, forkLength) &&
+      applyRange(m.freeLift, freeLift) &&
+      applyRange(m.maxReach, maxReach) &&
+      applyRange(m.digDepth, digDepth) &&
+      applyRange(m.bucketVolume, bucketVolume) &&
+      applyRange(m.workingWeight, workingWeight) &&
+      applyRange(m.enginePower, enginePower) &&
+      applyRange(m.year, year)
+    );
     return result;
-  }, [machines, statusFilter, aiActive, aiCriteria, textSearch]);
+  }, [machines, statusFilter, aiActive, aiCriteria, textSearch,
+      categories, fuels, capacity, liftHeight, buildHeight, forkLength,
+      freeLift, maxReach, digDepth, bucketVolume, workingWeight, enginePower, year]);
 
-  useEffect(() => { setPage(1); }, [statusFilter, aiActive, textSearch]);
+  useEffect(() => { setPage(1); }, [statusFilter, aiActive, textSearch,
+    categories, fuels, capacity, liftHeight, buildHeight, forkLength,
+    freeLift, maxReach, digDepth, bucketVolume, workingWeight, enginePower, year]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -301,17 +366,141 @@ export default function MachinesPage() {
           )}
         </div>
 
-        {/* Text search (when AI not active) */}
+        {/* Text search + filter button (when AI not active) */}
         {!aiActive && (
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Sök på namn, märke, serienummer..."
-              value={textSearch}
-              onChange={(e) => setTextSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-[13px] bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all placeholder:text-slate-400"
-            />
+          <div className="flex items-center gap-2">
+            <div className="relative max-w-sm flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Sök på namn, märke, serienummer..."
+                value={textSearch}
+                onChange={(e) => setTextSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 text-[13px] bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all placeholder:text-slate-400"
+              />
+            </div>
+            <button
+              onClick={() => setShowFilters((v) => !v)}
+              className={`flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium rounded-xl border transition-colors cursor-pointer shrink-0 ${
+                showFilters || activeManualFilterCount > 0
+                  ? 'bg-blue-50 border-blue-200 text-blue-700'
+                  : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              Filter
+              {activeManualFilterCount > 0 && (
+                <span className="flex items-center justify-center w-4 h-4 bg-blue-600 text-white text-[10px] font-bold rounded-full">
+                  {activeManualFilterCount}
+                </span>
+              )}
+              <ChevronDown className={`w-3 h-3 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            </button>
+            {activeManualFilterCount > 0 && (
+              <button
+                onClick={clearManualFilters}
+                className="flex items-center gap-1 px-3 py-2 text-[12px] font-medium text-slate-500 hover:text-red-600 bg-white border border-slate-200 hover:border-red-200 rounded-xl transition-colors cursor-pointer shrink-0"
+              >
+                <X className="w-3 h-3" />
+                Rensa
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Manual filter panel */}
+        {showFilters && !aiActive && (
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-5">
+
+            {/* Kategori */}
+            <div>
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Kategori</p>
+              <div className="flex flex-wrap gap-2">
+                {(Object.entries(CATEGORY_LABELS) as [MachineCategory, string][]).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => setCategories((prev) => {
+                      const next = new Set(prev);
+                      next.has(key) ? next.delete(key) : next.add(key);
+                      return next;
+                    })}
+                    className={`px-3 py-1.5 rounded-lg text-[12.5px] font-medium border transition-colors cursor-pointer ${
+                      categories.has(key)
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Drivmedel */}
+            <div>
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Drivmedel</p>
+              <div className="flex flex-wrap gap-2">
+                {(Object.entries(FUEL_LABELS) as [FuelType, string][]).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => setFuels((prev) => {
+                      const next = new Set(prev);
+                      next.has(key) ? next.delete(key) : next.add(key);
+                      return next;
+                    })}
+                    className={`px-3 py-1.5 rounded-lg text-[12.5px] font-medium border transition-colors cursor-pointer ${
+                      fuels.has(key)
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Specifikationer */}
+            <div>
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Specifikationer</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {([
+                  { label: 'Kapacitet (kg)', state: capacity, set: setCapacity },
+                  { label: 'Lyfthöjd (mm)', state: liftHeight, set: setLiftHeight },
+                  { label: 'Bygghöjd (mm)', state: buildHeight, set: setBuildHeight },
+                  { label: 'Gaffellängd (mm)', state: forkLength, set: setForkLength },
+                  { label: 'Frilyft (mm)', state: freeLift, set: setFreeLift },
+                  { label: 'Max räckvidd (mm)', state: maxReach, set: setMaxReach },
+                  { label: 'Grävdjup (mm)', state: digDepth, set: setDigDepth },
+                  { label: 'Skopvolym (l)', state: bucketVolume, set: setBucketVolume },
+                  { label: 'Tjänstevikt (kg)', state: workingWeight, set: setWorkingWeight },
+                  { label: 'Motoreffekt (kW)', state: enginePower, set: setEnginePower },
+                  { label: 'Årsmodell', state: year, set: setYear },
+                ] as { label: string; state: NumRange; set: React.Dispatch<React.SetStateAction<NumRange>> }[]).map(({ label, state, set }) => (
+                  <div key={label}>
+                    <p className="text-[11px] text-slate-500 mb-1.5">{label}</p>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        placeholder="Min"
+                        value={state.min}
+                        onChange={(e) => set((p) => ({ ...p, min: e.target.value }))}
+                        className="w-full px-2.5 py-1.5 text-[12px] bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-slate-300"
+                      />
+                      <span className="text-slate-300 text-[11px] shrink-0">–</span>
+                      <input
+                        type="number"
+                        placeholder="Max"
+                        value={state.max}
+                        onChange={(e) => set((p) => ({ ...p, max: e.target.value }))}
+                        className="w-full px-2.5 py-1.5 text-[12px] bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-slate-300"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
         )}
 
