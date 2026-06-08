@@ -163,6 +163,7 @@ function SettingsInner() {
   const [spSyncResult, setSpSyncResult] = useState<{ machinesImported: number; customersImported: number } | null>(null);
   const [spLastSync, setSpLastSync] = useState<string | null>(null);
   const [spSyncError, setSpSyncError] = useState('');
+  const [spOrgId, setSpOrgId] = useState<string | null>(null);
 
   const { userId } = useStore();
 
@@ -220,6 +221,7 @@ function SettingsInner() {
           });
           setSpKey(d.sp_integration_key ?? '');
           setSpLastSync(d.sp_last_sync ?? null);
+          setSpOrgId(oid);
         }
 
         setMembers(
@@ -235,6 +237,21 @@ function SettingsInner() {
     };
     load();
   }, []);
+
+  // Poll sp_last_sync every 60 seconds so UI reflects cron updates automatically
+  useEffect(() => {
+    if (!spOrgId) return;
+    const interval = setInterval(async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('organizations')
+        .select('sp_last_sync')
+        .eq('id', spOrgId)
+        .single();
+      if (data?.sp_last_sync) setSpLastSync(data.sp_last_sync as string);
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [spOrgId]);
 
   const handleSave = async () => {
     if (!orgId) return;
