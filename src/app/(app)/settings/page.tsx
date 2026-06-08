@@ -736,9 +736,6 @@ function SettingsInner() {
                         <p className="text-sm font-semibold text-slate-800">Serviceprotokoll</p>
                         <p className="text-xs text-slate-500">Synka maskiner och kunder automatiskt</p>
                       </div>
-                      {spLastSync && (
-                        <span className="text-xs text-slate-400">Senast synkad: {new Date(spLastSync).toLocaleString('sv-SE')}</span>
-                      )}
                     </div>
 
                     <div className="flex gap-2">
