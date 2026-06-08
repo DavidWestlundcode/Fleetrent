@@ -769,9 +769,6 @@ function SettingsInner() {
                       </div>
                     )}
 
-                    <p className="text-xs text-slate-400">
-                      Kunder och maskiner synkas automatiskt från Serviceprotokoll var 30:e minut.
-                    </p>
                   </div>
                   {[
                     { name: 'Visma', desc: 'Bokföring och fakturahantering' },
