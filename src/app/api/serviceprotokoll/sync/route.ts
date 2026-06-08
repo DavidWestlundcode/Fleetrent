@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
             model,
             serial_number: serialNo,
             internal_code: internalCode,
-            status: 'lager',
+            status: 'i_lager',
             sp_id: spId,
           });
           if (!error) machinesImported++;
@@ -257,10 +257,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Cron-triggered version (no auth check, uses env var per org)
+// Cron-triggered version — Vercel sends Authorization: Bearer <CRON_SECRET>
 export async function GET(request: NextRequest) {
-  const secret = request.headers.get('x-cron-secret');
-  if (secret !== process.env.CRON_SECRET) {
+  const auth = request.headers.get('authorization') ?? '';
+  const secret = auth.startsWith('Bearer ') ? auth.slice(7) : auth;
+  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -295,7 +296,7 @@ export async function GET(request: NextRequest) {
           model: obj.Model ?? obj.Type ?? '',
           serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
           internal_code: obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
-          status: 'lager',
+          status: 'i_lager',
           sp_id: spId,
         });
         total.machines++;
