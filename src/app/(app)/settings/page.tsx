@@ -782,6 +782,7 @@ function SettingsInner() {
                         {spSyncError && <span className="text-sm text-red-600">{spSyncError}</span>}
                       </div>
                     )}
+                    <p className="text-xs text-slate-400">Synkas automatiskt var 30:e minut.</p>
 
                   </div>
                   {[
