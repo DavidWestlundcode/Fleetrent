@@ -815,9 +815,7 @@ export default function LandingPage() {
                   { icon: Database, text: 'Fullständig kostnadsanalys inklusive service' },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-violet-50 rounded-xl flex items-center justify-center shrink-0">
-                      <Icon className="w-4 h-4 text-violet-600" />
-                    </div>
+                    <Icon className="w-4 h-4 text-violet-600 shrink-0" />
                     <span className="text-[14px] text-slate-700 font-medium">{text}</span>
                   </div>
                 ))}
@@ -851,9 +849,7 @@ export default function LandingPage() {
                   { icon: Shield, text: 'Valfri försäkring kopplas till varje order' },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0">
-                      <Icon className="w-4 h-4 text-emerald-600" />
-                    </div>
+                    <Icon className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span className="text-[14px] text-slate-700 font-medium">{text}</span>
                   </div>
                 ))}
@@ -881,9 +877,7 @@ export default function LandingPage() {
                   { icon: CheckCircle, text: 'Granska och spara – klart på under 30 sekunder' },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
-                      <Icon className="w-4 h-4 text-blue-600" />
-                    </div>
+                    <Icon className="w-4 h-4 text-blue-600 shrink-0" />
                     <span className="text-[14px] text-slate-700 font-medium">{text}</span>
                   </div>
                 ))}
@@ -916,9 +910,7 @@ export default function LandingPage() {
                   { icon: Mail, text: 'Båda parter får signerat avtal direkt på e-post' },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
-                      <Icon className="w-4 h-4 text-indigo-600" />
-                    </div>
+                    <Icon className="w-4 h-4 text-indigo-600 shrink-0" />
                     <span className="text-[14px] text-slate-700 font-medium">{text}</span>
                   </div>
                 ))}
@@ -946,9 +938,7 @@ export default function LandingPage() {
                   { icon: RefreshCw, text: 'Order och maskinstatus uppdateras automatiskt i systemet' },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0">
-                      <Icon className="w-4 h-4 text-emerald-600" />
-                    </div>
+                    <Icon className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span className="text-[14px] text-slate-700 font-medium">{text}</span>
                   </div>
                 ))}
