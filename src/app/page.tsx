@@ -567,10 +567,7 @@ export default function LandingPage() {
         </div>
 
         <div className="relative max-w-5xl mx-auto px-6 text-center pb-16">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-300 text-[12px] font-semibold mb-8 backdrop-blur-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-            Fleet management för maskinuthyrning
-          </div>
+
 
           <h1 className="text-[34px] sm:text-[52px] md:text-[76px] font-bold text-white leading-[1.02] tracking-[-0.025em] mb-6">
             Automatisera din{' '}
