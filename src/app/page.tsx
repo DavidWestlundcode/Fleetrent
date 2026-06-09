@@ -963,10 +963,7 @@ export default function LandingPage() {
         </div>
         <div className="max-w-6xl mx-auto relative">
           <AnimateIn className="text-center mb-20">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-300 text-[12px] font-semibold mb-6">
-              <Cpu className="w-3.5 h-3.5" />
-              AI Automation
-            </div>
+
             <h2 className="text-2xl sm:text-[40px] md:text-[48px] font-bold text-white tracking-tight mb-4">
               Intelligent automatisering<br />i varje steg
             </h2>
