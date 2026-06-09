@@ -1046,7 +1046,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto relative">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
             <AnimateIn direction="left">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-300 text-[12px] font-semibold mb-6">
+              <div className="inline-flex items-center gap-2 text-blue-300 text-[12px] font-semibold mb-6">
                 <QrCode className="w-3.5 h-3.5" />
                 QR-returhantering
               </div>
@@ -1066,9 +1066,7 @@ export default function LandingPage() {
                   { icon: Activity, text: 'Systemet uppdateras i realtid' },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/20 flex items-center justify-center shrink-0">
-                      <Icon className="w-4 h-4 text-blue-400" />
-                    </div>
+                    <Icon className="w-4 h-4 text-blue-400 shrink-0" />
                     <span className="text-[14px] text-slate-300 font-medium">{text}</span>
                   </div>
                 ))}
