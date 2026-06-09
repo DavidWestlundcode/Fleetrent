@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
-import { Plus, Tag, Edit, Trash2, Shield, Truck, Clock, CalendarDays, Users } from 'lucide-react';
+import { Plus, Tag, Edit, Trash2, Shield, Truck, Clock, CalendarDays, Users, Search, X } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
 import { formatCurrency, getMatchingTemplate } from '@/lib/utils';
@@ -54,6 +54,82 @@ function PriceField({
           <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none">%</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+function CustomerPicker({ customers, selectedIds, onToggle }: {
+  customers: { id: string; companyName: string }[];
+  selectedIds: string[];
+  onToggle: (id: string) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const sorted = [...customers].sort((a, b) => a.companyName.localeCompare(b.companyName));
+  const filtered = sorted.filter((c) => c.companyName.toLowerCase().includes(search.toLowerCase()));
+  const selected = sorted.filter((c) => selectedIds.includes(c.id));
+
+  return (
+    <div className="border-t border-slate-100 pt-5">
+      <div className="flex items-center gap-2 mb-2">
+        <Users className="w-3.5 h-3.5 text-slate-400" />
+        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Kopplade kunder</p>
+      </div>
+      <p className="text-[11px] text-slate-400 mb-3">
+        {selectedIds.length === 0
+          ? 'Inga kunder valda — mallen är tillgänglig för alla kunder.'
+          : `${selectedIds.length} kund${selectedIds.length > 1 ? 'er' : ''} vald${selectedIds.length > 1 ? 'a' : ''} — mallen visas bara för dessa.`}
+      </p>
+
+      {/* Selected chips */}
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {selected.map((c) => (
+            <span key={c.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-700 text-[12px] font-medium rounded-lg">
+              {c.companyName}
+              <button type="button" onClick={() => onToggle(c.id)} className="text-blue-400 hover:text-blue-700 cursor-pointer">
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Search input */}
+      <div className="relative mb-1.5">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+        <input
+          type="text"
+          placeholder="Sök kund..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-9 pr-3 py-2 text-[13px] bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-slate-400"
+        />
+      </div>
+
+      {/* Dropdown list */}
+      {search && (
+        <div className="border border-slate-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <p className="px-3 py-2.5 text-[12px] text-slate-400">Inga kunder hittades</p>
+          ) : (
+            filtered.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => onToggle(c.id)}
+                className={`w-full flex items-center justify-between px-3 py-2.5 text-[13px] text-left transition-colors cursor-pointer border-b border-slate-100 last:border-0 ${
+                  selectedIds.includes(c.id)
+                    ? 'bg-blue-50 text-blue-700 font-medium'
+                    : 'bg-white text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                {c.companyName}
+                {selectedIds.includes(c.id) && <X className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
+              </button>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -385,34 +461,11 @@ export default function TemplatesPage() {
               )}
 
               {/* Kopplade kunder */}
-              <div className="border-t border-slate-100 pt-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <Users className="w-3.5 h-3.5 text-slate-400" />
-                  <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Kopplade kunder</p>
-                </div>
-                <p className="text-[11px] text-slate-400 mb-3">
-                  {selectedCustomerIds.length === 0
-                    ? 'Inga kunder valda — mallen är tillgänglig för alla kunder.'
-                    : `${selectedCustomerIds.length} kund${selectedCustomerIds.length > 1 ? 'er' : ''} vald${selectedCustomerIds.length > 1 ? 'a' : ''} — mallen visas bara för dessa.`}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 max-h-48 overflow-y-auto pr-1">
-                  {customers.filter((c) => c.isActive !== false).sort((a, b) => a.companyName.localeCompare(b.companyName)).map((c) => (
-                    <label key={c.id} className={`flex items-center gap-2.5 px-3 py-2 rounded-xl border cursor-pointer transition-colors ${
-                      selectedCustomerIds.includes(c.id)
-                        ? 'bg-blue-50 border-blue-200 text-blue-800'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
-                    }`}>
-                      <input
-                        type="checkbox"
-                        className="w-3.5 h-3.5 accent-blue-600"
-                        checked={selectedCustomerIds.includes(c.id)}
-                        onChange={() => toggleCustomer(c.id)}
-                      />
-                      <span className="text-[12.5px] font-medium truncate">{c.companyName}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+              <CustomerPicker
+                customers={customers.filter((c) => c.isActive !== false)}
+                selectedIds={selectedCustomerIds}
+                onToggle={toggleCustomer}
+              />
 
               <div className="flex justify-end gap-3 pt-1">
                 <button type="button" onClick={resetForm} className="px-4 py-2 text-[13px] text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">Avbryt</button>
