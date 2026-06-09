@@ -296,9 +296,11 @@ function NewOrderForm() {
                 <Field label="Prismall">
                   <select value={form.templateId} onChange={(e) => { applyTemplate(e.target.value); setAutoMatchedTemplate(null); }} className={inputClass}>
                     <option value="">Välj mall (valfritt)...</option>
-                    {templates.map((t) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
+                    {templates
+                      .filter((t) => !t.customerIds?.length || t.customerIds.includes(form.customerId))
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
                   </select>
                 </Field>
 

@@ -311,6 +311,7 @@ function fromDbTemplate(r: DbRow): PriceTemplate {
     insuranceArticleId: r.insurance_article_id as string | undefined,
     transportArticleId: r.transport_article_id as string | undefined,
     depositArticleId: r.deposit_article_id as string | undefined,
+    customerIds: (r.customer_ids as string[]) ?? [],
     createdAt: r.created_at as string,
   };
 }
@@ -355,6 +356,7 @@ function toDbTemplate(t: PriceTemplate, orgId: string): DbRow {
     insurance_article_id: t.insuranceArticleId || null,
     transport_article_id: t.transportArticleId || null,
     deposit_article_id: t.depositArticleId || null,
+    customer_ids: t.customerIds ?? [],
     created_at: t.createdAt,
   };
 }

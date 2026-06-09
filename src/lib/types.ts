@@ -228,6 +228,7 @@ export interface PriceTemplate {
   insuranceArticleId?: string;
   transportArticleId?: string;
   depositArticleId?: string;
+  customerIds: string[];
   createdAt: string;
 }
 

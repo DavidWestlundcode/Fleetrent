@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
-import { Plus, Tag, Edit, Trash2, Shield, Truck, Clock, CalendarDays } from 'lucide-react';
+import { Plus, Tag, Edit, Trash2, Shield, Truck, Clock, CalendarDays, Users } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
 import { formatCurrency, getMatchingTemplate } from '@/lib/utils';
@@ -78,10 +78,11 @@ const emptyForm = {
 };
 
 export default function TemplatesPage() {
-  const { templates, machines, articles, addTemplate, updateTemplate, deleteTemplate } = useStore();
+  const { templates, machines, customers, articles, addTemplate, updateTemplate, deleteTemplate } = useStore();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
 
   const editIdRef = useRef<string | null>(null);
   const formRef = useRef(emptyForm);
@@ -118,13 +119,14 @@ export default function TemplatesPage() {
     editIdRef.current = id;
     setForm(next);
     setEditId(id);
+    setSelectedCustomerIds(t.customerIds ?? []);
     setShowForm(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const currentId = editIdRef.current;
-    const currentForm = formRef.current;
+    const currentForm = { ...formRef.current, customerIds: selectedCustomerIds };
     if (currentId) {
       updateTemplate(currentId, currentForm);
     } else {
@@ -135,6 +137,21 @@ export default function TemplatesPage() {
     setShowForm(false);
     setEditId(null);
     setForm(emptyForm);
+    setSelectedCustomerIds([]);
+  };
+
+  const toggleCustomer = (id: string) =>
+    setSelectedCustomerIds((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+    );
+
+  const resetForm = () => {
+    editIdRef.current = null;
+    formRef.current = emptyForm;
+    setShowForm(false);
+    setEditId(null);
+    setForm(emptyForm);
+    setSelectedCustomerIds([]);
   };
 
   const getMatchCount = (templateId: string) => {
@@ -150,7 +167,7 @@ export default function TemplatesPage() {
         subtitle="Mallar matchas automatiskt till maskiner baserat på typ och kapacitet"
         actions={
           <button
-            onClick={() => { editIdRef.current = null; formRef.current = emptyForm; setShowForm(!showForm); setEditId(null); setForm(emptyForm); }}
+            onClick={() => { resetForm(); setShowForm(!showForm); }}
             className="flex items-center gap-1.5 px-3.5 py-[7px] bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium rounded-xl shadow-sm transition-all"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -367,8 +384,38 @@ export default function TemplatesPage() {
                 </div>
               )}
 
+              {/* Kopplade kunder */}
+              <div className="border-t border-slate-100 pt-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="w-3.5 h-3.5 text-slate-400" />
+                  <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Kopplade kunder</p>
+                </div>
+                <p className="text-[11px] text-slate-400 mb-3">
+                  {selectedCustomerIds.length === 0
+                    ? 'Inga kunder valda — mallen är tillgänglig för alla kunder.'
+                    : `${selectedCustomerIds.length} kund${selectedCustomerIds.length > 1 ? 'er' : ''} vald${selectedCustomerIds.length > 1 ? 'a' : ''} — mallen visas bara för dessa.`}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                  {customers.filter((c) => c.isActive !== false).sort((a, b) => a.companyName.localeCompare(b.companyName)).map((c) => (
+                    <label key={c.id} className={`flex items-center gap-2.5 px-3 py-2 rounded-xl border cursor-pointer transition-colors ${
+                      selectedCustomerIds.includes(c.id)
+                        ? 'bg-blue-50 border-blue-200 text-blue-800'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        className="w-3.5 h-3.5 accent-blue-600"
+                        checked={selectedCustomerIds.includes(c.id)}
+                        onChange={() => toggleCustomer(c.id)}
+                      />
+                      <span className="text-[12.5px] font-medium truncate">{c.companyName}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex justify-end gap-3 pt-1">
-                <button type="button" onClick={() => { editIdRef.current = null; formRef.current = emptyForm; setShowForm(false); setEditId(null); setForm(emptyForm); }} className="px-4 py-2 text-[13px] text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">Avbryt</button>
+                <button type="button" onClick={resetForm} className="px-4 py-2 text-[13px] text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">Avbryt</button>
                 <button type="submit" className="px-5 py-2 bg-blue-600 text-white text-[13px] font-medium rounded-xl hover:bg-blue-700 transition-colors">
                   {editId ? 'Spara ändringar' : 'Skapa mall'}
                 </button>
@@ -450,6 +497,14 @@ export default function TemplatesPage() {
                     <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-lg">
                       <Shield className="w-3 h-3 text-blue-500" />
                       <span className="text-[11px] font-medium text-blue-600">Försäkring</span>
+                    </div>
+                  )}
+                  {(template.customerIds?.length ?? 0) > 0 && (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 rounded-lg">
+                      <Users className="w-3 h-3 text-amber-500" />
+                      <span className="text-[11px] font-medium text-amber-600">
+                        {template.customerIds.length} kund{template.customerIds.length > 1 ? 'er' : ''}
+                      </span>
                     </div>
                   )}
                 </div>
