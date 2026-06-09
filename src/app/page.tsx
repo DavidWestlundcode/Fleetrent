@@ -571,12 +571,7 @@ export default function LandingPage() {
 
           <h1 className="text-[34px] sm:text-[52px] md:text-[76px] font-bold text-white leading-[1.02] tracking-[-0.025em] mb-6">
             Automatisera din{' '}
-            <span
-              className="text-transparent bg-clip-text"
-              style={{ backgroundImage: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 40%, #818CF8 100%)' }}
-            >
-              maskinuthyrning
-            </span>
+            maskinuthyrning
           </h1>
 
           <p className="text-[15px] sm:text-[18px] text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
