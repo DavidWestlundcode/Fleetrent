@@ -798,7 +798,7 @@ export default function LandingPage() {
           {/* Feature 1: ROI */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
             <AnimateIn direction="left">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 border border-violet-200/80 rounded-full text-violet-700 text-[11px] font-semibold mb-5">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-violet-50 rounded-full text-violet-700 text-[11px] font-semibold mb-5">
                 <BarChart3 className="w-3.5 h-3.5" />
                 Realtidsanalys
               </div>
@@ -834,7 +834,7 @@ export default function LandingPage() {
               <OrderMockup />
             </AnimateIn>
             <AnimateIn direction="right" className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200/80 rounded-full text-emerald-700 text-[11px] font-semibold mb-5">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full text-emerald-700 text-[11px] font-semibold mb-5">
                 <Zap className="w-3.5 h-3.5" />
                 Automatiserat
               </div>
@@ -864,7 +864,7 @@ export default function LandingPage() {
           {/* Feature 3: AI Register */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
             <AnimateIn direction="left">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200/80 rounded-full text-blue-600 text-[11px] font-semibold mb-5">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-full text-blue-600 text-[11px] font-semibold mb-5">
                 <Brain className="w-3.5 h-3.5" />
                 AI-driven
               </div>
@@ -899,7 +899,7 @@ export default function LandingPage() {
               <SigningMockup />
             </AnimateIn>
             <AnimateIn direction="right" className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-200/80 rounded-full text-indigo-700 text-[11px] font-semibold mb-5">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 rounded-full text-indigo-700 text-[11px] font-semibold mb-5">
                 <PenLine className="w-3.5 h-3.5" />
                 Digital signering
               </div>
@@ -929,7 +929,7 @@ export default function LandingPage() {
           {/* Feature 5: QR return */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
             <AnimateIn direction="left">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200/80 rounded-full text-emerald-700 text-[11px] font-semibold mb-5">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full text-emerald-700 text-[11px] font-semibold mb-5">
                 <QrCode className="w-3.5 h-3.5" />
                 QR-returhantering
               </div>
