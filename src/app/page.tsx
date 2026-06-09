@@ -1010,16 +1010,11 @@ export default function LandingPage() {
                 badge: 'Live Analytics',
                 badgeColor: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
               },
-            ].map(({ icon: Icon, step, title, desc, color, border, iconBg, iconColor, badge, badgeColor }, i) => (
+            ].map(({ icon: Icon, step, title, desc, color, border, iconColor }, i) => (
               <AnimateIn key={title} delay={i * 120} direction="scale">
-                <div className={`relative bg-gradient-to-br ${color} border ${border} rounded-2xl p-6 h-full group hover:-translate-y-1 transition-all duration-300`}>
-                  <div className="absolute top-4 right-4">
-                    <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full border ${badgeColor}`}>{badge}</span>
-                  </div>
+                <div className={`relative bg-gradient-to-br ${color} border ${border} rounded-2xl p-6 h-full hover:-translate-y-1 transition-all duration-300`}>
                   <div className="text-[11px] font-bold text-white/20 tracking-widest mb-4">{step}</div>
-                  <div className={`w-12 h-12 ${iconBg} rounded-2xl flex items-center justify-center mb-5`}>
-                    <Icon className={`w-6 h-6 ${iconColor}`} />
-                  </div>
+                  <Icon className={`w-6 h-6 ${iconColor} mb-5`} />
                   <h3 className="text-[16px] font-semibold text-white mb-3">{title}</h3>
                   <p className="text-[13px] text-slate-400 leading-relaxed">{desc}</p>
                 </div>
