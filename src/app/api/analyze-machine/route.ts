@@ -90,7 +90,8 @@ Regler:
     const data = JSON.parse(jsonMatch[0]);
     return NextResponse.json(data);
   } catch (err) {
-    console.error('analyze-machine error:', err);
-    return NextResponse.json({ error: 'Analys misslyckades' }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('analyze-machine error:', msg);
+    return NextResponse.json({ error: `Analys misslyckades: ${msg}` }, { status: 500 });
   }
 }
