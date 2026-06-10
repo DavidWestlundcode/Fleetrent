@@ -814,9 +814,8 @@ function SettingsInner() {
                             <span>✓ {spSyncResult.machinesImported} maskiner och {spSyncResult.customersImported} kunder importerade</span>
                             {spSyncResult.debug && (
                               <span className="text-xs text-slate-500 font-mono break-all">
-                                debug: kundnr={String(spSyncResult.debug.spCustomerNo ?? '–')} | råsvar={String(spSyncResult.debug.rawCount ?? 0)} objekt
-                                {spSyncResult.debug.firstObject ? ` | första: ${JSON.stringify(spSyncResult.debug.firstObject).slice(0, 120)}` : ' | inga objekt'}
-                                {spSyncResult.debug.error ? ` | fel: ${String(spSyncResult.debug.error)}` : ''}
+                                kundnr={String(spSyncResult.debug.spCustomerNo ?? '–')} | {String(spSyncResult.debug.rawCount ?? 0)} objekt | spId=&quot;{String(spSyncResult.debug.firstSpId ?? '–')}&quot; | namn=&quot;{String(spSyncResult.debug.firstName ?? '–')}&quot; | hoppade(ingetId={String(spSyncResult.debug.skippedNoId ?? 0)} finns={String(spSyncResult.debug.skippedExists ?? 0)}) | nycklar: {JSON.stringify(spSyncResult.debug.firstObjectKeys ?? [])}
+                                {spSyncResult.debug.error ? ` | FEL: ${String(spSyncResult.debug.error)}` : ''}
                               </span>
                             )}
                           </div>

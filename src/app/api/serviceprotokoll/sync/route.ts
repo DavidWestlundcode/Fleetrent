@@ -303,31 +303,37 @@ export async function POST(request: NextRequest) {
         const url = `${SP_API}/ServiceObject/Get`;
         const customerObjects = await fetchAllPages(url, token, 20, undefined, `&request.customerNo=${encodeURIComponent(spCustomerNo)}`);
         debug.rawCount = customerObjects.length;
-        debug.firstObject = customerObjects[0] ?? null;
+        const first = customerObjects[0];
+        debug.firstObjectKeys = first ? Object.keys(first) : [];
+        debug.firstSpId = first ? String(first.Id ?? first.id ?? first.UniqueID ?? first.ObjectId ?? '') : '';
+        debug.firstName = first ? String(first.Description ?? first.Name ?? first.Designation ?? '') : '';
 
+        let skippedNoId = 0;
+        let skippedExists = 0;
         for (const obj of customerObjects) {
-          const spId = String(obj.Id ?? obj.id ?? '');
-          if (!spId) continue;
+          const spId = String(obj.Id ?? obj.id ?? obj.UniqueID ?? obj.ObjectId ?? '');
+          if (!spId) { skippedNoId++; continue; }
           const { data: existing } = await admin.from('machines')
             .select('id')
             .eq('organization_id', orgId)
             .eq('sp_id', spId)
             .maybeSingle();
-          if (!existing) {
-            const { error } = await admin.from('machines').insert({
-              organization_id: orgId,
-              name: obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
-              brand: obj.Brand ?? obj.Manufacturer ?? '',
-              model: obj.Model ?? obj.Type ?? '',
-              serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
-              internal_code: obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
-              status: 'i_lager',
-              sp_id: spId,
-            });
-            if (!error) machinesImported++;
-            else errors.push(`SP-maskin ${obj.Name}: ${error.message}`);
-          }
+          if (existing) { skippedExists++; continue; }
+          const { error } = await admin.from('machines').insert({
+            organization_id: orgId,
+            name: obj.Description ?? obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
+            brand: obj.Brand ?? obj.Manufacturer ?? '',
+            model: obj.Model ?? obj.Type ?? obj.Description ?? '',
+            serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
+            internal_code: obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
+            status: 'i_lager',
+            sp_id: spId,
+          });
+          if (!error) machinesImported++;
+          else errors.push(`SP-maskin: ${error.message}`);
         }
+        debug.skippedNoId = skippedNoId;
+        debug.skippedExists = skippedExists;
       } catch (e) {
         errors.push(`SP kundmaskiner: ${e instanceof Error ? e.message : String(e)}`);
         debug.error = e instanceof Error ? e.message : String(e);
