@@ -58,7 +58,8 @@ async function fetchAllPages(url: string, token: string, maxPages = 200, lastSyn
   return results;
 }
 
-// Fetch SP machines for a list of customer numbers using the customerNo filter, 10 concurrent
+// Fetch SP machines for a list of customer numbers using the customerNo filter.
+// 10 concurrent, max 3 pages per customer (300 machines) and 5 s timeout per request.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function fetchSpMachinesPerCustomer(customerNos: string[], token: string): Promise<Record<string, any[]>> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -68,15 +69,24 @@ async function fetchSpMachinesPerCustomer(customerNos: string[], token: string):
     const batch = customerNos.slice(i, i + CONCURRENCY);
     await Promise.all(batch.map(async (customerNo) => {
       try {
-        const objects = await fetchAllPages(
-          `${SP_API}/ServiceObject/Get`,
-          token,
-          20,
-          undefined,
-          `&request.customerNo=${encodeURIComponent(customerNo)}`,
-        );
+        const objects: unknown[] = [];
+        let skip = 0;
+        const take = 100;
+        for (let page = 0; page < 3; page++) {
+          const res = await fetch(
+            `${SP_API}/ServiceObject/Get?request.skip=${skip}&request.take=${take}&request.customerNo=${encodeURIComponent(customerNo)}`,
+            { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(5000) },
+          );
+          if (!res.ok) break;
+          const data = await res.json();
+          const items = data.Result ?? [];
+          objects.push(...items);
+          if (items.length < take) break;
+          skip += take;
+        }
         if (objects.length > 0) {
-          result[customerNo] = objects.map((obj) => ({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          result[customerNo] = (objects as any[]).map((obj) => ({
             spId: String(obj.Id ?? obj.id ?? ''),
             name: obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
             brand: obj.Brand ?? obj.Manufacturer ?? '',
@@ -110,11 +120,13 @@ export async function POST(request: NextRequest) {
     if (!orgId) return NextResponse.json({ error: 'Ingen organisation' }, { status: 400 });
 
     const admin = createAdminClient();
-    const { data: orgRow } = await admin.from('organizations').select('sp_integration_key, sp_last_sync').eq('id', orgId).single();
+    const { data: orgRow } = await admin.from('organizations').select('sp_integration_key, sp_last_sync, sp_customer_no').eq('id', orgId).single();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const integrationKey = (orgRow as any)?.sp_integration_key as string | null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const lastSync = forceFullSync ? null : ((orgRow as any)?.sp_last_sync as string | null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const spCustomerNo = (orgRow as any)?.sp_customer_no as string | null;
 
     if (!integrationKey) {
       return NextResponse.json({ error: 'Ingen Serviceprotokoll-nyckel konfigurerad' }, { status: 400 });
@@ -282,6 +294,44 @@ export async function POST(request: NextRequest) {
       errors.push(`Kunder: ${e instanceof Error ? e.message : String(e)}`);
     }
 
+    // ── Import machines linked to the org's own SP customer number ──
+    if (spCustomerNo) {
+      try {
+        const customerObjects = await fetchAllPages(
+          `${SP_API}/ServiceObject/Get`,
+          token,
+          20,
+          undefined,
+          `&request.customerNo=${encodeURIComponent(spCustomerNo)}`,
+        );
+        for (const obj of customerObjects) {
+          const spId = String(obj.Id ?? obj.id ?? '');
+          if (!spId) continue;
+          const { data: existing } = await admin.from('machines')
+            .select('id')
+            .eq('organization_id', orgId)
+            .eq('sp_id', spId)
+            .maybeSingle();
+          if (!existing) {
+            const { error } = await admin.from('machines').insert({
+              organization_id: orgId,
+              name: obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
+              brand: obj.Brand ?? obj.Manufacturer ?? '',
+              model: obj.Model ?? obj.Type ?? '',
+              serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
+              internal_code: obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
+              status: 'i_lager',
+              sp_id: spId,
+            });
+            if (!error) machinesImported++;
+            else errors.push(`SP-maskin ${obj.Name}: ${error.message}`);
+          }
+        }
+      } catch (e) {
+        errors.push(`SP kundmaskiner: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+
     // Update last sync timestamp
     await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', orgId);
 
@@ -306,7 +356,7 @@ export async function GET(request: NextRequest) {
 
   const admin = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: orgs, error: orgsError } = await admin.from('organizations').select('id, sp_integration_key, name').not('sp_integration_key' as any, 'is', null);
+  const { data: orgs, error: orgsError } = await admin.from('organizations').select('id, sp_integration_key, sp_customer_no, name').not('sp_integration_key' as any, 'is', null);
 
   if (orgsError) {
     console.error('[SP-sync] Failed to fetch organizations:', orgsError.message);
@@ -322,6 +372,8 @@ export async function GET(request: NextRequest) {
     const key = (org as any).sp_integration_key as string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const orgName = (org as any).name ?? org.id;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const orgSpCustomerNo = (org as any).sp_customer_no as string | null;
     if (!key) continue;
 
     console.log(`[SP-sync] Syncing org: ${orgName} (${org.id})`);
@@ -427,6 +479,38 @@ export async function GET(request: NextRequest) {
         total.customers++;
       }
       console.log(`[SP-sync] ${orgName}: ${upsertedCustomers} customers upserted`);
+
+      // Import machines linked to the org's own SP customer number
+      if (orgSpCustomerNo) {
+        const customerObjects = await fetchAllPages(
+          `${SP_API}/ServiceObject/Get`,
+          token,
+          20,
+          undefined,
+          `&request.customerNo=${encodeURIComponent(orgSpCustomerNo)}`,
+        );
+        let newCustomerMachines = 0;
+        for (const obj of customerObjects) {
+          const spId = String(obj.Id ?? obj.id ?? '');
+          if (!spId) continue;
+          const { data: existing } = await admin.from('machines').select('id').eq('organization_id', org.id).eq('sp_id', spId).maybeSingle();
+          if (!existing) {
+            await admin.from('machines').insert({
+              organization_id: org.id,
+              name: obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
+              brand: obj.Brand ?? obj.Manufacturer ?? '',
+              model: obj.Model ?? obj.Type ?? '',
+              serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
+              internal_code: obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
+              status: 'i_lager',
+              sp_id: spId,
+            });
+            newCustomerMachines++;
+            total.machines++;
+          }
+        }
+        console.log(`[SP-sync] ${orgName}: ${newCustomerMachines} new SP customer machines inserted`);
+      }
 
       await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', org.id);
       total.orgs++;

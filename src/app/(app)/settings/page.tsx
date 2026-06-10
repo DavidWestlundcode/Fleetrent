@@ -159,6 +159,9 @@ function SettingsInner() {
   const [spKey, setSpKey] = useState('');
   const [spKeySaving, setSpKeySaving] = useState(false);
   const [spKeySaved, setSpKeySaved] = useState(false);
+  const [spCustomerNo, setSpCustomerNo] = useState('');
+  const [spCustomerNoSaving, setSpCustomerNoSaving] = useState(false);
+  const [spCustomerNoSaved, setSpCustomerNoSaved] = useState(false);
   const [spSyncing, setSpSyncing] = useState(false);
   const [spSyncResult, setSpSyncResult] = useState<{ machinesImported: number; customersImported: number } | null>(null);
   const [spLastSync, setSpLastSync] = useState<string | null>(null);
@@ -220,6 +223,7 @@ function SettingsInner() {
             standardTerms: d.standard_terms ?? '',
           });
           setSpKey(d.sp_integration_key ?? '');
+          setSpCustomerNo(d.sp_customer_no ?? '');
           setSpLastSync(d.sp_last_sync ?? null);
           setSpOrgId(oid);
         }
@@ -288,6 +292,16 @@ function SettingsInner() {
     setSpKeySaving(false);
     setSpKeySaved(true);
     setTimeout(() => setSpKeySaved(false), 2000);
+  };
+
+  const handleSaveSpCustomerNo = async () => {
+    if (!orgId) return;
+    setSpCustomerNoSaving(true);
+    const supabase = createClient();
+    await supabase.from('organizations').update({ sp_customer_no: spCustomerNo || null }).eq('id', orgId);
+    setSpCustomerNoSaving(false);
+    setSpCustomerNoSaved(true);
+    setTimeout(() => setSpCustomerNoSaved(false), 2000);
   };
 
   const handleSpSync = async (force = false) => {
@@ -754,6 +768,27 @@ function SettingsInner() {
                         {spKeySaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : spKeySaved ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : null}
                         {spKeySaved ? 'Sparad' : 'Spara nyckel'}
                       </button>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1.5">Kundnummer i SP (för att hämta era egna maskiner)</p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={spCustomerNo}
+                          onChange={(e) => setSpCustomerNo(e.target.value)}
+                          placeholder="T.ex. 1234"
+                          className={inputClass + ' flex-1'}
+                        />
+                        <button
+                          onClick={handleSaveSpCustomerNo}
+                          disabled={spCustomerNoSaving}
+                          className="px-4 py-2 text-sm font-medium bg-slate-800 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 flex items-center gap-2 shrink-0"
+                        >
+                          {spCustomerNoSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : spCustomerNoSaved ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : null}
+                          {spCustomerNoSaved ? 'Sparad' : 'Spara kundnr'}
+                        </button>
+                      </div>
                     </div>
 
                     {spKey && (
