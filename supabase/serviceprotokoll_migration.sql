@@ -16,3 +16,7 @@ ALTER TABLE customers
 
 CREATE UNIQUE INDEX IF NOT EXISTS customers_org_sp_id ON customers (organization_id, sp_id)
   WHERE sp_id IS NOT NULL;
+
+-- sp_machines on customers — machines owned by this customer in Serviceprotokoll
+ALTER TABLE customers
+  ADD COLUMN IF NOT EXISTS sp_machines JSONB NOT NULL DEFAULT '[]'::jsonb;

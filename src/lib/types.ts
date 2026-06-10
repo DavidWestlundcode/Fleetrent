@@ -40,6 +40,16 @@ export interface CustomerFacility {
   contacts?: ContactPerson[];
 }
 
+export interface SpMachine {
+  spId: string;
+  name: string;
+  brand?: string;
+  model?: string;
+  serialNo?: string;
+  objectNo?: string;
+  tags?: string[];
+}
+
 export interface Article {
   id: string;
   articleNumber: string;
@@ -114,6 +124,7 @@ export interface Customer {
   fortnoxCustomerNumber?: string;
   contacts: ContactPerson[];
   facilities: CustomerFacility[];
+  spMachines?: SpMachine[];
   isActive?: boolean;
   createdAt: string;
   spId?: string;

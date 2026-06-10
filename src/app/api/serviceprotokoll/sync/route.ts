@@ -94,10 +94,29 @@ export async function POST(request: NextRequest) {
     const errors: string[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let facilityByCustomer: Record<string, any[]> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let spMachinesByCustomerNo: Record<string, any[]> = {};
 
     // ── Sync machines (ServiceObjects with tag "uthyrningsbar") ──
     try {
       const serviceObjects = await fetchAllPages(`${SP_API}/ServiceObject/Get`, token);
+
+      // Build map of SP machines by customer number for use during customer sync
+      for (const obj of serviceObjects) {
+        const customerNo = obj.CustomerNo ? String(obj.CustomerNo) : null;
+        if (!customerNo) continue;
+        if (!spMachinesByCustomerNo[customerNo]) spMachinesByCustomerNo[customerNo] = [];
+        spMachinesByCustomerNo[customerNo].push({
+          spId: String(obj.Id ?? obj.id ?? ''),
+          name: obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
+          brand: obj.Brand ?? obj.Manufacturer ?? '',
+          model: obj.Model ?? obj.Type ?? '',
+          serialNo: obj.SerialNo ?? obj.SerialNumber ?? '',
+          objectNo: obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
+          tags: obj.Tags ?? obj.tags ?? [],
+        });
+      }
+
       const rentable = serviceObjects.filter((obj) => {
         const tags: string[] = obj.Tags ?? obj.tags ?? [];
         return tags.some((t: string) => t.toLowerCase() === RENTABLE_TAG);
@@ -177,6 +196,8 @@ export async function POST(request: NextRequest) {
           // All contacts come from facilities (customer.Contacts is null in SP API)
           const allContacts = customerFacilities.flatMap((f: { contacts?: { name: string; phone: string; email: string; title: string }[] }) => f.contacts ?? []);
 
+          const spMachines = customerNoKey ? (spMachinesByCustomerNo[customerNoKey] ?? []) : [];
+
           return {
             organization_id: orgId,
             company_name: c.Name,
@@ -188,6 +209,7 @@ export async function POST(request: NextRequest) {
             fortnox_customer_number: c.CustomerNo ? String(c.CustomerNo) : null,
             contacts: allContacts,
             facilities: customerFacilities,
+            sp_machines: spMachines,
             sp_id: spId,
           };
         });
@@ -235,6 +257,7 @@ export async function POST(request: NextRequest) {
           fortnox_customer_number: r.fortnox_customer_number,
           contacts: r.contacts,
           facilities: r.facilities,
+          sp_machines: r.sp_machines,
           sp_id: r.sp_id,
           organization_id: r.organization_id,
         }));
@@ -303,6 +326,23 @@ export async function GET(request: NextRequest) {
       const serviceObjects = await fetchAllPages(`${SP_API}/ServiceObject/Get`, token);
       console.log(`[SP-sync] ${orgName}: fetched ${serviceObjects.length} service objects from SP`);
 
+      // Build map of SP machines by customer number
+      const spMachinesByCustomerNo: Record<string, unknown[]> = {};
+      for (const obj of serviceObjects) {
+        const customerNo = obj.CustomerNo ? String(obj.CustomerNo) : null;
+        if (!customerNo) continue;
+        if (!spMachinesByCustomerNo[customerNo]) spMachinesByCustomerNo[customerNo] = [];
+        spMachinesByCustomerNo[customerNo].push({
+          spId: String(obj.Id ?? obj.id ?? ''),
+          name: obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
+          brand: obj.Brand ?? obj.Manufacturer ?? '',
+          model: obj.Model ?? obj.Type ?? '',
+          serialNo: obj.SerialNo ?? obj.SerialNumber ?? '',
+          objectNo: obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
+          tags: obj.Tags ?? obj.tags ?? [],
+        });
+      }
+
       const rentable = serviceObjects.filter((obj) => {
         const tags: string[] = obj.Tags ?? obj.tags ?? [];
         return tags.some((t: string) => t.toLowerCase() === RENTABLE_TAG);
@@ -368,6 +408,8 @@ export async function GET(request: NextRequest) {
         const allContacts = (customerFacilities as { contacts?: { name: string; phone: string; email: string; title: string }[] }[])
           .flatMap(f => f.contacts ?? []);
 
+        const spMachines = customerNoKey ? (spMachinesByCustomerNo[customerNoKey] ?? []) : [];
+
         const record = {
           organization_id: org.id,
           company_name: c.Name,
@@ -379,6 +421,7 @@ export async function GET(request: NextRequest) {
           fortnox_customer_number: c.CustomerNo ? String(c.CustomerNo) : null,
           contacts: allContacts,
           facilities: customerFacilities,
+          sp_machines: spMachines,
           sp_id: spId,
         };
 
