@@ -4,7 +4,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, Truck, ArrowLeft, Camera, AlertTriangle, Wrench } from 'lucide-react';
 import { useStore } from '@/store';
-import { formatDate, daysBetween, calcBreakdown, formatCurrency } from '@/lib/utils';
+import { formatDate, daysBetween, countBusinessDays, calcBreakdown, formatCurrency } from '@/lib/utils';
 import { MachineStatusBadge } from '@/components/ui/StatusBadge';
 
 type ReturnCondition = 'bra' | 'skadat' | 'kraver_service' | 'kraver_kontroll';
@@ -64,8 +64,11 @@ function ReturnPageInner() {
     );
   }
 
-  const rentalDays = daysBetween(order.startDate, new Date().toISOString());
+  const today = new Date().toISOString();
   const isOpenEnded = order.openEnded === true || !order.plannedReturnDate;
+  const rentalDays = isOpenEnded
+    ? (order.chargeWeekends ? daysBetween(order.startDate, today) : countBusinessDays(order.startDate, today))
+    : daysBetween(order.startDate, today);
 
   const priceBreakdown = isOpenEnded
     ? calcBreakdown(rentalDays, order.dailyPrice, order.weeklyPrice, order.monthlyPrice)

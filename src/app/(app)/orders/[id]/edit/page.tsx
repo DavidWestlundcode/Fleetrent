@@ -355,20 +355,18 @@ export default function EditOrderPage() {
                   />
                   <span className="text-[13px] text-slate-600 font-medium">Inget slutdatum</span>
                 </label>
-                {!openEnded && (
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={chargeWeekends}
-                      onChange={(e) => setChargeWeekends(e.target.checked)}
-                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                    />
-                    <span className="text-[13px] text-slate-600 font-medium flex items-center gap-1.5">
-                      <CalendarOff className="w-3.5 h-3.5 text-slate-400" />
-                      Räkna med helgdagar
-                    </span>
-                  </label>
-                )}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={chargeWeekends}
+                    onChange={(e) => setChargeWeekends(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <span className="text-[13px] text-slate-600 font-medium flex items-center gap-1.5">
+                    <CalendarOff className="w-3.5 h-3.5 text-slate-400" />
+                    Räkna med helgdagar
+                  </span>
+                </label>
                 {!openEnded && days > 0 && (
                   <span className="text-[13px] text-slate-600 bg-blue-50 px-3 py-1.5 rounded-xl">
                     {billableDays !== days
