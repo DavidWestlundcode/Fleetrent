@@ -24,3 +24,9 @@ ALTER TABLE customers
 -- sp_customer_no on organizations — the org's own customer number in SP, used to import their machines
 ALTER TABLE organizations
   ADD COLUMN IF NOT EXISTS sp_customer_no TEXT;
+
+-- Fix SP-imported machines that were incorrectly set to 'el' — reset to 'okand' (unknown)
+UPDATE machines
+  SET fuel_type = 'okand'
+  WHERE sp_id IS NOT NULL
+    AND fuel_type = 'el';

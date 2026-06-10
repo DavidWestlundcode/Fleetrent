@@ -1,5 +1,5 @@
 export type MachineStatus = 'i_lager' | 'uthyrd' | 'reserverad' | 'service' | 'skadad' | 'utfasad';
-export type FuelType = 'el' | 'diesel' | 'gas' | 'lithium' | 'bensin';
+export type FuelType = 'el' | 'diesel' | 'gas' | 'lithium' | 'bensin' | 'okand';
 export type MachineCategory =
   | 'motviktstruck'
   | 'ledstaplare'
@@ -318,6 +318,7 @@ export const FUEL_LABELS: Record<FuelType, string> = {
   gas: 'Gas',
   lithium: 'Lithium',
   bensin: 'Bensin',
+  okand: '–',
 };
 
 export const ARTICLE_TYPE_LABELS: Record<ArticleType, string> = {
