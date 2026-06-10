@@ -35,14 +35,14 @@ async function getSPToken(integrationKey: string): Promise<string | null> {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fetchAllPages(url: string, token: string, maxPages = 200, lastSync?: string): Promise<any[]> {
+async function fetchAllPages(url: string, token: string, maxPages = 200, lastSync?: string, extraParams = ''): Promise<any[]> {
   const results = [];
   let skip = 0;
   const take = 100;
   let page = 0;
   const syncParam = lastSync ? `&request.lastSync=${encodeURIComponent(lastSync)}` : '';
   while (page < maxPages) {
-    const res = await fetch(`${url}?request.skip=${skip}&request.take=${take}${syncParam}`, {
+    const res = await fetch(`${url}?request.skip=${skip}&request.take=${take}${syncParam}${extraParams}`, {
       headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(8000),
     });
@@ -56,6 +56,40 @@ async function fetchAllPages(url: string, token: string, maxPages = 200, lastSyn
     if (items.length < take) break;
   }
   return results;
+}
+
+// Fetch SP machines for a list of customer numbers using the customerNo filter, 10 concurrent
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchSpMachinesPerCustomer(customerNos: string[], token: string): Promise<Record<string, any[]>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result: Record<string, any[]> = {};
+  const CONCURRENCY = 10;
+  for (let i = 0; i < customerNos.length; i += CONCURRENCY) {
+    const batch = customerNos.slice(i, i + CONCURRENCY);
+    await Promise.all(batch.map(async (customerNo) => {
+      try {
+        const objects = await fetchAllPages(
+          `${SP_API}/ServiceObject/Get`,
+          token,
+          20,
+          undefined,
+          `&request.customerNo=${encodeURIComponent(customerNo)}`,
+        );
+        if (objects.length > 0) {
+          result[customerNo] = objects.map((obj) => ({
+            spId: String(obj.Id ?? obj.id ?? ''),
+            name: obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
+            brand: obj.Brand ?? obj.Manufacturer ?? '',
+            model: obj.Model ?? obj.Type ?? '',
+            serialNo: obj.SerialNo ?? obj.SerialNumber ?? '',
+            objectNo: obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
+            tags: obj.Tags ?? obj.tags ?? [],
+          }));
+        }
+      } catch { /* skip failed customer */ }
+    }));
+  }
+  return result;
 }
 
 export async function POST(request: NextRequest) {
@@ -94,28 +128,10 @@ export async function POST(request: NextRequest) {
     const errors: string[] = [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let facilityByCustomer: Record<string, any[]> = {};
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let spMachinesByCustomerNo: Record<string, any[]> = {};
 
     // ── Sync machines (ServiceObjects with tag "uthyrningsbar") ──
     try {
       const serviceObjects = await fetchAllPages(`${SP_API}/ServiceObject/Get`, token);
-
-      // Build map of SP machines by customer number for use during customer sync
-      for (const obj of serviceObjects) {
-        const customerNo = obj.CustomerNo ? String(obj.CustomerNo) : null;
-        if (!customerNo) continue;
-        if (!spMachinesByCustomerNo[customerNo]) spMachinesByCustomerNo[customerNo] = [];
-        spMachinesByCustomerNo[customerNo].push({
-          spId: String(obj.Id ?? obj.id ?? ''),
-          name: obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
-          brand: obj.Brand ?? obj.Manufacturer ?? '',
-          model: obj.Model ?? obj.Type ?? '',
-          serialNo: obj.SerialNo ?? obj.SerialNumber ?? '',
-          objectNo: obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
-          tags: obj.Tags ?? obj.tags ?? [],
-        });
-      }
 
       const rentable = serviceObjects.filter((obj) => {
         const tags: string[] = obj.Tags ?? obj.tags ?? [];
@@ -183,6 +199,12 @@ export async function POST(request: NextRequest) {
           contacts: facContacts,
         });
       }
+
+      // Fetch SP machines per customer using the customerNo filter
+      const customerNos = customers
+        .map((c) => c.CustomerNo ? String(c.CustomerNo) : null)
+        .filter((n): n is string => Boolean(n));
+      const spMachinesByCustomerNo = await fetchSpMachinesPerCustomer(customerNos, token);
 
       // Build records
       const records = customers
@@ -326,23 +348,6 @@ export async function GET(request: NextRequest) {
       const serviceObjects = await fetchAllPages(`${SP_API}/ServiceObject/Get`, token);
       console.log(`[SP-sync] ${orgName}: fetched ${serviceObjects.length} service objects from SP`);
 
-      // Build map of SP machines by customer number
-      const spMachinesByCustomerNo: Record<string, unknown[]> = {};
-      for (const obj of serviceObjects) {
-        const customerNo = obj.CustomerNo ? String(obj.CustomerNo) : null;
-        if (!customerNo) continue;
-        if (!spMachinesByCustomerNo[customerNo]) spMachinesByCustomerNo[customerNo] = [];
-        spMachinesByCustomerNo[customerNo].push({
-          spId: String(obj.Id ?? obj.id ?? ''),
-          name: obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
-          brand: obj.Brand ?? obj.Manufacturer ?? '',
-          model: obj.Model ?? obj.Type ?? '',
-          serialNo: obj.SerialNo ?? obj.SerialNumber ?? '',
-          objectNo: obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
-          tags: obj.Tags ?? obj.tags ?? [],
-        });
-      }
-
       const rentable = serviceObjects.filter((obj) => {
         const tags: string[] = obj.Tags ?? obj.tags ?? [];
         return tags.some((t: string) => t.toLowerCase() === RENTABLE_TAG);
@@ -397,6 +402,13 @@ export async function GET(request: NextRequest) {
           contacts: facContacts,
         });
       }
+
+      // Fetch SP machines per customer using the customerNo filter
+      const customerNos = customers
+        .map((c) => c.CustomerNo ? String(c.CustomerNo) : null)
+        .filter((n): n is string => Boolean(n));
+      const spMachinesByCustomerNo = await fetchSpMachinesPerCustomer(customerNos, token);
+      console.log(`[SP-sync] ${orgName}: fetched SP machines for ${Object.keys(spMachinesByCustomerNo).length} customers`);
 
       let upsertedCustomers = 0;
       for (const c of customers) {
