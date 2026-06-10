@@ -397,6 +397,8 @@ export async function POST(request: NextRequest) {
         debug.skippedNoId = skippedNoId;
         debug.skippedExists = skippedExists;
         debug.firstComment = first?.Comment ?? null;
+        debug.firstArticles = first?.Articles ?? null;
+        debug.firstInstallation = first?.Installation ?? null;
         debug.firstParsedSpecs = first ? parseSpSpecs(first) : null;
       } catch (e) {
         errors.push(`SP kundmaskiner: ${e instanceof Error ? e.message : String(e)}`);
