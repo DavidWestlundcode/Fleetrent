@@ -328,7 +328,8 @@ export async function POST(request: NextRequest) {
             brand: obj.Brand ?? obj.Manufacturer ?? '',
             model: obj.Model ?? obj.Type ?? '',
             serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
-            internal_code: obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
+            internal_code: obj.MachineNo ?? obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
+            category: 'ovrig',
             status: 'i_lager',
             sp_id: spId,
           });
@@ -422,7 +423,8 @@ export async function GET(request: NextRequest) {
             brand: obj.Brand ?? obj.Manufacturer ?? '',
             model: obj.Model ?? obj.Type ?? '',
             serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
-            internal_code: obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
+            internal_code: obj.MachineNo ?? obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
+            category: 'ovrig',
             status: 'i_lager',
             sp_id: spId,
           });
@@ -511,11 +513,12 @@ export async function GET(request: NextRequest) {
           if (!existing) {
             await admin.from('machines').insert({
               organization_id: org.id,
-              name: obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
+              name: obj.Description ?? obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
               brand: obj.Brand ?? obj.Manufacturer ?? '',
               model: obj.Model ?? obj.Type ?? '',
               serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
-              internal_code: obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
+              internal_code: obj.MachineNo ?? obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
+              category: 'ovrig',
               status: 'i_lager',
               sp_id: spId,
             });
