@@ -163,7 +163,7 @@ function SettingsInner() {
   const [spCustomerNoSaving, setSpCustomerNoSaving] = useState(false);
   const [spCustomerNoSaved, setSpCustomerNoSaved] = useState(false);
   const [spSyncing, setSpSyncing] = useState(false);
-  const [spSyncResult, setSpSyncResult] = useState<{ machinesImported: number; customersImported: number } | null>(null);
+  const [spSyncResult, setSpSyncResult] = useState<{ machinesImported: number; customersImported: number; debug?: Record<string, unknown> } | null>(null);
   const [spLastSync, setSpLastSync] = useState<string | null>(null);
   const [spSyncError, setSpSyncError] = useState('');
   const [spOrgId, setSpOrgId] = useState<string | null>(null);
@@ -319,7 +319,7 @@ function SettingsInner() {
       });
       const data = await res.json();
       if (!res.ok) { setSpSyncError(data.error ?? 'Synken misslyckades'); return; }
-      setSpSyncResult({ machinesImported: data.machinesImported, customersImported: data.customersImported });
+      setSpSyncResult({ machinesImported: data.machinesImported, customersImported: data.customersImported, debug: data.debug });
       if (data.errors?.length) setSpSyncError(data.errors.slice(0, 3).join(' | '));
       setSpLastSync(new Date().toISOString());
       // Refresh store so new customers/data shows immediately
@@ -810,9 +810,16 @@ function SettingsInner() {
                           Synka om allt
                         </button>
                         {spSyncResult && (
-                          <span className="text-sm text-emerald-700 font-medium">
-                            ✓ {spSyncResult.machinesImported} maskiner och {spSyncResult.customersImported} kunder importerade
-                          </span>
+                          <div className="text-sm text-emerald-700 font-medium flex flex-col gap-1">
+                            <span>✓ {spSyncResult.machinesImported} maskiner och {spSyncResult.customersImported} kunder importerade</span>
+                            {spSyncResult.debug && (
+                              <span className="text-xs text-slate-500 font-mono break-all">
+                                debug: kundnr={String(spSyncResult.debug.spCustomerNo ?? '–')} | råsvar={String(spSyncResult.debug.rawCount ?? 0)} objekt
+                                {spSyncResult.debug.firstObject ? ` | första: ${JSON.stringify(spSyncResult.debug.firstObject).slice(0, 120)}` : ' | inga objekt'}
+                                {spSyncResult.debug.error ? ` | fel: ${String(spSyncResult.debug.error)}` : ''}
+                              </span>
+                            )}
+                          </div>
                         )}
                         {spSyncError && <span className="text-sm text-red-600">{spSyncError}</span>}
                       </div>

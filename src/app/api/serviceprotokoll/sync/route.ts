@@ -295,15 +295,16 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Import machines linked to the org's own SP customer number ──
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let debug: Record<string, any> = { spCustomerNo, rawCount: 0, firstObject: null };
     if (spCustomerNo) {
       try {
-        const customerObjects = await fetchAllPages(
-          `${SP_API}/ServiceObject/Get`,
-          token,
-          20,
-          undefined,
-          `&request.customerNo=${encodeURIComponent(spCustomerNo)}`,
-        );
+        // Try both casing variants since SP API casing is unknown
+        const url = `${SP_API}/ServiceObject/Get`;
+        const customerObjects = await fetchAllPages(url, token, 20, undefined, `&request.customerNo=${encodeURIComponent(spCustomerNo)}`);
+        debug.rawCount = customerObjects.length;
+        debug.firstObject = customerObjects[0] ?? null;
+
         for (const obj of customerObjects) {
           const spId = String(obj.Id ?? obj.id ?? '');
           if (!spId) continue;
@@ -329,14 +330,14 @@ export async function POST(request: NextRequest) {
         }
       } catch (e) {
         errors.push(`SP kundmaskiner: ${e instanceof Error ? e.message : String(e)}`);
+        debug.error = e instanceof Error ? e.message : String(e);
       }
     }
 
     // Update last sync timestamp
     await admin.from('organizations').update({ sp_last_sync: new Date().toISOString() }).eq('id', orgId);
 
-    const facilitiesTotal = Object.values(facilityByCustomer ?? {}).flat().length;
-    return NextResponse.json({ machinesImported, customersImported, errors });
+    return NextResponse.json({ machinesImported, customersImported, errors, debug });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Okänt fel' }, { status: 500 });
   }
