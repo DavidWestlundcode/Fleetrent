@@ -839,20 +839,6 @@ function SettingsInner() {
                     <p className="text-xs text-slate-400">Synkas automatiskt var 30:e minut.</p>
 
                   </div>
-                  {[
-                    { name: 'Visma', desc: 'Bokföring och fakturahantering' },
-                    { name: 'SMS-tjänst', desc: 'Automatiska SMS-påminnelser till kunder' },
-                    { name: 'GPS/IoT', desc: 'Realtidsspårning av maskinernas position' },
-                    { name: 'Digital signering', desc: 'Elektronisk signering av hyresavtal' },
-                  ].map((integration) => (
-                    <div key={integration.name} className="flex items-center justify-between p-5 border border-slate-200 rounded-xl opacity-50">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800">{integration.name}</p>
-                        <p className="text-xs text-slate-500">{integration.desc}</p>
-                      </div>
-                      <span className="text-xs px-2.5 py-1 bg-slate-100 text-slate-500 rounded-full">Kommer snart</span>
-                    </div>
-                  ))}
                 </div>
               </div>
             )}
