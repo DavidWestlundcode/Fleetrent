@@ -394,8 +394,32 @@ export async function POST(request: NextRequest) {
             return admin.from('machines').update(updates).eq('id', id);
           }));
         }
+        // Remove machines no longer linked to this org's customer number in SP
+        const currentSpIds = new Set(
+          customerObjects
+            .map((obj) => String(obj.Id ?? obj.id ?? obj.UniqueID ?? obj.ObjectId ?? ''))
+            .filter(Boolean),
+        );
+        const toRemoveIds = [...existingSpIdMap.entries()]
+          .filter(([spId]) => !currentSpIds.has(spId))
+          .map(([, id]) => id);
+        let removedMachines = 0;
+        if (toRemoveIds.length > 0) {
+          // Only delete machines with no orders to avoid orphaning data
+          const { data: withOrders } = await admin.from('orders')
+            .select('machine_id')
+            .in('machine_id', toRemoveIds);
+          const hasOrders = new Set((withOrders ?? []).map((r) => r.machine_id));
+          const safeToRemove = toRemoveIds.filter((id) => !hasOrders.has(id));
+          if (safeToRemove.length > 0) {
+            const { error: delErr } = await admin.from('machines').delete().in('id', safeToRemove);
+            if (delErr) errors.push(`Borttagning: ${delErr.message}`);
+            else removedMachines = safeToRemove.length;
+          }
+        }
         debug.skippedNoId = skippedNoId;
         debug.skippedExists = skippedExists;
+        debug.removedMachines = removedMachines;
         debug.firstComment = first?.Comment ?? null;
         debug.firstArticles = first?.Articles ?? null;
         debug.firstInstallation = first?.Installation ?? null;
@@ -598,6 +622,24 @@ export async function GET(request: NextRequest) {
             });
             newCustomerMachines++;
             total.machines++;
+          }
+        }
+        // Remove machines no longer linked to this org's customer number in SP
+        const currentSpIdsCron = new Set(
+          customerObjects
+            .map((obj) => String(obj.Id ?? obj.id ?? obj.UniqueID ?? ''))
+            .filter(Boolean),
+        );
+        const toRemoveCron = [...existingMachineMap.entries()]
+          .filter(([spId]) => !currentSpIdsCron.has(spId))
+          .map(([, id]) => id);
+        if (toRemoveCron.length > 0) {
+          const { data: withOrdersCron } = await admin.from('orders').select('machine_id').in('machine_id', toRemoveCron);
+          const hasOrdersCron = new Set((withOrdersCron ?? []).map((r) => r.machine_id));
+          const safeToRemoveCron = toRemoveCron.filter((id) => !hasOrdersCron.has(id));
+          if (safeToRemoveCron.length > 0) {
+            await admin.from('machines').delete().in('id', safeToRemoveCron);
+            console.log(`[SP-sync] ${orgName}: removed ${safeToRemoveCron.length} machines no longer in SP`);
           }
         }
         console.log(`[SP-sync] ${orgName}: ${newCustomerMachines} new SP customer machines inserted`);
