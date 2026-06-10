@@ -104,11 +104,12 @@ export async function POST(request: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('organization_id')
+      .select('organization_id, cost_center')
       .eq('id', user.id)
       .single();
 
     const orgId = profile?.organization_id;
+    const costCenter = (profile as { cost_center?: string | null } | null)?.cost_center ?? null;
     if (!orgId) return NextResponse.json({ error: 'Ingen organisation' }, { status: 400 });
 
     const token = await getValidToken(orgId);
@@ -249,6 +250,7 @@ export async function POST(request: NextRequest) {
           OurReference: orderRow.order_number,
           YourOrderNumber: (orderRow.order_reference as string) || '',
           Comments: `FleetOS-order ${orderRow.order_number}`,
+          ...(costCenter ? { CostCenter: costCenter } : {}),
           OrderRows: orderRows,
         },
       }),

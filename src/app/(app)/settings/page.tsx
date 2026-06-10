@@ -154,6 +154,7 @@ function SettingsInner() {
   const [createError, setCreateError] = useState('');
   const [profileName, setProfileName] = useState('');
   const [profilePhone, setProfilePhone] = useState('');
+  const [profileCostCenter, setProfileCostCenter] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [spKey, setSpKey] = useState('');
@@ -195,12 +196,13 @@ function SettingsInner() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('organization_id, full_name, phone')
+        .select('organization_id, full_name, phone, cost_center')
         .eq('id', user.id)
         .single();
 
       setProfileName((profile?.full_name as string) ?? '');
       setProfilePhone((profile?.phone as string) ?? '');
+      setProfileCostCenter((profile?.cost_center as string) ?? '');
 
       const oid = profile?.organization_id as string | null;
       setOrgId(oid);
@@ -362,6 +364,7 @@ function SettingsInner() {
       await supabase.from('profiles').update({
         full_name: profileName,
         phone: profilePhone,
+        cost_center: profileCostCenter || null,
       }).eq('id', user.id);
     }
     setProfileSaving(false);
@@ -462,6 +465,17 @@ function SettingsInner() {
                         className={`${inputClass} pl-9`}
                       />
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Kostnadsställe (Fortnox)</label>
+                    <input
+                      type="text"
+                      value={profileCostCenter}
+                      onChange={(e) => setProfileCostCenter(e.target.value)}
+                      placeholder="T.ex. 100"
+                      className={inputClass}
+                    />
+                    <p className="text-xs text-slate-400 mt-1">Sätts automatiskt på Fortnox-order du skickar in.</p>
                   </div>
                   <div className="flex items-center gap-3 pt-2">
                     <button

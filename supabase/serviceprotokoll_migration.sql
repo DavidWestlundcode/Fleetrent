@@ -25,6 +25,9 @@ ALTER TABLE customers
 ALTER TABLE organizations
   ADD COLUMN IF NOT EXISTS sp_customer_no TEXT;
 
+-- Cost center per user profile — sent to Fortnox when creating orders
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cost_center TEXT;
+
 -- Fix SP-imported machines that were incorrectly set to 'el' — reset to 'okand' (unknown)
 UPDATE machines
   SET fuel_type = 'okand'
