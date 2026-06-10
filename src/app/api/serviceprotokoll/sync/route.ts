@@ -420,10 +420,9 @@ export async function POST(request: NextRequest) {
         debug.skippedNoId = skippedNoId;
         debug.skippedExists = skippedExists;
         debug.removedMachines = removedMachines;
-        debug.firstComment = first?.Comment ?? null;
-        debug.firstArticles = first?.Articles ?? null;
         debug.firstInstallation = first?.Installation ?? null;
         debug.firstParsedSpecs = first ? parseSpSpecs(first) : null;
+        debug.firstRawObject = first ? JSON.stringify(first).slice(0, 1200) : null;
       } catch (e) {
         errors.push(`SP kundmaskiner: ${e instanceof Error ? e.message : String(e)}`);
         debug.error = e instanceof Error ? e.message : String(e);
