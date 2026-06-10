@@ -60,7 +60,11 @@ const SPEC_FIELDS: Record<MachineCategory, { key: string; label: string; unit: s
     { key: 'workingWeight', label: 'Tjänstevikt', unit: 'kg' },
     { key: 'enginePower', label: 'Motoreffekt', unit: 'kW' },
   ],
-  ovrig: [],
+  ovrig: [
+    { key: 'liftHeight', label: 'Lyfthöjd', unit: 'mm' },
+    { key: 'buildHeight', label: 'Bygghöjd', unit: 'mm' },
+    { key: 'forkLength', label: 'Gaffellängd', unit: 'mm' },
+  ],
 };
 
 export default function EditMachinePage() {
