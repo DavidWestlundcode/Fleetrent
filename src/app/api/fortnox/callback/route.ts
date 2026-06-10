@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
   const clientId = process.env.FORTNOX_CLIENT_ID!;
   const clientSecret = process.env.FORTNOX_CLIENT_SECRET!;
-  const redirectUri = `${origin}/api/fortnox/callback`;
+  const redirectUri = `${process.env.APP_URL ?? origin}/api/fortnox/callback`;
 
   const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
   const tokenRes = await fetch('https://apps.fortnox.se/oauth-v1/token', {

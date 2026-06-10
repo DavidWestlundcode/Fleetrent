@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/settings?error=fortnox_not_configured', request.url));
   }
 
-  const redirectUri = `${request.nextUrl.origin}/api/fortnox/callback`;
+  const redirectUri = `${process.env.APP_URL ?? request.nextUrl.origin}/api/fortnox/callback`;
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
