@@ -308,29 +308,36 @@ export async function POST(request: NextRequest) {
         debug.firstSpId = first ? String(first.Id ?? first.id ?? first.UniqueID ?? first.ObjectId ?? '') : '';
         debug.firstName = first ? String(first.Description ?? first.Name ?? first.Designation ?? '') : '';
 
+        // Bulk-fetch existing sp_ids — one query instead of one per machine
+        const { data: existingRows } = await admin.from('machines')
+          .select('sp_id')
+          .eq('organization_id', orgId)
+          .not('sp_id', 'is', null);
+        const existingSpIds = new Set((existingRows ?? []).map((r) => String(r.sp_id)));
+
         let skippedNoId = 0;
         let skippedExists = 0;
+        const toInsert = [];
         for (const obj of customerObjects) {
           const spId = String(obj.Id ?? obj.id ?? obj.UniqueID ?? obj.ObjectId ?? '');
           if (!spId) { skippedNoId++; continue; }
-          const { data: existing } = await admin.from('machines')
-            .select('id')
-            .eq('organization_id', orgId)
-            .eq('sp_id', spId)
-            .maybeSingle();
-          if (existing) { skippedExists++; continue; }
-          const { error } = await admin.from('machines').insert({
+          if (existingSpIds.has(spId)) { skippedExists++; continue; }
+          toInsert.push({
             organization_id: orgId,
             name: obj.Description ?? obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
             brand: obj.Brand ?? obj.Manufacturer ?? '',
-            model: obj.Model ?? obj.Type ?? obj.Description ?? '',
+            model: obj.Model ?? obj.Type ?? '',
             serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
             internal_code: obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
             status: 'i_lager',
             sp_id: spId,
           });
-          if (!error) machinesImported++;
-          else errors.push(`SP-maskin: ${error.message}`);
+        }
+        // Bulk insert in batches of 100
+        for (let i = 0; i < toInsert.length; i += 100) {
+          const { error } = await admin.from('machines').insert(toInsert.slice(i, i + 100));
+          if (!error) machinesImported += toInsert.slice(i, i + 100).length;
+          else errors.push(`SP-maskiner batch ${i}: ${error.message}`);
         }
         debug.skippedNoId = skippedNoId;
         debug.skippedExists = skippedExists;
