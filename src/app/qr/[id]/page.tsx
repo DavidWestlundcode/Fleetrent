@@ -46,7 +46,7 @@ export default function QRPage() {
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             <Truck className="w-4 h-4 text-white" />
           </div>
-          <span className="text-white font-bold text-lg">FleetOS</span>
+          <span className="text-white font-bold text-lg">fleetos.se</span>
         </div>
         <button
           onClick={() => window.print()}
@@ -83,12 +83,13 @@ export default function QRPage() {
           </div>
 
           {/* QR Code */}
-          <div className="flex justify-center py-4 border-t border-slate-100">
+          <div className="flex flex-col items-center py-4 border-t border-slate-100 gap-2">
             <div className="p-3 bg-white border border-slate-200 rounded-xl">
               <QRCodeSVG value={qrUrl} size={120} />
             </div>
+            <p className="text-xs text-slate-400">Skanna för maskininfo</p>
+            <p className="text-sm font-semibold text-slate-600 tracking-wide">fleetos.se</p>
           </div>
-          <p className="text-center text-xs text-slate-400 mt-2">Skanna för maskininfo</p>
         </div>
 
         {/* Active Order */}
