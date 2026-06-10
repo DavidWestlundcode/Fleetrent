@@ -200,12 +200,6 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Fetch SP machines per customer using the customerNo filter
-      const customerNos = customers
-        .map((c) => c.CustomerNo ? String(c.CustomerNo) : null)
-        .filter((n): n is string => Boolean(n));
-      const spMachinesByCustomerNo = await fetchSpMachinesPerCustomer(customerNos, token);
-
       // Build records
       const records = customers
         .filter((c: { Name: string; UniqueID: unknown; CustomerNo: unknown }) => c.Name && (c.UniqueID ?? c.CustomerNo))
@@ -218,8 +212,6 @@ export async function POST(request: NextRequest) {
           // All contacts come from facilities (customer.Contacts is null in SP API)
           const allContacts = customerFacilities.flatMap((f: { contacts?: { name: string; phone: string; email: string; title: string }[] }) => f.contacts ?? []);
 
-          const spMachines = customerNoKey ? (spMachinesByCustomerNo[customerNoKey] ?? []) : [];
-
           return {
             organization_id: orgId,
             company_name: c.Name,
@@ -231,7 +223,6 @@ export async function POST(request: NextRequest) {
             fortnox_customer_number: c.CustomerNo ? String(c.CustomerNo) : null,
             contacts: allContacts,
             facilities: customerFacilities,
-            sp_machines: spMachines,
             sp_id: spId,
           };
         });
@@ -279,7 +270,6 @@ export async function POST(request: NextRequest) {
           fortnox_customer_number: r.fortnox_customer_number,
           contacts: r.contacts,
           facilities: r.facilities,
-          sp_machines: r.sp_machines,
           sp_id: r.sp_id,
           organization_id: r.organization_id,
         }));
@@ -403,13 +393,6 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      // Fetch SP machines per customer using the customerNo filter
-      const customerNos = customers
-        .map((c) => c.CustomerNo ? String(c.CustomerNo) : null)
-        .filter((n): n is string => Boolean(n));
-      const spMachinesByCustomerNo = await fetchSpMachinesPerCustomer(customerNos, token);
-      console.log(`[SP-sync] ${orgName}: fetched SP machines for ${Object.keys(spMachinesByCustomerNo).length} customers`);
-
       let upsertedCustomers = 0;
       for (const c of customers) {
         const spId = String(c.UniqueID ?? c.CustomerNo ?? '');
@@ -419,8 +402,6 @@ export async function GET(request: NextRequest) {
         const customerFacilities = customerNoKey ? (facilityByCustomer[customerNoKey] ?? []) : [];
         const allContacts = (customerFacilities as { contacts?: { name: string; phone: string; email: string; title: string }[] }[])
           .flatMap(f => f.contacts ?? []);
-
-        const spMachines = customerNoKey ? (spMachinesByCustomerNo[customerNoKey] ?? []) : [];
 
         const record = {
           organization_id: org.id,
@@ -433,7 +414,6 @@ export async function GET(request: NextRequest) {
           fortnox_customer_number: c.CustomerNo ? String(c.CustomerNo) : null,
           contacts: allContacts,
           facilities: customerFacilities,
-          sp_machines: spMachines,
           sp_id: spId,
         };
 

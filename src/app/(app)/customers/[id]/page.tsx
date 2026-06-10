@@ -1,12 +1,13 @@
 'use client';
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Building2, Phone, Mail, MapPin, FileText, Plus, Trash2, Ban, RotateCcw, Users, Home, ChevronDown, ChevronRight, Edit, Wrench } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import type { SpMachine } from '@/lib/types';
 
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -14,6 +15,16 @@ export default function CustomerDetailPage() {
   const { customers, orders, machines, updateCustomer, deleteCustomer } = useStore();
 
   const customer = customers.find((c) => c.id === id);
+
+  const [spMachines, setSpMachines] = useState<SpMachine[] | null>(null);
+  useEffect(() => {
+    if (!customer?.fortnoxCustomerNumber) return;
+    fetch(`/api/serviceprotokoll/customer-machines?customerNo=${encodeURIComponent(customer.fortnoxCustomerNumber)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.machines) setSpMachines(data.machines); })
+      .catch(() => {});
+  }, [customer?.fortnoxCustomerNumber]);
+
   const customerOrders = orders
     .filter((o) => o.customerId === id)
     .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
@@ -273,32 +284,38 @@ export default function CustomerDetailPage() {
         )}
 
         {/* Maskiner i Serviceprotokoll */}
-        {customer.spMachines && customer.spMachines.length > 0 && (
+        {customer.fortnoxCustomerNumber && (spMachines === null || spMachines.length > 0) && (
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
               <Wrench className="w-4 h-4 text-slate-500" />
               <h3 className="font-semibold text-slate-900">Maskiner i Serviceprotokoll</h3>
-              <span className="ml-auto text-xs font-medium text-slate-400">{customer.spMachines.length} st</span>
+              {spMachines !== null && (
+                <span className="ml-auto text-xs font-medium text-slate-400">{spMachines.length} st</span>
+              )}
             </div>
-            <div className="divide-y divide-slate-100">
-              {customer.spMachines.map((m, i) => (
-                <div key={i} className="flex items-center gap-4 px-5 py-3.5">
-                  <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center shrink-0">
-                    <Wrench className="w-4 h-4 text-slate-400" />
+            {spMachines === null ? (
+              <p className="px-5 py-6 text-sm text-slate-400 text-center">Hämtar maskiner...</p>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {spMachines.map((m, i) => (
+                  <div key={i} className="flex items-center gap-4 px-5 py-3.5">
+                    <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center shrink-0">
+                      <Wrench className="w-4 h-4 text-slate-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-800">{m.name}</p>
+                      {(m.brand || m.model) && (
+                        <p className="text-xs text-slate-400 mt-0.5">{[m.brand, m.model].filter(Boolean).join(' · ')}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0 text-xs text-slate-500">
+                      {m.serialNo && <span>Serienr: {m.serialNo}</span>}
+                      {m.objectNo && <span>Objektnr: {m.objectNo}</span>}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-800">{m.name}</p>
-                    {(m.brand || m.model) && (
-                      <p className="text-xs text-slate-400 mt-0.5">{[m.brand, m.model].filter(Boolean).join(' · ')}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0 text-xs text-slate-500">
-                    {m.serialNo && <span>Serienr: {m.serialNo}</span>}
-                    {m.objectNo && <span>Objektnr: {m.objectNo}</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
