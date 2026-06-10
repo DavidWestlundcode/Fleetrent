@@ -813,9 +813,8 @@ function SettingsInner() {
                           <div className="text-sm text-emerald-700 font-medium flex flex-col gap-1">
                             <span>✓ {spSyncResult.machinesImported} maskiner och {spSyncResult.customersImported} kunder importerade</span>
                             {spSyncResult.debug && (
-                              <span className="text-xs text-slate-500 font-mono break-all">
-                                kundnr={String(spSyncResult.debug.spCustomerNo ?? '–')} | {String(spSyncResult.debug.rawCount ?? 0)} objekt | spId=&quot;{String(spSyncResult.debug.firstSpId ?? '–')}&quot; | namn=&quot;{String(spSyncResult.debug.firstName ?? '–')}&quot; | hoppade(ingetId={String(spSyncResult.debug.skippedNoId ?? 0)} finns={String(spSyncResult.debug.skippedExists ?? 0)}) | nycklar: {JSON.stringify(spSyncResult.debug.firstObjectKeys ?? [])}
-                                {spSyncResult.debug.error ? ` | FEL: ${String(spSyncResult.debug.error)}` : ''}
+                              <span className="text-xs text-slate-500 font-mono break-all whitespace-pre-wrap">
+                                {`kundnr=${String(spSyncResult.debug.spCustomerNo ?? '–')} | ${String(spSyncResult.debug.rawCount ?? 0)} objekt | spId="${String(spSyncResult.debug.firstSpId ?? '–')}" | namn="${String(spSyncResult.debug.firstName ?? '–')}" | hoppade(ingetId=${String(spSyncResult.debug.skippedNoId ?? 0)} finns=${String(spSyncResult.debug.skippedExists ?? 0)})\nnycklar: ${JSON.stringify(spSyncResult.debug.firstObjectKeys ?? [])}\nComment: "${String(spSyncResult.debug.firstComment ?? '(tom)').slice(0, 300)}"${(spSyncResult.debug.firstComment as string ?? '').length > 300 ? '...' : ''}\nParsed: ${JSON.stringify(spSyncResult.debug.firstParsedSpecs ?? {})}${spSyncResult.debug.error ? `\nFEL: ${String(spSyncResult.debug.error)}` : ''}`}
                               </span>
                             )}
                           </div>
