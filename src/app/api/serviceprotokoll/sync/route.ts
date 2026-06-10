@@ -58,6 +58,40 @@ async function fetchAllPages(url: string, token: string, maxPages = 200, lastSyn
   return results;
 }
 
+// Parse technical specs from SP's "Ytterligare information" free-text block (stored in Comment field)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseSpSpecs(obj: any): {
+  year?: number;
+  capacity?: number;
+  lift_height?: number;
+  build_height?: number;
+  fork_length?: number;
+  purchase_price?: number;
+} {
+  const comment: string = typeof obj?.Comment === 'string' ? obj.Comment : '';
+  const parseNum = (pattern: RegExp): number | undefined => {
+    const m = comment.match(pattern);
+    if (!m) return undefined;
+    const n = parseFloat(m[1].replace(/[\s ]/g, '').replace(',', '.'));
+    return isNaN(n) ? undefined : n;
+  };
+  // Year: try comment first, then Installation date field
+  const yearFromComment = parseNum(/årsmodell[:\s]+(\d{4})/i);
+  let year = yearFromComment;
+  if (!year && obj?.Installation) {
+    const m = String(obj.Installation).match(/^(\d{4})/);
+    if (m) { const y = parseInt(m[1]); if (y > 1900 && y < 2100) year = y; }
+  }
+  return {
+    year: year ?? undefined,
+    capacity: parseNum(/kapacitet[:\s]+([\d,.]+)\s*kg/i),
+    lift_height: parseNum(/lyfthöjd[:\s]+([\d,.]+)\s*mm/i),
+    build_height: parseNum(/bygghöjd[:\s]+([\d,.]+)\s*mm/i),
+    fork_length: parseNum(/gafflar[:\s]+([\d,.]+)\s*mm/i),
+    purchase_price: parseNum(/inköpspris[:\s]+([\d,.]+)/i),
+  };
+}
+
 // Fetch SP machines for a list of customer numbers using the customerNo filter.
 // 10 concurrent, max 3 pages per customer (300 machines) and 5 s timeout per request.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -308,20 +342,29 @@ export async function POST(request: NextRequest) {
         debug.firstSpId = first ? String(first.Id ?? first.id ?? first.UniqueID ?? first.ObjectId ?? '') : '';
         debug.firstName = first ? String(first.Description ?? first.Name ?? first.Designation ?? '') : '';
 
-        // Bulk-fetch existing sp_ids — one query instead of one per machine
+        // Bulk-fetch existing sp_ids and their row ids — one query instead of one per machine
         const { data: existingRows } = await admin.from('machines')
-          .select('sp_id')
+          .select('id, sp_id')
           .eq('organization_id', orgId)
           .not('sp_id', 'is', null);
-        const existingSpIds = new Set((existingRows ?? []).map((r) => String(r.sp_id)));
+        const existingSpIdMap = new Map((existingRows ?? []).map((r) => [String(r.sp_id), r.id]));
 
         let skippedNoId = 0;
         let skippedExists = 0;
-        const toInsert = [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const toInsert: any[] = [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const toUpdateSpecs: { id: string; specs: Record<string, any> }[] = [];
         for (const obj of customerObjects) {
           const spId = String(obj.Id ?? obj.id ?? obj.UniqueID ?? obj.ObjectId ?? '');
           if (!spId) { skippedNoId++; continue; }
-          if (existingSpIds.has(spId)) { skippedExists++; continue; }
+          const specs = parseSpSpecs(obj);
+          if (existingSpIdMap.has(spId)) {
+            // Update tech specs on already-imported machines
+            toUpdateSpecs.push({ id: existingSpIdMap.get(spId)!, specs });
+            skippedExists++;
+            continue;
+          }
           toInsert.push({
             organization_id: orgId,
             name: obj.Description ?? obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
@@ -333,16 +376,27 @@ export async function POST(request: NextRequest) {
             fuel_type: 'el',
             status: 'i_lager',
             sp_id: spId,
+            ...specs,
           });
         }
-        // Bulk insert in batches of 100
+        // Bulk insert new machines in batches of 100
         for (let i = 0; i < toInsert.length; i += 100) {
           const { error } = await admin.from('machines').insert(toInsert.slice(i, i + 100));
           if (!error) machinesImported += toInsert.slice(i, i + 100).length;
           else errors.push(`SP-maskiner batch ${i}: ${error.message}`);
         }
+        // Update tech specs on existing machines in batches of 100
+        for (let i = 0; i < toUpdateSpecs.length; i += 100) {
+          const batch = toUpdateSpecs.slice(i, i + 100);
+          await Promise.all(batch.map(({ id, specs }) => {
+            const updates = Object.fromEntries(Object.entries(specs).filter(([, v]) => v !== undefined));
+            if (Object.keys(updates).length === 0) return Promise.resolve();
+            return admin.from('machines').update(updates).eq('id', id);
+          }));
+        }
         debug.skippedNoId = skippedNoId;
         debug.skippedExists = skippedExists;
+        debug.firstComment = first?.Comment ?? null;
       } catch (e) {
         errors.push(`SP kundmaskiner: ${e instanceof Error ? e.message : String(e)}`);
         debug.error = e instanceof Error ? e.message : String(e);
@@ -507,12 +561,25 @@ export async function GET(request: NextRequest) {
           undefined,
           `&request.customerNo=${encodeURIComponent(orgSpCustomerNo)}`,
         );
+        // Bulk-fetch existing sp_ids for this org
+        const { data: existingMachineRows } = await admin.from('machines')
+          .select('id, sp_id')
+          .eq('organization_id', org.id)
+          .not('sp_id', 'is', null);
+        const existingMachineMap = new Map((existingMachineRows ?? []).map((r) => [String(r.sp_id), r.id]));
+
         let newCustomerMachines = 0;
         for (const obj of customerObjects) {
-          const spId = String(obj.Id ?? obj.id ?? '');
+          const spId = String(obj.Id ?? obj.id ?? obj.UniqueID ?? '');
           if (!spId) continue;
-          const { data: existing } = await admin.from('machines').select('id').eq('organization_id', org.id).eq('sp_id', spId).maybeSingle();
-          if (!existing) {
+          const specs = parseSpSpecs(obj);
+          if (existingMachineMap.has(spId)) {
+            // Update tech specs for existing machines
+            const updates = Object.fromEntries(Object.entries(specs).filter(([, v]) => v !== undefined));
+            if (Object.keys(updates).length > 0) {
+              await admin.from('machines').update(updates).eq('id', existingMachineMap.get(spId)!);
+            }
+          } else {
             await admin.from('machines').insert({
               organization_id: org.id,
               name: obj.Description ?? obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
@@ -524,6 +591,7 @@ export async function GET(request: NextRequest) {
               fuel_type: 'el',
               status: 'i_lager',
               sp_id: spId,
+              ...specs,
             });
             newCustomerMachines++;
             total.machines++;
