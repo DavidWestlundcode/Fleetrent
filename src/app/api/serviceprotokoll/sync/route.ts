@@ -330,6 +330,7 @@ export async function POST(request: NextRequest) {
             serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
             internal_code: obj.MachineNo ?? obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
             category: 'ovrig',
+            fuel_type: 'el',
             status: 'i_lager',
             sp_id: spId,
           });
@@ -425,6 +426,7 @@ export async function GET(request: NextRequest) {
             serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
             internal_code: obj.MachineNo ?? obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
             category: 'ovrig',
+            fuel_type: 'el',
             status: 'i_lager',
             sp_id: spId,
           });
@@ -519,6 +521,7 @@ export async function GET(request: NextRequest) {
               serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
               internal_code: obj.MachineNo ?? obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
               category: 'ovrig',
+              fuel_type: 'el',
               status: 'i_lager',
               sp_id: spId,
             });
