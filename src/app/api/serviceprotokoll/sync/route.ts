@@ -58,10 +58,12 @@ async function fetchAllPages(url: string, token: string, maxPages = 200, lastSyn
   return results;
 }
 
-// Parse a numeric value from a string, stripping units like "mm", "kg", "kr"
+// Extract the first number from a string (handles "160x15" → 160, "5000 kg" → 5000)
 function parseNumericValue(raw: string | null | undefined): number | undefined {
   if (!raw) return undefined;
-  const n = parseFloat(String(raw).replace(/[^\d,.-]/g, '').replace(',', '.'));
+  const m = String(raw).match(/\d+([.,]\d+)?/);
+  if (!m) return undefined;
+  const n = parseFloat(m[0].replace(',', '.'));
   return isNaN(n) ? undefined : n;
 }
 
