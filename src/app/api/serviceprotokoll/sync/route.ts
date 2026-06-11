@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server';
+﻿import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { LIMITS } from '@/lib/rate-limit';
@@ -58,7 +58,15 @@ async function fetchAllPages(url: string, token: string, maxPages = 200, lastSyn
   return results;
 }
 
-// Parse technical specs from SP's "Ytterligare information" free-text block (stored in Comment field)
+// Parse a numeric value from a string, stripping units like "mm", "kg", "kr"
+function parseNumericValue(raw: string | null | undefined): number | undefined {
+  if (!raw) return undefined;
+  const n = parseFloat(String(raw).replace(/[^\d,.-]/g, '').replace(',', '.'));
+  return isNaN(n) ? undefined : n;
+}
+
+// Parse technical specs from SP object.
+// Tries CustomInfo array (when includeCustomInfo=true) first, falls back to Installation date for year.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parseSpSpecs(obj: any): {
   year?: number;
@@ -68,32 +76,40 @@ function parseSpSpecs(obj: any): {
   fork_length?: number;
   purchase_price?: number;
 } {
-  const comment: string = typeof obj?.Comment === 'string' ? obj.Comment : '';
-  const parseNum = (pattern: RegExp): number | undefined => {
-    const m = comment.match(pattern);
-    if (!m) return undefined;
-    const n = parseFloat(m[1].replace(/[\s ]/g, '').replace(',', '.'));
-    return isNaN(n) ? undefined : n;
+  // CustomInfo is an array of { Name, Value } when SP flag includeCustomInfo=true is used
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const customFields: { Name?: string; Value?: string }[] = Array.isArray(obj?.CustomInfo) ? obj.CustomInfo
+    : Array.isArray(obj?.CustomFields) ? obj.CustomFields
+    : Array.isArray(obj?.Properties) ? obj.Properties
+    : [];
+
+  const getField = (...names: string[]): number | undefined => {
+    for (const name of names) {
+      const entry = customFields.find((f) => f.Name?.toLowerCase() === name.toLowerCase());
+      if (entry?.Value) {
+        const v = parseNumericValue(entry.Value);
+        if (v !== undefined) return v;
+      }
+    }
+    return undefined;
   };
-  // Year: try comment first, then Installation date field
-  const yearFromComment = parseNum(/årsmodell[:\s]+(\d{4})/i);
-  let year = yearFromComment;
+
+  // Year: try custom fields first, then Installation date
+  let year = getField('arsmodell', 'Arsmodell', 'year', 'Year');
   if (!year && obj?.Installation) {
     const m = String(obj.Installation).match(/^(\d{4})/);
     if (m) { const y = parseInt(m[1]); if (y > 1900 && y < 2100) year = y; }
   }
+
   return {
-    year: year ?? undefined,
-    capacity: parseNum(/kapacitet[:\s]+([\d,.]+)\s*kg/i),
-    lift_height: parseNum(/lyfthöjd[:\s]+([\d,.]+)\s*mm/i),
-    build_height: parseNum(/bygghöjd[:\s]+([\d,.]+)\s*mm/i),
-    fork_length: parseNum(/gafflar[:\s]+([\d,.]+)\s*mm/i),
-    purchase_price: parseNum(/inköpspris[:\s]+([\d,.]+)/i),
+    year,
+    capacity: getField('kapacitet', 'Kapacitet', 'capacity'),
+    lift_height: getField('Lyfthöjd', 'lyfthöjd', 'lift_height'),
+    build_height: getField('Bygghöjd', 'bygghöjd', 'build_height'),
+    fork_length: getField('Gafflar', 'gafflar', 'fork_length', 'Gaffelhängd'),
+    purchase_price: getField('Inköpspris', 'inköpspris', 'purchase_price'),
   };
 }
-
-// Fetch SP machines for a list of customer numbers using the customerNo filter.
-// 10 concurrent, max 3 pages per customer (300 machines) and 5 s timeout per request.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function fetchSpMachinesPerCustomer(customerNos: string[], token: string): Promise<Record<string, any[]>> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -335,7 +351,7 @@ export async function POST(request: NextRequest) {
       try {
         // Try both casing variants since SP API casing is unknown
         const url = `${SP_API}/ServiceObject/Get`;
-        const customerObjects = await fetchAllPages(url, token, 20, undefined, `&request.customerNo=${encodeURIComponent(spCustomerNo)}`);
+        const customerObjects = await fetchAllPages(url, token, 20, undefined, `&request.customerNo=${encodeURIComponent(spCustomerNo)}&request.includeCustomInfo=true`);
         debug.rawCount = customerObjects.length;
         const first = customerObjects[0];
         debug.firstObjectKeys = first ? Object.keys(first) : [];
@@ -421,8 +437,8 @@ export async function POST(request: NextRequest) {
         debug.skippedExists = skippedExists;
         debug.removedMachines = removedMachines;
         debug.firstInstallation = first?.Installation ?? null;
+        debug.firstCustomInfo = first?.CustomInfo ?? first?.CustomFields ?? first?.Properties ?? null;
         debug.firstParsedSpecs = first ? parseSpSpecs(first) : null;
-        debug.firstRawObject = first ? JSON.stringify(first).slice(0, 1200) : null;
       } catch (e) {
         errors.push(`SP kundmaskiner: ${e instanceof Error ? e.message : String(e)}`);
         debug.error = e instanceof Error ? e.message : String(e);
@@ -585,7 +601,7 @@ export async function GET(request: NextRequest) {
           token,
           20,
           undefined,
-          `&request.customerNo=${encodeURIComponent(orgSpCustomerNo)}`,
+          `&request.customerNo=${encodeURIComponent(orgSpCustomerNo)}&request.includeCustomInfo=true`,
         );
         // Bulk-fetch existing sp_ids for this org
         const { data: existingMachineRows } = await admin.from('machines')
