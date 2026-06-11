@@ -95,7 +95,7 @@ function parseSpSpecs(obj: any): {
   };
 
   // Year: try custom fields first, then Installation date
-  let year = getField('arsmodell', 'Arsmodell', 'year', 'Year');
+  let year = getField('Årsmodell', 'arsmodell', 'year', 'Year');
   if (!year && obj?.Installation) {
     const m = String(obj.Installation).match(/^(\d{4})/);
     if (m) { const y = parseInt(m[1]); if (y > 1900 && y < 2100) year = y; }
