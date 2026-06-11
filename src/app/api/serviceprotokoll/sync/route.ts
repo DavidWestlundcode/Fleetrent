@@ -401,9 +401,11 @@ export async function POST(request: NextRequest) {
           const spId = String(obj.Id ?? obj.id ?? obj.UniqueID ?? obj.ObjectId ?? '');
           if (!spId) { skippedNoId++; continue; }
           const specs = parseSpSpecs(obj);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const definedSpecs = Object.fromEntries(Object.entries(specs).filter(([, v]) => v !== undefined)) as Record<string, any>;
           if (existingSpIdMap.has(spId)) {
             // Update tech specs on already-imported machines
-            toUpdateSpecs.push({ id: existingSpIdMap.get(spId)!, specs });
+            toUpdateSpecs.push({ id: existingSpIdMap.get(spId)!, specs: definedSpecs });
             skippedExists++;
             continue;
           }
@@ -414,11 +416,11 @@ export async function POST(request: NextRequest) {
             model: obj.Model ?? obj.Type ?? '',
             serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
             internal_code: obj.MachineNo ?? obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
-            category: specs.category ?? 'ovrig',
             fuel_type: 'okand',
             status: 'i_lager',
             sp_id: spId,
-            ...specs,
+            ...definedSpecs,
+            category: definedSpecs.category ?? 'ovrig',
           });
         }
         // Bulk insert new machines in batches of 100
@@ -643,11 +645,11 @@ export async function GET(request: NextRequest) {
           const spId = String(obj.Id ?? obj.id ?? obj.UniqueID ?? '');
           if (!spId) continue;
           const specs = parseSpSpecs(obj);
+          const definedSpecs = Object.fromEntries(Object.entries(specs).filter(([, v]) => v !== undefined));
           if (existingMachineMap.has(spId)) {
             // Update tech specs for existing machines
-            const updates = Object.fromEntries(Object.entries(specs).filter(([, v]) => v !== undefined));
-            if (Object.keys(updates).length > 0) {
-              await admin.from('machines').update(updates).eq('id', existingMachineMap.get(spId)!);
+            if (Object.keys(definedSpecs).length > 0) {
+              await admin.from('machines').update(definedSpecs).eq('id', existingMachineMap.get(spId)!);
             }
           } else {
             await admin.from('machines').insert({
@@ -657,11 +659,11 @@ export async function GET(request: NextRequest) {
               model: obj.Model ?? obj.Type ?? '',
               serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
               internal_code: obj.MachineNo ?? obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
-              category: specs.category ?? 'ovrig',
               fuel_type: 'okand',
               status: 'i_lager',
               sp_id: spId,
-              ...specs,
+              ...definedSpecs,
+              category: definedSpecs.category ?? 'ovrig',
             });
             newCustomerMachines++;
             total.machines++;
