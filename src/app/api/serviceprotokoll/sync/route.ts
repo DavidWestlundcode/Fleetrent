@@ -95,11 +95,15 @@ function parseSpSpecs(obj: any): {
     return undefined;
   };
 
-  // Year: try custom fields first, then Installation date
-  let year = getField('Årsmodell', 'arsmodell', 'year', 'Year');
-  if (!year && obj?.Installation) {
-    const m = String(obj.Installation).match(/^(\d{4})/);
-    if (m) { const y = parseInt(m[1]); if (y > 1900 && y < 2100) year = y; }
+  // Year: try CustomInfo first, then top-level SP fields (ModelYear, ManufactureYear, Arsmodell etc.)
+  let year = getField('Årsmodell', 'Arsmodell', 'ModelYear', 'ManufactureYear', 'year', 'Year');
+  if (!year) {
+    // Check top-level SP object fields for year
+    const topLevelYear = obj?.ModelYear ?? obj?.ManufactureYear ?? obj?.Arsmodell ?? obj?.ArsModell ?? obj?.Year;
+    if (topLevelYear) {
+      const y = parseInt(String(topLevelYear));
+      if (y > 1900 && y < 2100) year = y;
+    }
   }
 
   // Category from SP custom field "Kategori"
@@ -464,9 +468,12 @@ export async function POST(request: NextRequest) {
         debug.skippedNoId = skippedNoId;
         debug.skippedExists = skippedExists;
         debug.removedMachines = removedMachines;
-        debug.firstInstallation = first?.Installation ?? null;
         debug.firstCustomInfo = first?.CustomInfo ?? first?.CustomFields ?? first?.Properties ?? null;
         debug.firstParsedSpecs = first ? parseSpSpecs(first) : null;
+        // Show all top-level scalar fields to find the year key
+        debug.firstAllFields = first ? Object.fromEntries(
+          Object.entries(first).filter(([, v]) => typeof v !== 'object' || v === null)
+        ) : null;
       } catch (e) {
         errors.push(`SP kundmaskiner: ${e instanceof Error ? e.message : String(e)}`);
         debug.error = e instanceof Error ? e.message : String(e);
