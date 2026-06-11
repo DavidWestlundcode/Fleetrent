@@ -472,10 +472,16 @@ export async function POST(request: NextRequest) {
         debug.removedMachines = removedMachines;
         debug.firstCustomInfo = first?.CustomInfo ?? first?.CustomFields ?? first?.Properties ?? null;
         debug.firstParsedSpecs = first ? parseSpSpecs(first) : null;
-        // Show all top-level scalar fields to find the year key
-        debug.firstAllFields = first ? Object.fromEntries(
-          Object.entries(first).filter(([, v]) => typeof v !== 'object' || v === null)
-        ) : null;
+        // Find which top-level field contains a year value across all machines
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const yearFields: Record<string, any> = {};
+        for (const o of customerObjects) {
+          for (const [k, v] of Object.entries(o)) {
+            if (typeof v === 'number' && v > 1900 && v < 2100) yearFields[k] = v;
+            if (typeof v === 'string' && /^(19|20)\d{2}$/.test(v.trim())) yearFields[k] = v;
+          }
+        }
+        debug.yearFields = yearFields;
       } catch (e) {
         errors.push(`SP kundmaskiner: ${e instanceof Error ? e.message : String(e)}`);
         debug.error = e instanceof Error ? e.message : String(e);
