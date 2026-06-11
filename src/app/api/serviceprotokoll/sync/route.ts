@@ -75,6 +75,7 @@ function parseSpSpecs(obj: any): {
   build_height?: number;
   fork_length?: number;
   purchase_price?: number;
+  category?: string;
 } {
   // CustomInfo is an array of { Name, Value } when SP flag includeCustomInfo=true is used
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -101,6 +102,11 @@ function parseSpSpecs(obj: any): {
     if (m) { const y = parseInt(m[1]); if (y > 1900 && y < 2100) year = y; }
   }
 
+  // Category from SP custom field "Kategori"
+  const categoryRaw = customFields.find((f) =>
+    f.Name?.toLowerCase() === 'kategori' || f.Name?.toLowerCase() === 'category'
+  )?.Value;
+
   return {
     year,
     capacity: getField('kapacitet', 'Kapacitet', 'capacity'),
@@ -108,7 +114,27 @@ function parseSpSpecs(obj: any): {
     build_height: getField('Bygghöjd', 'bygghöjd', 'build_height'),
     fork_length: getField('Gafflar', 'gafflar', 'fork_length', 'Gaffelhängd'),
     purchase_price: getField('Inköpspris', 'inköpspris', 'purchase_price'),
+    category: mapSpCategory(categoryRaw),
   };
+}
+
+// Map an SP category string to a FleetRent MachineCategory code
+function mapSpCategory(value: string | null | undefined): string | undefined {
+  if (!value) return undefined;
+  const v = value.trim().toLowerCase()
+    .replace(/[u{00E5}]/g, 'a').replace(/[u{00E4}]/g, 'a').replace(/[u{00F6}]/g, 'o'); // normalize Swedish chars
+  const map: Record<string, string> = {
+    motviktstruck: 'motviktstruck',
+    ledstaplare: 'ledstaplare',
+    skjutstativtruck: 'skjutstativtruck',
+    teleskoplastare: 'teleskoplastare',
+    hjullastare: 'hjullastare',
+    gravmaskin: 'gravmaskin',
+    kompaktlastare: 'kompaktlastare',
+    ovrigt: 'ovrig',
+    ovrig: 'ovrig',
+  };
+  return map[v];
 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function fetchSpMachinesPerCustomer(customerNos: string[], token: string): Promise<Record<string, any[]>> {
@@ -388,7 +414,7 @@ export async function POST(request: NextRequest) {
             model: obj.Model ?? obj.Type ?? '',
             serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
             internal_code: obj.MachineNo ?? obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
-            category: 'ovrig',
+            category: specs.category ?? 'ovrig',
             fuel_type: 'okand',
             status: 'i_lager',
             sp_id: spId,
@@ -514,6 +540,7 @@ export async function GET(request: NextRequest) {
         if (!spId) continue;
         const { data: existing } = await admin.from('machines').select('id').eq('organization_id', org.id).eq('sp_id', spId).maybeSingle();
         if (!existing) {
+          const rentableSpecs = parseSpSpecs(obj);
           await admin.from('machines').insert({
             organization_id: org.id,
             name: obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
@@ -521,10 +548,11 @@ export async function GET(request: NextRequest) {
             model: obj.Model ?? obj.Type ?? '',
             serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
             internal_code: obj.MachineNo ?? obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
-            category: 'ovrig',
+            category: rentableSpecs.category ?? 'ovrig',
             fuel_type: 'okand',
             status: 'i_lager',
             sp_id: spId,
+            ...rentableSpecs,
           });
           newMachines++;
           total.machines++;
@@ -629,7 +657,7 @@ export async function GET(request: NextRequest) {
               model: obj.Model ?? obj.Type ?? '',
               serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
               internal_code: obj.MachineNo ?? obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
-              category: 'ovrig',
+              category: specs.category ?? 'ovrig',
               fuel_type: 'okand',
               status: 'i_lager',
               sp_id: spId,
