@@ -579,9 +579,12 @@ export async function GET(request: NextRequest) {
       }
       console.log(`[SP-sync] ${orgName}: ${newMachines} new machines inserted`);
 
-      // customers
+      // customers — use lastSync for incremental fetch, bulk insert/update to avoid N+1 timeout
+      const { data: orgLastSyncRow } = await admin.from('organizations').select('sp_last_sync').eq('id', org.id).single();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const orgLastSync = (orgLastSyncRow as any)?.sp_last_sync as string | null;
       const [customers, facilities] = await Promise.all([
-        fetchAllPages(`${SP_API}/Customer/Get`, token),
+        fetchAllPages(`${SP_API}/Customer/Get`, token, 200, orgLastSync ?? undefined),
         fetchAllPages(`${SP_API}/Facility/Get`, token, 50).catch(() => []),
       ]);
       console.log(`[SP-sync] ${orgName}: fetched ${customers.length} customers, ${facilities.length} facilities`);
@@ -606,40 +609,66 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      let upsertedCustomers = 0;
-      for (const c of customers) {
-        const spId = String(c.UniqueID ?? c.CustomerNo ?? '');
-        if (!spId || !c.Name) continue;
+      const cronRecords = customers
+        .filter((c: { Name: string; UniqueID: unknown; CustomerNo: unknown }) => c.Name && (c.UniqueID ?? c.CustomerNo))
+        .map((c) => {
+          const spId = String(c.UniqueID ?? c.CustomerNo);
+          const customerNoKey = c.CustomerNo ? String(c.CustomerNo) : null;
+          const customerFacilities = customerNoKey ? (facilityByCustomer[customerNoKey] ?? []) : [];
+          const allContacts = (customerFacilities as { contacts?: { name: string; phone: string; email: string; title: string }[] }[])
+            .flatMap(f => f.contacts ?? []);
+          return {
+            organization_id: org.id,
+            company_name: c.Name,
+            org_number: c.OrganisationNumber ?? '',
+            email: c.InvoiceEmail ?? (allContacts[0]?.email ?? ''),
+            phone: c.Phone ?? (allContacts[0]?.phone ?? ''),
+            contact_person: allContacts[0]?.name ?? '',
+            ...mapCustomerAddresses(c),
+            fortnox_customer_number: c.CustomerNo ? String(c.CustomerNo) : null,
+            contacts: allContacts,
+            facilities: customerFacilities,
+            sp_id: spId,
+          };
+        });
 
-        const customerNoKey = c.CustomerNo ? String(c.CustomerNo) : null;
-        const customerFacilities = customerNoKey ? (facilityByCustomer[customerNoKey] ?? []) : [];
-        const allContacts = (customerFacilities as { contacts?: { name: string; phone: string; email: string; title: string }[] }[])
-          .flatMap(f => f.contacts ?? []);
-
-        const record = {
-          organization_id: org.id,
-          company_name: c.Name,
-          org_number: c.OrganisationNumber ?? '',
-          email: c.InvoiceEmail ?? (allContacts[0]?.email ?? ''),
-          phone: c.Phone ?? (allContacts[0]?.phone ?? ''),
-          contact_person: allContacts[0]?.name ?? '',
-          ...mapCustomerAddresses(c),
-          fortnox_customer_number: c.CustomerNo ? String(c.CustomerNo) : null,
-          contacts: allContacts,
-          facilities: customerFacilities,
-          sp_id: spId,
-        };
-
-        const { data: existing } = await admin.from('customers').select('id').eq('organization_id', org.id).eq('sp_id', spId).maybeSingle();
-        if (!existing) {
-          await admin.from('customers').insert(record);
-        } else {
-          await admin.from('customers').update(record).eq('id', existing.id);
-        }
-        upsertedCustomers++;
-        total.customers++;
+      // Bulk-fetch all existing sp_ids for this org
+      const cronExistingAll: { id: string; sp_id: string }[] = [];
+      let cronSkip = 0;
+      while (true) {
+        const { data: batch } = await admin.from('customers')
+          .select('id, sp_id').eq('organization_id', org.id).not('sp_id', 'is', null)
+          .range(cronSkip, cronSkip + 999);
+        if (!batch || batch.length === 0) break;
+        cronExistingAll.push(...batch as { id: string; sp_id: string }[]);
+        if (batch.length < 1000) break;
+        cronSkip += 1000;
       }
-      console.log(`[SP-sync] ${orgName}: ${upsertedCustomers} customers upserted`);
+      const cronExistingMap = new Map(cronExistingAll.map(r => [String(r.sp_id), String(r.id)]));
+
+      const cronToInsert = cronRecords.filter(r => !cronExistingMap.has(r.sp_id));
+      const cronToUpdate = cronRecords
+        .filter(r => cronExistingMap.has(r.sp_id))
+        .map(r => ({ ...r, id: cronExistingMap.get(r.sp_id)! }));
+
+      const CBATCH = 200;
+      for (let i = 0; i < cronToInsert.length; i += CBATCH) {
+        const { error } = await admin.from('customers').insert(cronToInsert.slice(i, i + CBATCH));
+        if (!error) total.customers += cronToInsert.slice(i, i + CBATCH).length;
+      }
+      for (let i = 0; i < cronToUpdate.length; i += CBATCH) {
+        const batch = cronToUpdate.slice(i, i + CBATCH).map(r => ({
+          id: r.id, company_name: r.company_name, org_number: r.org_number,
+          email: r.email, phone: r.phone, contact_person: r.contact_person,
+          invoice_address: r.invoice_address, delivery_address: r.delivery_address,
+          fortnox_customer_number: r.fortnox_customer_number,
+          contacts: r.contacts, facilities: r.facilities, sp_id: r.sp_id,
+          organization_id: r.organization_id,
+        }));
+        const { error } = await admin.from('customers').upsert(batch, { onConflict: 'id' });
+        if (!error) total.customers += batch.length;
+      }
+      console.log(`[SP-sync] ${orgName}: ${cronToInsert.length} new + ${cronToUpdate.length} updated customers`);
 
       // Import machines linked to the org's own SP customer number
       if (orgSpCustomerNo) {
