@@ -1176,11 +1176,6 @@ export default function LandingPage() {
               <p className="text-[13px] text-slate-500 leading-relaxed max-w-[220px]">
                 Det moderna uthyrningssystemet för maskinföretag i Sverige.
               </p>
-              <div className="flex gap-3 mt-5">
-                {['LinkedIn', 'Twitter'].map((s) => (
-                  <a key={s} href="#" className="text-[12px] text-slate-600 hover:text-slate-300 transition-colors">{s}</a>
-                ))}
-              </div>
             </div>
             {[
               { title: 'Företag', links: [
