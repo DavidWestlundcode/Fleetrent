@@ -472,6 +472,8 @@ export async function POST(request: NextRequest) {
         debug.removedMachines = removedMachines;
         debug.firstCustomInfo = first?.CustomInfo ?? first?.CustomFields ?? first?.Properties ?? null;
         debug.firstParsedSpecs = first ? parseSpSpecs(first) : null;
+        // Full raw dump of first object (all fields including nested) to identify CustomInfo key
+        debug.firstRawFull = first ? JSON.stringify(first).slice(0, 2000) : null;
         // Find which top-level field contains a year value across all machines
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const yearFields: Record<string, any> = {};
