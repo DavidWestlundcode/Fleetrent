@@ -6,7 +6,22 @@ import Header from '@/components/layout/Header';
 import { OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
 import { formatCurrency, formatDate, daysUntil } from '@/lib/utils';
-import type { OrderStatus } from '@/lib/types';
+import type { Order, OrderStatus } from '@/lib/types';
+
+const DAYS_THRESHOLD = 30;
+
+function daysSinceLastInvoice(order: Order): number {
+  const periods = order.invoicePeriods ?? [];
+  const referenceDate = periods.length > 0
+    ? periods.reduce((latest, p) => p.endDate > latest ? p.endDate : latest, periods[0].endDate)
+    : order.startDate;
+  return Math.floor((Date.now() - new Date(referenceDate).getTime()) / 86400000);
+}
+
+function needsPartialInvoice(order: Order): boolean {
+  if (order.status !== 'aktiv') return false;
+  return daysSinceLastInvoice(order) >= DAYS_THRESHOLD;
+}
 import Pagination from '@/components/ui/Pagination';
 
 const PAGE_SIZE = 50;
@@ -14,7 +29,7 @@ const PAGE_SIZE = 50;
 export default function OrdersPage() {
   const { orders, machines, customers, deleteOrder } = useStore();
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all' | '30_dagar'>('all');
   const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
@@ -27,7 +42,10 @@ export default function OrdersPage() {
           o.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
           customer?.companyName.toLowerCase().includes(search.toLowerCase()) ||
           machine?.name.toLowerCase().includes(search.toLowerCase());
-        const matchesStatus = statusFilter === 'all' || o.status === statusFilter;
+        const matchesStatus =
+          statusFilter === 'all' ? true :
+          statusFilter === '30_dagar' ? needsPartialInvoice(o) :
+          o.status === statusFilter;
         return matchesSearch && matchesStatus;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -41,12 +59,14 @@ export default function OrdersPage() {
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { all: orders.length };
     orders.forEach((o) => { counts[o.status] = (counts[o.status] ?? 0) + 1; });
+    counts['30_dagar'] = orders.filter(needsPartialInvoice).length;
     return counts;
   }, [orders]);
 
   const statusLabels: Record<string, string> = {
     all: 'Alla', aktiv: 'Aktiva', reserverad: 'Reserverade',
-    forsenad: 'Försenade', klar_for_fakturering: 'Klar för fakturering',
+    forsenad: 'Försenade', '30_dagar': '30 dagar',
+    klar_for_fakturering: 'Klar för fakturering',
     avslutad: 'Avslutade', annullerad: 'Annullerade',
   };
 
@@ -69,22 +89,29 @@ export default function OrdersPage() {
       <div className="flex-1 p-3 sm:p-6 space-y-4">
         {/* Status Tabs */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          {(['all', 'aktiv', 'reserverad', 'forsenad', 'klar_for_fakturering', 'avslutad', 'annullerad'] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer ${
-                statusFilter === s
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-              }`}
-            >
-              {statusLabels[s]}
-              <span className={`ml-1.5 text-[11px] ${statusFilter === s ? 'text-white/60' : 'text-slate-400'}`}>
-                {statusCounts[s] ?? 0}
-              </span>
-            </button>
-          ))}
+          {(['all', 'aktiv', 'reserverad', 'forsenad', '30_dagar', 'klar_for_fakturering', 'avslutad', 'annullerad'] as const).map((s) => {
+            const count = statusCounts[s] ?? 0;
+            const isThirty = s === '30_dagar';
+            const isActive = statusFilter === s;
+            return (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-1.5 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer ${
+                  isActive
+                    ? isThirty ? 'bg-orange-500 text-white' : 'bg-slate-900 text-white'
+                    : isThirty && count > 0
+                      ? 'bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100'
+                      : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                {statusLabels[s]}
+                <span className={`ml-1.5 text-[11px] ${isActive ? 'text-white/60' : isThirty && count > 0 ? 'text-orange-500 font-semibold' : 'text-slate-400'}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Search */}
