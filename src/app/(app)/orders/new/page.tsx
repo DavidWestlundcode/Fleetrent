@@ -100,6 +100,10 @@ function NewOrderForm() {
   const [newArticleDescription, setNewArticleDescription] = useState('');
   const [articleSearch, setArticleSearch] = useState('');
   const [showArticleDropdown, setShowArticleDropdown] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [machineSearch, setMachineSearch] = useState('');
+  const [showMachineDropdown, setShowMachineDropdown] = useState(false);
 
   // Per-row discounts
   const [dailyDiscount, setDailyDiscount] = useState(0);
@@ -147,6 +151,19 @@ function NewOrderForm() {
     setInsuranceDiscount(template.insuranceDailyDiscount ?? 0);
 
   };
+
+  // Pre-fill search fields from URL params
+  useEffect(() => {
+    if (form.machineId && !machineSearch) {
+      const m = machines.find((x) => x.id === form.machineId);
+      if (m) setMachineSearch(`${m.name}${m.internalCode ? ` (${m.internalCode})` : ''}`);
+    }
+    if (form.customerId && !customerSearch) {
+      const c = customers.find((x) => x.id === form.customerId);
+      if (c) setCustomerSearch(c.companyName);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [machines, customers]);
 
   useEffect(() => {
     if (!form.machineId) { setAutoMatchedTemplate(null); return; }
@@ -274,23 +291,60 @@ function NewOrderForm() {
               <h2 className="text-[14px] font-semibold text-slate-900 mb-4">Kund och maskin</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="Kund *" required>
-                  <select
-                    required
-                    value={form.customerId}
-                    onChange={(e) => {
-                      set('customerId', e.target.value);
-                      set('facilityName', '');
-                      set('ordererName', '');
-                      set('ordererPhone', '');
-                      set('ordererEmail', '');
-                    }}
-                    className={inputClass}
-                  >
-                    <option value="">Välj kund...</option>
-                    {customers.filter(c => c.isActive !== false).map((c) => (
-                      <option key={c.id} value={c.id}>{c.companyName}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={customerSearch}
+                      onChange={(e) => {
+                        setCustomerSearch(e.target.value);
+                        setShowCustomerDropdown(true);
+                        if (!e.target.value) {
+                          set('customerId', '');
+                          set('facilityName', '');
+                          set('ordererName', '');
+                          set('ordererPhone', '');
+                          set('ordererEmail', '');
+                        }
+                      }}
+                      onFocus={() => setShowCustomerDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowCustomerDropdown(false), 150)}
+                      placeholder="Sök kund..."
+                      className={`${inputClass} pl-8`}
+                    />
+                    {showCustomerDropdown && (
+                      <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                        {customers
+                          .filter(c => c.isActive !== false && (
+                            !customerSearch ||
+                            c.companyName.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                            (c.orgNumber ?? '').includes(customerSearch)
+                          ))
+                          .map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onMouseDown={() => {
+                                set('customerId', c.id);
+                                set('facilityName', '');
+                                set('ordererName', '');
+                                set('ordererPhone', '');
+                                set('ordererEmail', '');
+                                setCustomerSearch(c.companyName);
+                                setShowCustomerDropdown(false);
+                              }}
+                              className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 text-left border-b border-slate-100 last:border-0 cursor-pointer"
+                            >
+                              <span className="text-[13px] text-slate-800">{c.companyName}</span>
+                              {c.orgNumber && <span className="text-[11px] text-slate-400 ml-2 shrink-0">{c.orgNumber}</span>}
+                            </button>
+                          ))}
+                        {customers.filter(c => c.isActive !== false && (!customerSearch || c.companyName.toLowerCase().includes(customerSearch.toLowerCase()) || (c.orgNumber ?? '').includes(customerSearch))).length === 0 && (
+                          <p className="px-3 py-3 text-[12px] text-slate-400">Inga kunder hittades</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </Field>
 
                 <Field label="Prismall">
@@ -346,15 +400,55 @@ function NewOrderForm() {
 
                 <div className="md:col-span-2">
                   <Field label="Maskin *" required>
-                    <select required value={form.machineId} onChange={(e) => set('machineId', e.target.value)} className={inputClass}>
-                      <option value="">Välj maskin...</option>
-                      {availableMachines.map((m) => (
-                        <option key={m.id} value={m.id}>{m.name} – {m.brand} {m.model} ({m.internalCode})</option>
-                      ))}
-                      {availableMachines.length === 0 && (
-                        <option disabled>Inga maskiner matchar prismallens krav</option>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={machineSearch}
+                        onChange={(e) => {
+                          setMachineSearch(e.target.value);
+                          setShowMachineDropdown(true);
+                          if (!e.target.value) set('machineId', '');
+                        }}
+                        onFocus={() => setShowMachineDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowMachineDropdown(false), 150)}
+                        placeholder="Sök maskin, kod, serienr..."
+                        className={`${inputClass} pl-8`}
+                      />
+                      {showMachineDropdown && (
+                        <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                          {availableMachines
+                            .filter(m => !machineSearch ||
+                              m.name.toLowerCase().includes(machineSearch.toLowerCase()) ||
+                              (m.internalCode ?? '').toLowerCase().includes(machineSearch.toLowerCase()) ||
+                              (m.serialNumber ?? '').toLowerCase().includes(machineSearch.toLowerCase()) ||
+                              (m.brand ?? '').toLowerCase().includes(machineSearch.toLowerCase()) ||
+                              (m.model ?? '').toLowerCase().includes(machineSearch.toLowerCase())
+                            )
+                            .map((m) => (
+                              <button
+                                key={m.id}
+                                type="button"
+                                onMouseDown={() => {
+                                  set('machineId', m.id);
+                                  setMachineSearch(`${m.name}${m.internalCode ? ` (${m.internalCode})` : ''}`);
+                                  setShowMachineDropdown(false);
+                                }}
+                                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 text-left border-b border-slate-100 last:border-0 cursor-pointer"
+                              >
+                                <div>
+                                  <span className="text-[13px] font-medium text-slate-800">{m.name}</span>
+                                  <span className="ml-2 text-[11px] text-slate-400">{m.brand} {m.model}</span>
+                                </div>
+                                <span className="text-[11px] text-slate-400 font-mono shrink-0 ml-2">{m.internalCode}</span>
+                              </button>
+                            ))}
+                          {availableMachines.filter(m => !machineSearch || m.name.toLowerCase().includes(machineSearch.toLowerCase()) || (m.internalCode ?? '').toLowerCase().includes(machineSearch.toLowerCase()) || (m.serialNumber ?? '').toLowerCase().includes(machineSearch.toLowerCase()) || (m.brand ?? '').toLowerCase().includes(machineSearch.toLowerCase()) || (m.model ?? '').toLowerCase().includes(machineSearch.toLowerCase())).length === 0 && (
+                            <p className="px-3 py-3 text-[12px] text-slate-400">{availableMachines.length === 0 ? 'Inga maskiner matchar prismallens krav' : 'Inga maskiner hittades'}</p>
+                          )}
+                        </div>
                       )}
-                    </select>
+                    </div>
                   </Field>
                   {selectedMachine && (
                     <div className="mt-2 p-3 bg-slate-50 rounded-xl flex items-center gap-3">
