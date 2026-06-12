@@ -128,7 +128,7 @@ function parseSpSpecs(obj: any): {
 function mapSpCategory(value: string | null | undefined): string | undefined {
   if (!value) return undefined;
   const v = value.trim().toLowerCase()
-    .replace(/[u{00E5}]/g, 'a').replace(/[u{00E4}]/g, 'a').replace(/[u{00F6}]/g, 'o'); // normalize Swedish chars
+    .replace(/[åä]/g, 'a').replace(/[ö]/g, 'o');
   const map: Record<string, string> = {
     motviktstruck: 'motviktstruck',
     ledstaplare: 'ledstaplare',
