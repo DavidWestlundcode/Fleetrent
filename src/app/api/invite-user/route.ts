@@ -38,7 +38,8 @@ export async function POST(request: NextRequest) {
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
         email,
         email_confirm: true,
-        user_metadata: { organization_id: profile.organization_id },
+        // Include role in metadata so the DB trigger sets it correctly on profile creation
+        user_metadata: { organization_id: profile.organization_id, role: 'saljare' },
       });
       if (createErr) throw createErr;
       userId = created.user.id;
@@ -47,12 +48,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (userId) {
-      await admin.from('profiles').upsert({
+      const { error: upsertErr } = await admin.from('profiles').upsert({
         id: userId,
         organization_id: profile.organization_id,
         full_name: '',
         role: 'saljare',
       });
+      if (upsertErr) throw new Error(`Kunde inte sätta roll på inbjuden användare: ${upsertErr.message}`);
     }
 
     // Generate recovery link — get the hashed_token directly
