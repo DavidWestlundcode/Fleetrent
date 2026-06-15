@@ -1,4 +1,5 @@
-﻿import Link from 'next/link';
+﻿import type { Metadata } from 'next';
+import Link from 'next/link';
 import {
   Zap, Truck, BarChart3, QrCode, Wrench, Users, CheckCircle,
   ArrowRight, Shield, Clock, TrendingUp, Bell, Search,
@@ -8,6 +9,31 @@ import {
 } from 'lucide-react';
 import { AnimateIn, CountUp } from '@/components/ui/AnimateIn';
 import { Logo } from '@/components/ui/Logo';
+
+export const metadata: Metadata = {
+  title: 'FleetOS – Maskinuthyrningssystem för Sverige',
+  description: 'FleetOS är det moderna uthyrningssystemet för maskinföretag i Sverige. Hantera maskinflotta, uthyrningsordrar, kunder och fakturering – enkelt och effektivt. Integrerat med Fortnox och Serviceprotokoll.',
+  alternates: { canonical: 'https://fleetos.se' },
+  openGraph: {
+    url: 'https://fleetos.se',
+    title: 'FleetOS – Maskinuthyrningssystem för Sverige',
+    description: 'Det moderna uthyrningssystemet för maskinföretag. Hantera flotta, ordrar och fakturering – integrerat med Fortnox.',
+  },
+};
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'FleetOS',
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Web',
+  url: 'https://fleetos.se',
+  description: 'Modernt uthyrningssystem för maskinföretag i Sverige. Hantera maskinflotta, uthyrningsordrar, kunder och fakturering.',
+  offers: { '@type': 'Offer', priceCurrency: 'SEK', price: '0', availability: 'https://schema.org/InStock' },
+  publisher: { '@type': 'Organization', name: 'FleetOS', url: 'https://fleetos.se' },
+  inLanguage: 'sv-SE',
+  keywords: 'maskinuthyrningssystem, uthyrningssystem maskiner, maskinflotta, orderhantering, Fortnox integration',
+};
 
 /* ─── Static data ─────────────────────────────────────────────────── */
 const TESTIMONIALS = [
@@ -518,6 +544,10 @@ function QRReturnMockup() {
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       {/* ── Navbar ── */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
