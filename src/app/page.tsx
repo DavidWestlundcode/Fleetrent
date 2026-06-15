@@ -1074,6 +1074,89 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Integrations ── */}
+      <section className="py-16 sm:py-28 px-4 sm:px-6 bg-white border-t border-slate-100">
+        <div className="max-w-6xl mx-auto">
+          <AnimateIn className="text-center mb-16">
+            <p className="text-[12px] font-semibold text-blue-600 uppercase tracking-widest mb-3">Integrationer</p>
+            <h2 className="text-2xl sm:text-[40px] font-bold text-slate-900 tracking-tight mb-4">Integrera dina system</h2>
+            <p className="text-[16px] text-slate-500 max-w-xl mx-auto">
+              Koppla enkelt ihop FleetOS med ditt befintliga bokföringssystem. Behöver du något annat — vi anpassar integrationer efter dina önskemål.
+            </p>
+          </AnimateIn>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            {/* Fortnox */}
+            <AnimateIn className="relative bg-white rounded-2xl border-2 border-blue-100 p-6 shadow-sm">
+              <div className="absolute top-4 right-4">
+                <span className="px-2 py-0.5 text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-100 rounded-full uppercase tracking-wide">Tillgänglig nu</span>
+              </div>
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mb-4">
+                <FileText className="w-5 h-5 text-blue-600" />
+              </div>
+              <h3 className="text-[15px] font-bold text-slate-900 mb-2">Fortnox</h3>
+              <p className="text-[13px] text-slate-500 leading-relaxed">
+                Skicka order och fakturor direkt till Fortnox med ett knapptryck. Kundregister och kostnadsställen synkroniseras automatiskt.
+              </p>
+              <div className="mt-4 flex items-center gap-1.5 text-[12px] font-medium text-blue-600">
+                <Check className="w-3.5 h-3.5" /> Redo att använda
+              </div>
+            </AnimateIn>
+
+            {/* Serviceprotokoll */}
+            <AnimateIn className="relative bg-white rounded-2xl border-2 border-emerald-100 p-6 shadow-sm">
+              <div className="absolute top-4 right-4">
+                <span className="px-2 py-0.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-full uppercase tracking-wide">Tillgänglig nu</span>
+              </div>
+              <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center mb-4">
+                <RefreshCw className="w-5 h-5 text-emerald-600" />
+              </div>
+              <h3 className="text-[15px] font-bold text-slate-900 mb-2">Serviceprotokoll</h3>
+              <p className="text-[13px] text-slate-500 leading-relaxed">
+                Importera maskiner och kunder direkt från Serviceprotokoll. Flottan hålls synkroniserad automatiskt var 30:e minut.
+              </p>
+              <div className="mt-4 flex items-center gap-1.5 text-[12px] font-medium text-emerald-600">
+                <Check className="w-3.5 h-3.5" /> Redo att använda
+              </div>
+            </AnimateIn>
+
+            {/* Custom */}
+            <AnimateIn className="relative bg-slate-900 rounded-2xl border border-white/10 p-6 shadow-sm">
+              <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mb-4">
+                <Cpu className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-[15px] font-bold text-white mb-2">Skräddarsydda integrationer</h3>
+              <p className="text-[13px] text-slate-400 leading-relaxed">
+                Visma, affärssystem, GPS-tracking, SMS-notiser eller något helt annat — vi bygger det som passar din verksamhet.
+              </p>
+              <div className="mt-4">
+                <a href="mailto:hej@fleetos.se" className="inline-flex items-center gap-1.5 text-[12px] font-medium text-blue-400 hover:text-blue-300 transition-colors">
+                  Kontakta oss <ArrowRight className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            </AnimateIn>
+          </div>
+
+          <AnimateIn className="bg-slate-50 rounded-2xl border border-slate-200 p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shrink-0">
+                <Zap className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-[15px] font-bold text-slate-900">Använder du ett annat system?</p>
+                <p className="text-[13px] text-slate-500 mt-0.5">Vi tittar gärna på möjligheterna tillsammans — de flesta integrationer är klara på kort tid.</p>
+              </div>
+            </div>
+            <a
+              href="mailto:hej@fleetos.se"
+              className="shrink-0 flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-[13px] font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
+            >
+              Hör av dig <ArrowRight className="w-3.5 h-3.5" />
+            </a>
+          </AnimateIn>
+        </div>
+      </section>
+
       {/* ── How it works ── */}
       <section id="how-it-works" className="py-16 sm:py-28 px-4 sm:px-6 bg-slate-50 border-y border-slate-200">
         <div className="max-w-5xl mx-auto">
