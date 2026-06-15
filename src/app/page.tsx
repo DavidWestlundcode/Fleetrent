@@ -1166,24 +1166,6 @@ export default function LandingPage() {
               </div>
             </AnimateIn>
           </div>
-
-          <AnimateIn className="bg-slate-50 rounded-2xl border border-slate-200 p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shrink-0">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-[15px] font-bold text-slate-900">Använder du ett annat system?</p>
-                <p className="text-[13px] text-slate-500 mt-0.5">Vi tittar gärna på möjligheterna tillsammans — de flesta integrationer är klara på kort tid.</p>
-              </div>
-            </div>
-            <a
-              href="mailto:hej@fleetos.se"
-              className="shrink-0 flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-[13px] font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
-            >
-              Hör av dig <ArrowRight className="w-3.5 h-3.5" />
-            </a>
-          </AnimateIn>
         </div>
       </section>
 
