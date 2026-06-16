@@ -560,6 +560,7 @@ export default function LandingPage() {
             {[
               { label: 'Funktioner', href: '#features' },
               { label: 'Hur det fungerar', href: '#how-it-works' },
+              { label: 'Integrationer', href: '#integrations' },
               { label: 'Priser', href: '/priser' },
             ].map(({ label, href }) => (
               <a key={label} href={href} className="px-3 py-1.5 text-[13px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors font-medium">
@@ -1105,7 +1106,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Integrations ── */}
-      <section className="py-16 sm:py-28 px-4 sm:px-6 bg-white border-t border-slate-100 overflow-hidden">
+      <section id="integrations" className="py-16 sm:py-28 px-4 sm:px-6 bg-white border-t border-slate-100 overflow-hidden">
         <style>{`
           @keyframes orbit-cw { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
           @keyframes orbit-ccw { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
