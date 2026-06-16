@@ -1105,66 +1105,110 @@ export default function LandingPage() {
       </section>
 
       {/* ── Integrations ── */}
-      <section className="py-16 sm:py-28 px-4 sm:px-6 bg-white border-t border-slate-100">
+      <section className="py-16 sm:py-28 px-4 sm:px-6 bg-white border-t border-slate-100 overflow-hidden">
+        <style>{`
+          @keyframes orbit-cw { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+          @keyframes orbit-ccw { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+        `}</style>
         <div className="max-w-6xl mx-auto">
           <AnimateIn className="text-center mb-16">
             <p className="text-[12px] font-semibold text-blue-600 uppercase tracking-widest mb-3">Integrationer</p>
             <h2 className="text-2xl sm:text-[40px] font-bold text-slate-900 tracking-tight mb-4">Integrera dina system</h2>
             <p className="text-[16px] text-slate-500 max-w-xl mx-auto">
-              Koppla enkelt ihop FleetOS med ditt befintliga bokföringssystem. Behöver du något annat — vi anpassar integrationer efter dina önskemål.
+              Koppla FleetOS till dina befintliga system. Fortnox, Visma och Serviceprotokoll är klara — behöver du något annat bygger vi det åt dig.
             </p>
           </AnimateIn>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            {/* Fortnox */}
-            <AnimateIn className="relative bg-white rounded-2xl border-2 border-blue-100 p-6 shadow-sm">
-              <div className="absolute top-4 right-4">
-                <span className="px-2 py-0.5 text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-100 rounded-full uppercase tracking-wide">Tillgänglig nu</span>
-              </div>
-              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mb-4">
-                <FileText className="w-5 h-5 text-blue-600" />
-              </div>
-              <h3 className="text-[15px] font-bold text-slate-900 mb-2">Fortnox</h3>
-              <p className="text-[13px] text-slate-500 leading-relaxed">
-                Skicka order och fakturor direkt till Fortnox med ett knapptryck. Kundregister och kostnadsställen synkroniseras automatiskt.
-              </p>
-              <div className="mt-4 flex items-center gap-1.5 text-[12px] font-medium text-blue-600">
-                <Check className="w-3.5 h-3.5" /> Redo att använda
+          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+
+            {/* Orbit visualization */}
+            <AnimateIn className="shrink-0 mx-auto lg:mx-0">
+              <div className="relative" style={{ width: 340, height: 340 }}>
+                {/* Ring lines */}
+                <div className="absolute rounded-full border border-slate-200" style={{ inset: 35 }} />
+                <div className="absolute rounded-full border border-slate-200" style={{ inset: 85 }} />
+
+                {/* Center: FleetOS */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-[60px] h-[60px] bg-white rounded-2xl shadow-md border border-slate-200 flex items-center justify-center">
+                    <span className="text-2xl font-black text-slate-900">F</span>
+                  </div>
+                </div>
+
+                {/* Inner orbit — clockwise 20s — Fortnox + Serviceprotokoll */}
+                {[
+                  { label: 'FTX', title: 'Fortnox', color: '#16a34a', bg: '#dcfce7', border: '#bbf7d0', delay: 0 },
+                  { label: 'SP', title: 'Serviceprotokoll', color: '#c2410c', bg: '#fff7ed', border: '#fed7aa', delay: -10 },
+                ].map(({ label, title, color, bg, border, delay }) => (
+                  <div key={label} title={title} style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0, animation: 'orbit-cw 20s linear infinite', animationDelay: `${delay}s` }}>
+                    <div style={{ position: 'absolute', left: 63, top: -22, animation: 'orbit-ccw 20s linear infinite', animationDelay: `${delay}s` }}>
+                      <div style={{ width: 44, height: 44, borderRadius: 10, background: bg, border: `1.5px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color, letterSpacing: 0.5, boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }}>
+                        {label}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Outer orbit — counter-clockwise 28s — Visma + GPS + Custom */}
+                {[
+                  { label: 'V', title: 'Visma', color: '#1d4ed8', bg: '#eff6ff', border: '#bfdbfe', delay: 0 },
+                  { label: 'GPS', title: 'GPS-tracking', color: '#0d9488', bg: '#f0fdfa', border: '#99f6e4', delay: -9.3 },
+                  { label: '+', title: 'Anpassad integration', color: '#64748b', bg: '#f8fafc', border: '#e2e8f0', delay: -18.7 },
+                ].map(({ label, title, color, bg, border, delay }) => (
+                  <div key={label} title={title} style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0, animation: 'orbit-ccw 28s linear infinite', animationDelay: `${delay}s` }}>
+                    <div style={{ position: 'absolute', left: 113, top: -22, animation: 'orbit-cw 28s linear infinite', animationDelay: `${delay}s` }}>
+                      <div style={{ width: 44, height: 44, borderRadius: 10, background: bg, border: `1.5px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: label === '+' ? 22 : 10, fontWeight: 800, color, letterSpacing: 0.5, boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }}>
+                        {label}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </AnimateIn>
 
-            {/* Serviceprotokoll */}
-            <AnimateIn className="relative bg-white rounded-2xl border-2 border-emerald-100 p-6 shadow-sm">
-              <div className="absolute top-4 right-4">
-                <span className="px-2 py-0.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-full uppercase tracking-wide">Tillgänglig nu</span>
+            {/* Text content */}
+            <AnimateIn className="flex-1 max-w-lg">
+              <div className="space-y-6 mb-8">
+                {[
+                  {
+                    name: 'Fortnox',
+                    badge: 'Tillgänglig nu',
+                    badgeClass: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
+                    desc: 'Skicka order och fakturor direkt till Fortnox. Kundregister och kostnadsställen synkroniseras automatiskt.',
+                  },
+                  {
+                    name: 'Serviceprotokoll',
+                    badge: 'Tillgänglig nu',
+                    badgeClass: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
+                    desc: 'Importera maskiner och kunder från Serviceprotokoll. Flottan synkroniseras automatiskt var 30:e minut.',
+                  },
+                  {
+                    name: 'Visma, GPS & andra system',
+                    badge: 'På begäran',
+                    badgeClass: 'bg-slate-100 text-slate-600 border border-slate-200',
+                    desc: 'Vi anpassar integrationer efter dina önskemål — bokföring, GPS-tracking, SMS-notiser eller något helt annat.',
+                  },
+                ].map(({ name, badge, badgeClass, desc }) => (
+                  <div key={name} className="flex items-start gap-4">
+                    <div className="w-0.5 self-stretch bg-slate-200 rounded-full shrink-0" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="text-[14px] font-bold text-slate-900">{name}</span>
+                        <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${badgeClass}`}>{badge}</span>
+                      </div>
+                      <p className="text-[13px] text-slate-500 leading-relaxed">{desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center mb-4">
-                <RefreshCw className="w-5 h-5 text-emerald-600" />
-              </div>
-              <h3 className="text-[15px] font-bold text-slate-900 mb-2">Serviceprotokoll</h3>
-              <p className="text-[13px] text-slate-500 leading-relaxed">
-                Importera maskiner och kunder direkt från Serviceprotokoll. Flottan hålls synkroniserad automatiskt var 30:e minut.
-              </p>
-              <div className="mt-4 flex items-center gap-1.5 text-[12px] font-medium text-emerald-600">
-                <Check className="w-3.5 h-3.5" /> Redo att använda
-              </div>
+              <a
+                href="mailto:hej@fleetos.se"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-[13px] font-semibold rounded-xl hover:bg-blue-700 transition-colors"
+              >
+                Berätta om din setup <ArrowRight className="w-3.5 h-3.5" />
+              </a>
             </AnimateIn>
 
-            {/* Custom */}
-            <AnimateIn className="relative bg-slate-900 rounded-2xl border border-white/10 p-6 shadow-sm">
-              <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center mb-4">
-                <Cpu className="w-5 h-5 text-white" />
-              </div>
-              <h3 className="text-[15px] font-bold text-white mb-2">Skräddarsydda integrationer</h3>
-              <p className="text-[13px] text-slate-400 leading-relaxed">
-                Visma, affärssystem, GPS-tracking, SMS-notiser eller något helt annat — vi bygger det som passar din verksamhet.
-              </p>
-              <div className="mt-4">
-                <a href="mailto:hej@fleetos.se" className="inline-flex items-center gap-1.5 text-[12px] font-medium text-blue-400 hover:text-blue-300 transition-colors">
-                  Kontakta oss <ArrowRight className="w-3.5 h-3.5" />
-                </a>
-              </div>
-            </AnimateIn>
           </div>
         </div>
       </section>
