@@ -1130,8 +1130,8 @@ export default function LandingPage() {
 
                 {/* Center: FleetOS */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-[60px] h-[60px] bg-white rounded-2xl shadow-md border border-slate-200 flex items-center justify-center">
-                    <span className="text-2xl font-black text-slate-900">F</span>
+                  <div className="w-[64px] h-[64px] bg-white rounded-2xl shadow-md border border-slate-200 flex items-center justify-center p-2">
+                    <Logo size={40} />
                   </div>
                 </div>
 
