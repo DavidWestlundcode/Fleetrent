@@ -1137,27 +1137,27 @@ export default function LandingPage() {
 
                 {/* Inner orbit — clockwise 20s — Fortnox + Serviceprotokoll */}
                 {[
-                  { label: 'FTX', title: 'Fortnox', color: '#16a34a', bg: '#dcfce7', border: '#bbf7d0', delay: 0 },
-                  { label: 'SP', title: 'Serviceprotokoll', color: '#c2410c', bg: '#fff7ed', border: '#fed7aa', delay: -10 },
-                ].map(({ label, title, color, bg, border, delay }) => (
-                  <div key={label} title={title} style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0, animation: 'orbit-cw 20s linear infinite', animationDelay: `${delay}s` }}>
-                    <div style={{ position: 'absolute', left: 63, top: -22, animation: 'orbit-ccw 20s linear infinite', animationDelay: `${delay}s` }}>
-                      <div style={{ width: 44, height: 44, borderRadius: 10, background: bg, border: `1.5px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color, letterSpacing: 0.5, boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }}>
+                  { label: 'Fortnox', bg: '#1e7a3c', fontSize: 8.5, delay: 0 },
+                  { label: 'SP', bg: '#c2500c', fontSize: 15, delay: -10 },
+                ].map(({ label, bg, fontSize, delay }) => (
+                  <div key={label} style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0, animation: 'orbit-cw 20s linear infinite', animationDelay: `${delay}s` }}>
+                    <div style={{ position: 'absolute', left: 59, top: -26, animation: 'orbit-ccw 20s linear infinite', animationDelay: `${delay}s` }}>
+                      <div style={{ width: 52, height: 52, borderRadius: 13, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize, fontWeight: 700, color: '#fff', letterSpacing: 0.2, boxShadow: '0 2px 8px rgba(0,0,0,0.18)' }}>
                         {label}
                       </div>
                     </div>
                   </div>
                 ))}
 
-                {/* Outer orbit — counter-clockwise 28s — Visma + GPS + Custom */}
+                {/* Outer orbit — counter-clockwise 28s — Visma + Zapier + Custom */}
                 {[
-                  { label: 'V', title: 'Visma', color: '#1d4ed8', bg: '#eff6ff', border: '#bfdbfe', delay: 0 },
-                  { label: 'GPS', title: 'GPS-tracking', color: '#0d9488', bg: '#f0fdfa', border: '#99f6e4', delay: -9.3 },
-                  { label: '+', title: 'Anpassad integration', color: '#64748b', bg: '#f8fafc', border: '#e2e8f0', delay: -18.7 },
-                ].map(({ label, title, color, bg, border, delay }) => (
-                  <div key={label} title={title} style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0, animation: 'orbit-ccw 28s linear infinite', animationDelay: `${delay}s` }}>
-                    <div style={{ position: 'absolute', left: 113, top: -22, animation: 'orbit-cw 28s linear infinite', animationDelay: `${delay}s` }}>
-                      <div style={{ width: 44, height: 44, borderRadius: 10, background: bg, border: `1.5px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: label === '+' ? 22 : 10, fontWeight: 800, color, letterSpacing: 0.5, boxShadow: '0 1px 6px rgba(0,0,0,0.08)' }}>
+                  { label: 'Visma', bg: '#1a3190', fontSize: 8.5, delay: 0 },
+                  { label: 'Zapier', bg: '#ff4a00', fontSize: 7.5, delay: -9.3 },
+                  { label: '+', bg: '#334155', fontSize: 24, delay: -18.7 },
+                ].map(({ label, bg, fontSize, delay }) => (
+                  <div key={label} style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0, animation: 'orbit-ccw 28s linear infinite', animationDelay: `${delay}s` }}>
+                    <div style={{ position: 'absolute', left: 109, top: -26, animation: 'orbit-cw 28s linear infinite', animationDelay: `${delay}s` }}>
+                      <div style={{ width: 52, height: 52, borderRadius: 13, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize, fontWeight: 700, color: '#fff', letterSpacing: 0.2, boxShadow: '0 2px 8px rgba(0,0,0,0.18)' }}>
                         {label}
                       </div>
                     </div>
@@ -1201,12 +1201,6 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <a
-                href="mailto:hej@fleetos.se"
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-[13px] font-semibold rounded-xl hover:bg-blue-700 transition-colors"
-              >
-                Berätta om din setup <ArrowRight className="w-3.5 h-3.5" />
-              </a>
             </AnimateIn>
 
           </div>
