@@ -19,9 +19,9 @@ export default function OmOssPage() {
       <div className="not-prose flex items-center justify-center gap-10 sm:gap-16 my-12">
         <div className="flex flex-col items-center gap-3">
           <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border border-slate-200 shadow-sm bg-slate-100">
-            <Image src="/david-profilbild.jpg" alt="David Westlund" width={128} height={128} className="w-full h-full object-cover" />
+            <Image src="/david-profilbild.jpg" alt="David Vestlund" width={128} height={128} className="w-full h-full object-cover" />
           </div>
-          <p className="text-sm font-semibold text-slate-900">David Westlund</p>
+          <p className="text-sm font-semibold text-slate-900">David Vestlund</p>
         </div>
         <div className="flex flex-col items-center gap-3">
           <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border border-slate-200 shadow-sm bg-slate-100">
@@ -33,7 +33,7 @@ export default function OmOssPage() {
 
       <h2>Varför vi startade FleetOS</h2>
       <p className="mb-6">
-        Idén till FleetOS föddes inte i maskinuthyrningsbranschen, utan i tryckbranschen. Det var där David Westlund, en av grundarna, först stötte på problemet: hyror och hyressystem som byggde på lösa Excel-ark, pappersblanketter och manuell uppföljning — system som var krångliga, lätta att göra fel i och nästan omöjliga att få en samlad överblick av.
+        Idén till FleetOS föddes inte i maskinuthyrningsbranschen, utan i truckbranschen. Det var där David Vestlund, en av grundarna, först stötte på problemet: hyror och hyressystem som byggde på lösa Excel-ark, pappersblanketter och manuell uppföljning — system som var krångliga, lätta att göra fel i och nästan omöjliga att få en samlad överblick av.
       </p>
       <p className="mb-6">
         Tanken som föddes där var enkel: <em>&quot;Det här kan man göra bättre.&quot;</em> Den idén blev startskottet för FleetOS — tillsammans med medgrundare Elias Morberg har vi sedan byggt vidare på den för att skapa ett system som faktiskt är anpassat för hur maskinuthyrning fungerar i verkligheten, inte tvärtom.

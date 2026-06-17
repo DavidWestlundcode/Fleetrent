@@ -178,7 +178,7 @@ function DemoSidebar({ active, onNav }: { active: Tab; onNav: (t: Tab) => void }
         <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg">
           <div className="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white text-[11px] font-bold shrink-0">D</div>
           <div className="flex-1 min-w-0">
-            <p className="text-[12.5px] font-medium text-white truncate leading-[1.3]">David Westlund</p>
+            <p className="text-[12.5px] font-medium text-white truncate leading-[1.3]">David Vestlund</p>
             <p className="text-[11px] text-[#4B5568] leading-[1.3]">Admin</p>
           </div>
         </div>
@@ -710,7 +710,7 @@ function InstallningarTab() {
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white text-[15px] font-bold">D</div>
               <div>
-                <p className="text-[14px] font-semibold text-slate-900">David Westlund</p>
+                <p className="text-[14px] font-semibold text-slate-900">David Vestlund</p>
                 <p className="text-[12px] text-slate-400">Admin</p>
               </div>
             </div>
@@ -730,7 +730,7 @@ function InstallningarTab() {
         )}
         {active === 'anvandare' && (
           <div className="divide-y divide-slate-50">
-            {[{ n: 'David Westlund', r: 'Admin' }, { n: 'Anna Karlsson', r: 'Uthyrare' }, { n: 'Mikael Sten', r: 'Lager' }].map((u) => (
+            {[{ n: 'David Vestlund', r: 'Admin' }, { n: 'Anna Karlsson', r: 'Uthyrare' }, { n: 'Mikael Sten', r: 'Lager' }].map((u) => (
               <div key={u.n} className="flex items-center justify-between py-3">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-500 text-[12px] font-bold">{u.n[0]}</div>
