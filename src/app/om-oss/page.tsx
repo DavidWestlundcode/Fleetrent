@@ -25,7 +25,7 @@ export default function OmOssPage() {
         </div>
         <div className="flex flex-col items-center gap-3">
           <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border border-slate-200 shadow-sm bg-slate-100">
-            <Image src="/team/elias.jpg" alt="Elias Morberg" width={128} height={128} className="w-full h-full object-cover" />
+            <Image src="/elias-profilbild.jpg" alt="Elias Morberg" width={128} height={128} className="w-full h-full object-cover" />
           </div>
           <p className="text-sm font-semibold text-slate-900">Elias Morberg</p>
         </div>
