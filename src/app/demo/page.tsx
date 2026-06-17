@@ -4,18 +4,19 @@ import { useState } from 'react';
 import Link from 'next/link';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell, Legend, AreaChart, Area,
 } from 'recharts';
 import {
   LayoutDashboard, Truck, Users, FileText, Tag, Package, BarChart3, Settings,
   AlertTriangle, TrendingUp, Clock, Wrench, CheckCircle2, ArrowRight, Plus,
-  Bell, Search, MapPin, Phone, Mail, Home, ChevronRight, ChevronDown,
+  Bell, Search, Phone, Mail,
+  Shield, Building2, Globe, Link2, Check,
 } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 
-type Tab = 'dashboard' | 'maskiner' | 'kunder' | 'order';
+type Tab = 'dashboard' | 'maskiner' | 'kunder' | 'order' | 'mallar' | 'artiklar' | 'statistik' | 'installningar';
 type MachineStatus = 'i_lager' | 'uthyrd' | 'reserverad' | 'service' | 'skadad';
-type OrderStatus = 'aktiv' | 'avslutad' | 'forsenad' | 'klar_for_fakturering' | 'reserverad';
+type OrderStatus = 'aktiv' | 'avslutad' | 'forsenad' | 'klar_for_fakturering' | 'reserverad' | 'annullerad';
 
 /* ── Fake data ─────────────────────────────────────────────────────── */
 const MACHINES: { id: string; name: string; brand: string; model: string; internalCode: string; category: string; status: MachineStatus; capacity: number; location: string; totalRevenue: number; totalRentals: number; totalRentalDays: number }[] = [
@@ -58,6 +59,23 @@ const REVENUE_DATA = [
   { month: 'maj', revenue: 91000 }, { month: 'jun', revenue: 69500 },
 ];
 
+const TEMPLATES = [
+  { id: 't1', name: 'Motviktstruck 1–2.5 ton', category: 'Motviktstruck', dailyPrice: 850,  weeklyPrice: 4200,  monthlyPrice: 12500, hasLongTerm: true,  hasInsurance: true,  insurancePrice: 95,  customerCount: 4 },
+  { id: 't2', name: 'Hjullastare 4–6 ton',      category: 'Hjullastare',  dailyPrice: 1800, weeklyPrice: 9500,  monthlyPrice: 28000, hasLongTerm: true,  hasInsurance: true,  insurancePrice: 180, customerCount: 2 },
+  { id: 't3', name: 'Grävmaskin 6–10 ton',      category: 'Grävmaskin',   dailyPrice: 2200, weeklyPrice: 11000, monthlyPrice: 32000, hasLongTerm: true,  hasInsurance: true,  insurancePrice: 220, customerCount: 3 },
+  { id: 't4', name: 'Skjutstativtruck',         category: 'Skjutstativtruck', dailyPrice: 650, weeklyPrice: 3200, monthlyPrice: 9500, hasLongTerm: false, hasInsurance: true,  insurancePrice: 70,  customerCount: 5 },
+  { id: 't5', name: 'Teleskoplastare',          category: 'Teleskoplastare',  dailyPrice: 1450, weeklyPrice: 7600, monthlyPrice: 22000, hasLongTerm: true, hasInsurance: false, insurancePrice: 0,   customerCount: 1 },
+];
+
+const ARTICLES = [
+  { id: 'a1', articleNumber: '1001', name: 'Maskinuthyrning – dag',  type: 'Hyra',        unit: 'dag', defaultPrice: 850,  accountNumber: '3041', vatRate: 25, isActive: true },
+  { id: 'a2', articleNumber: '1002', name: 'Maskinförsäkring',       type: 'Försäkring',  unit: 'dag', defaultPrice: 95,   accountNumber: '3042', vatRate: 25, isActive: true },
+  { id: 'a3', articleNumber: '1003', name: 'Transport till/från',    type: 'Transport',   unit: 'st',  defaultPrice: 1200, accountNumber: '3043', vatRate: 25, isActive: true },
+  { id: 'a4', articleNumber: '1004', name: 'Deposition',             type: 'Deposition',  unit: 'st',  defaultPrice: 5000, accountNumber: '2440', vatRate: 0,  isActive: true },
+  { id: 'a5', articleNumber: '1005', name: 'Bränsletillägg',         type: 'Tillägg',     unit: 'st',  defaultPrice: 350,  accountNumber: '3044', vatRate: 25, isActive: true },
+  { id: 'a6', articleNumber: '1006', name: 'Sanering vid retur',     type: 'Tillägg',     unit: 'st',  defaultPrice: 1500, accountNumber: '3045', vatRate: 25, isActive: false },
+];
+
 const machineById = Object.fromEntries(MACHINES.map((m) => [m.id, m]));
 const customerById = Object.fromEntries(CUSTOMERS.map((c) => [c.id, c]));
 
@@ -78,6 +96,7 @@ const OBADGE: Record<OrderStatus, { bg: string; dot: string; label: string }> = 
   forsenad:             { bg: 'bg-red-100 text-red-800',       dot: 'bg-red-500',     label: 'Försenad' },
   klar_for_fakturering: { bg: 'bg-violet-100 text-violet-800', dot: 'bg-violet-500',  label: 'Klar för fakturering' },
   avslutad:             { bg: 'bg-emerald-100 text-emerald-800', dot: 'bg-emerald-500', label: 'Avslutad' },
+  annullerad:           { bg: 'bg-slate-200 text-slate-600',    dot: 'bg-slate-400',   label: 'Annullerad' },
 };
 
 function MBadge({ s }: { s: MachineStatus }) {
@@ -117,15 +136,15 @@ function SC({ title, value, subtitle, icon: Icon, color = 'blue' }: { title: str
 }
 
 /* ── Sidebar ───────────────────────────────────────────────────────── */
-const NAV = [
-  { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { id: 'maskiner',  icon: Truck,           label: 'Maskinflotta' },
-  { id: 'order',     icon: FileText,        label: 'Uthyrningsorder' },
-  { id: 'kunder',    icon: Users,           label: 'Kunder' },
-  { id: '_templates', icon: Tag,            label: 'Prismallar' },
-  { id: '_articles', icon: Package,         label: 'Artikelregister' },
-  { id: '_stats',    icon: BarChart3,       label: 'Statistik' },
-  { id: '_settings', icon: Settings,        label: 'Inställningar' },
+const NAV: { id: Tab; icon: React.ElementType; label: string }[] = [
+  { id: 'dashboard',     icon: LayoutDashboard, label: 'Dashboard' },
+  { id: 'maskiner',      icon: Truck,           label: 'Maskinflotta' },
+  { id: 'order',         icon: FileText,        label: 'Uthyrningsorder' },
+  { id: 'kunder',        icon: Users,           label: 'Kunder' },
+  { id: 'mallar',        icon: Tag,             label: 'Prismallar' },
+  { id: 'artiklar',      icon: Package,         label: 'Artikelregister' },
+  { id: 'statistik',     icon: BarChart3,       label: 'Statistik' },
+  { id: 'installningar', icon: Settings,        label: 'Inställningar' },
 ];
 
 function DemoSidebar({ active, onNav }: { active: Tab; onNav: (t: Tab) => void }) {
@@ -139,12 +158,11 @@ function DemoSidebar({ active, onNav }: { active: Tab; onNav: (t: Tab) => void }
       </div>
       <nav className="flex-1 py-3 px-2.5 space-y-px overflow-y-auto">
         {NAV.map(({ id, icon: Icon, label }) => {
-          const isReal = !id.startsWith('_');
-          const isActive = isReal && id === active;
+          const isActive = id === active;
           return (
             <button
               key={id}
-              onClick={() => isReal && onNav(id as Tab)}
+              onClick={() => onNav(id)}
               className={`relative flex items-center gap-2.5 px-3 py-[7px] rounded-lg text-[13px] font-medium transition-all duration-150 w-full text-left cursor-pointer group ${
                 isActive ? 'text-white bg-white/[0.09]' : 'text-[#8B95A8] hover:text-white hover:bg-white/[0.05]'
               }`}
@@ -393,34 +411,167 @@ function KunderTab() {
 }
 
 /* ── Order tab ─────────────────────────────────────────────────────── */
+const DAYS_THRESHOLD = 30;
+function daysSinceStart(o: (typeof ORDERS)[number]): number {
+  return Math.floor((Date.now() - new Date(o.startDate).getTime()) / 86400000);
+}
+function needsPartialInvoice(o: (typeof ORDERS)[number]): boolean {
+  return o.status === 'aktiv' && daysSinceStart(o) >= DAYS_THRESHOLD;
+}
+
+type OrderFilter = OrderStatus | 'all' | '30_dagar';
+const STATUS_LABELS: Record<OrderFilter, string> = {
+  all: 'Alla', aktiv: 'Aktiva', reserverad: 'Reserverade',
+  forsenad: 'Försenade', '30_dagar': '30 dagar',
+  klar_for_fakturering: 'Klar för fakturering',
+  avslutad: 'Avslutade', annullerad: 'Annullerade',
+};
+const ORDER_FILTERS: OrderFilter[] = ['all', 'aktiv', 'reserverad', 'forsenad', '30_dagar', 'klar_for_fakturering', 'avslutad', 'annullerad'];
+
 function OrderTab() {
+  const [filter, setFilter] = useState<OrderFilter>('all');
+
+  const counts: Record<OrderFilter, number> = {
+    all: ORDERS.length,
+    aktiv: ORDERS.filter((o) => o.status === 'aktiv').length,
+    reserverad: ORDERS.filter((o) => o.status === 'reserverad').length,
+    forsenad: ORDERS.filter((o) => o.status === 'forsenad').length,
+    '30_dagar': ORDERS.filter(needsPartialInvoice).length,
+    klar_for_fakturering: ORDERS.filter((o) => o.status === 'klar_for_fakturering').length,
+    avslutad: ORDERS.filter((o) => o.status === 'avslutad').length,
+    annullerad: ORDERS.filter((o) => o.status === 'annullerad').length,
+  };
+
+  const filtered = ORDERS.filter((o) => {
+    if (filter === 'all') return true;
+    if (filter === '30_dagar') return needsPartialInvoice(o);
+    return o.status === filter;
+  });
+
+  return (
+    <div className="flex-1 p-6 overflow-auto bg-slate-50/60">
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        {ORDER_FILTERS.map((f) => {
+          const isActive = filter === f;
+          const isThirty = f === '30_dagar' && counts[f] > 0;
+          return (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-3 py-1.5 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+                isActive
+                  ? isThirty ? 'bg-orange-600 text-white' : 'bg-blue-600 text-white'
+                  : isThirty ? 'bg-orange-50 text-orange-700 hover:bg-orange-100' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              {STATUS_LABELS[f]}
+              <span className={`text-[10px] font-semibold px-1.5 py-px rounded-full ${isActive ? 'bg-white/20' : isThirty ? 'bg-orange-200/70' : 'bg-slate-100'}`}>{counts[f]}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <h2 className="text-[14px] font-semibold text-slate-900">{STATUS_LABELS[filter]}</h2>
+          <span className="text-[12px] text-slate-400">{filtered.length} order</span>
+        </div>
+        {filtered.length === 0 ? (
+          <div className="px-5 py-10 text-center text-[13px] text-slate-400">Inga order matchar denna filtrering.</div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100">
+                {['Order', 'Kund', 'Maskin', 'Period', 'Belopp', 'Status'].map((h) => (
+                  <th key={h} className="text-left px-5 py-2.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {filtered.map((o) => (
+                <tr key={o.id} className={`hover:bg-slate-50/80 transition-colors cursor-pointer ${o.status === 'forsenad' ? 'bg-red-50/30' : ''}`}>
+                  <td className="px-5 py-3.5">
+                    <p className="text-[13px] font-medium text-slate-800">{o.orderNumber}</p>
+                    {o.orderReference && <p className="text-[11px] text-slate-400 mt-0.5">{o.orderReference}</p>}
+                  </td>
+                  <td className="px-5 py-3.5 text-[13px] text-slate-600">{customerById[o.customerId]?.companyName ?? '–'}</td>
+                  <td className="px-5 py-3.5 text-[13px] text-slate-500">{machineById[o.machineId]?.name ?? '–'}</td>
+                  <td className="px-5 py-3.5 text-[12px] text-slate-400">{o.startDate}<br />→ {o.plannedReturnDate}</td>
+                  <td className="px-5 py-3.5 text-[13px] font-semibold text-slate-700">{fmt(o.totalPrice)}</td>
+                  <td className="px-5 py-3.5"><OBadge s={o.status} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Prismallar tab ────────────────────────────────────────────────── */
+function MallarTab() {
+  return (
+    <div className="flex-1 p-6 overflow-auto bg-slate-50/60">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {TEMPLATES.map((t) => (
+          <div key={t.id} className="bg-white rounded-2xl border border-slate-200/80 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h3 className="text-[14px] font-semibold text-slate-900">{t.name}</h3>
+                <p className="text-[12px] text-slate-400 mt-0.5">{t.category}</p>
+              </div>
+              <Tag className="w-4 h-4 text-slate-300 shrink-0" />
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center mb-3">
+              <div className="bg-slate-50 rounded-lg py-2"><p className="text-[10px] text-slate-400">Dag</p><p className="text-[13px] font-semibold text-slate-700">{fmt(t.dailyPrice)}</p></div>
+              <div className="bg-slate-50 rounded-lg py-2"><p className="text-[10px] text-slate-400">Vecka</p><p className="text-[13px] font-semibold text-slate-700">{fmt(t.weeklyPrice)}</p></div>
+              <div className="bg-slate-50 rounded-lg py-2"><p className="text-[10px] text-slate-400">Månad</p><p className="text-[13px] font-semibold text-slate-700">{fmt(t.monthlyPrice)}</p></div>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {t.hasLongTerm && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">Långtid</span>}
+              {t.hasInsurance && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">Försäkring {fmt(t.insurancePrice)}/dag</span>}
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{t.customerCount} kunder</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Artikelregister tab ───────────────────────────────────────────── */
+function ArtiklarTab() {
   return (
     <div className="flex-1 p-6 overflow-auto bg-slate-50/60">
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h2 className="text-[14px] font-semibold text-slate-900">Alla order</h2>
-          <span className="text-[12px] text-slate-400">{ORDERS.length} order totalt</span>
+          <h2 className="text-[14px] font-semibold text-slate-900">Alla artiklar</h2>
+          <span className="text-[12px] text-slate-400">{ARTICLES.length} artiklar</span>
         </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-100">
-              {['Order', 'Kund', 'Maskin', 'Period', 'Belopp', 'Status'].map((h) => (
+              {['Art.nr', 'Namn', 'Typ', 'Enhet', 'Pris', 'Konto', 'Moms', 'Status'].map((h) => (
                 <th key={h} className="text-left px-5 py-2.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {ORDERS.map((o) => (
-              <tr key={o.id} className={`hover:bg-slate-50/80 transition-colors cursor-pointer ${o.status === 'forsenad' ? 'bg-red-50/30' : ''}`}>
+            {ARTICLES.map((a) => (
+              <tr key={a.id} className="hover:bg-slate-50/80 transition-colors cursor-pointer">
+                <td className="px-5 py-3.5 text-[13px] font-mono text-slate-500">{a.articleNumber}</td>
+                <td className="px-5 py-3.5 text-[13px] font-medium text-slate-800">{a.name}</td>
+                <td className="px-5 py-3.5 text-[12px] text-slate-500">{a.type}</td>
+                <td className="px-5 py-3.5 text-[12px] text-slate-500">{a.unit}</td>
+                <td className="px-5 py-3.5 text-[13px] font-semibold text-slate-700">{fmt(a.defaultPrice)}</td>
+                <td className="px-5 py-3.5 text-[12px] font-mono text-slate-400">{a.accountNumber}</td>
+                <td className="px-5 py-3.5 text-[12px] text-slate-400">{a.vatRate}%</td>
                 <td className="px-5 py-3.5">
-                  <p className="text-[13px] font-medium text-slate-800">{o.orderNumber}</p>
-                  {o.orderReference && <p className="text-[11px] text-slate-400 mt-0.5">{o.orderReference}</p>}
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${a.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                    {a.isActive ? 'Aktiv' : 'Inaktiv'}
+                  </span>
                 </td>
-                <td className="px-5 py-3.5 text-[13px] text-slate-600">{customerById[o.customerId]?.companyName ?? '–'}</td>
-                <td className="px-5 py-3.5 text-[13px] text-slate-500">{machineById[o.machineId]?.name ?? '–'}</td>
-                <td className="px-5 py-3.5 text-[12px] text-slate-400">{o.startDate}<br />→ {o.plannedReturnDate}</td>
-                <td className="px-5 py-3.5 text-[13px] font-semibold text-slate-700">{fmt(o.totalPrice)}</td>
-                <td className="px-5 py-3.5"><OBadge s={o.status} /></td>
               </tr>
             ))}
           </tbody>
@@ -430,12 +581,201 @@ function OrderTab() {
   );
 }
 
+/* ── Statistik tab ─────────────────────────────────────────────────── */
+const CATEGORY_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444'];
+
+function StatistikTab() {
+  const totalRevenue = MACHINES.reduce((s, m) => s + m.totalRevenue, 0);
+  const totalCost = Math.round(totalRevenue * 0.42);
+  const net = totalRevenue - totalCost;
+  const occupancy = 38;
+
+  const byCategory = Object.values(
+    MACHINES.reduce<Record<string, { name: string; value: number }>>((acc, m) => {
+      acc[m.category] ??= { name: m.category, value: 0 };
+      acc[m.category].value += m.totalRevenue;
+      return acc;
+    }, {})
+  );
+
+  const byCustomer = [...CUSTOMERS].sort((a, b) => b.totalSpent - a.totalSpent).map((c) => ({ name: c.companyName.split(' ')[0], value: c.totalSpent }));
+
+  const machineRoi = [...MACHINES].sort((a, b) => b.totalRevenue - a.totalRevenue).map((m) => ({ name: m.internalCode, intakt: m.totalRevenue, kostnad: Math.round(m.totalRevenue * 0.42) }));
+
+  return (
+    <div className="flex-1 p-6 overflow-auto bg-slate-50/60 space-y-5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <SC title="Total intäkt"     value={fmt(totalRevenue)} subtitle="Alla order" icon={TrendingUp} color="green" />
+        <SC title="Total kostnad"    value={fmt(totalCost)}    subtitle="Uppskattad"  icon={Wrench}     color="red" />
+        <SC title="Nettoresultat"    value={fmt(net)}          subtitle="Intäkt − kostnad" icon={BarChart3} color="blue" />
+        <SC title="Beläggningsgrad"  value={`${occupancy}%`}   subtitle="Uthyrda + reserv." icon={CheckCircle2} color="purple" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+          <h2 className="text-[14px] font-semibold text-slate-900 mb-1">Intäkter per månad</h2>
+          <p className="text-[11px] text-slate-400 mb-4">Senaste 12 månader</p>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={REVENUE_DATA} margin={{ top: 0, right: 0, left: -15, bottom: 0 }}>
+              <defs>
+                <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.25} />
+                  <stop offset="100%" stopColor="#3B82F6" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+              <Tooltip formatter={(v) => [fmt(Number(v)), 'Intäkt']} contentStyle={{ borderRadius: 10, border: '1px solid #E2E8F0', fontSize: 12 }} />
+              <Area type="monotone" dataKey="revenue" stroke="#3B82F6" strokeWidth={2} fill="url(#revFill)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+          <h2 className="text-[14px] font-semibold text-slate-900 mb-1">Intäkt per kategori</h2>
+          <p className="text-[11px] text-slate-400 mb-3">Fördelning</p>
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie data={byCategory} cx="50%" cy="50%" innerRadius={48} outerRadius={72} paddingAngle={3} dataKey="value">
+                {byCategory.map((_, i) => <Cell key={i} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />)}
+              </Pie>
+              <Legend iconType="circle" iconSize={7} formatter={(v) => <span style={{ fontSize: 10.5, color: '#64748B' }}>{v}</span>} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+          <h2 className="text-[14px] font-semibold text-slate-900 mb-1">Maskinlönsamhet</h2>
+          <p className="text-[11px] text-slate-400 mb-4">Intäkt vs. kostnad</p>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={machineRoi} margin={{ top: 0, right: 0, left: -15, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+              <Tooltip formatter={(v) => fmt(Number(v))} contentStyle={{ borderRadius: 10, border: '1px solid #E2E8F0', fontSize: 12 }} />
+              <Bar dataKey="intakt" fill="#3B82F6" radius={[5, 5, 0, 0]} name="Intäkt" />
+              <Bar dataKey="kostnad" fill="#F87171" radius={[5, 5, 0, 0]} name="Kostnad" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+          <h2 className="text-[14px] font-semibold text-slate-900 mb-1">Intäkt per kund</h2>
+          <p className="text-[11px] text-slate-400 mb-4">Topp kunder</p>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={byCustomer} layout="vertical" margin={{ top: 0, right: 10, left: 10, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#64748B' }} axisLine={false} tickLine={false} width={70} />
+              <Tooltip formatter={(v) => fmt(Number(v))} contentStyle={{ borderRadius: 10, border: '1px solid #E2E8F0', fontSize: 12 }} />
+              <Bar dataKey="value" fill="#8B5CF6" radius={[0, 5, 5, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Inställningar tab ─────────────────────────────────────────────── */
+function InstallningarTab() {
+  const [active, setActive] = useState<'profil' | 'foretag' | 'anvandare' | 'integrationer'>('profil');
+  const tabs = [
+    { id: 'profil', label: 'Min profil', icon: Users },
+    { id: 'foretag', label: 'Företagsinformation', icon: Building2 },
+    { id: 'anvandare', label: 'Användare', icon: Shield },
+    { id: 'integrationer', label: 'Integrationer', icon: Link2 },
+  ] as const;
+
+  return (
+    <div className="flex-1 p-6 overflow-auto bg-slate-50/60">
+      <div className="flex gap-1.5 mb-4 flex-wrap">
+        {tabs.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActive(id)}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-medium transition-colors cursor-pointer ${
+              active === id ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            <Icon className="w-3.5 h-3.5" /> {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 max-w-2xl">
+        {active === 'profil' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white text-[15px] font-bold">D</div>
+              <div>
+                <p className="text-[14px] font-semibold text-slate-900">David Westlund</p>
+                <p className="text-[12px] text-slate-400">Admin</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-[13px]">
+              <div><p className="text-slate-400 mb-1">E-post</p><p className="font-medium text-slate-700">david@fleetos.se</p></div>
+              <div><p className="text-slate-400 mb-1">Telefon</p><p className="font-medium text-slate-700">070-000 00 00</p></div>
+            </div>
+          </div>
+        )}
+        {active === 'foretag' && (
+          <div className="grid grid-cols-2 gap-4 text-[13px]">
+            <div><p className="text-slate-400 mb-1">Företagsnamn</p><p className="font-medium text-slate-700">Demo Maskinuthyrning AB</p></div>
+            <div><p className="text-slate-400 mb-1">Org.nummer</p><p className="font-medium text-slate-700">556000-0000</p></div>
+            <div><p className="text-slate-400 mb-1">Adress</p><p className="font-medium text-slate-700">Exempelgatan 1, 123 45 Stockholm</p></div>
+            <div><p className="text-slate-400 mb-1">Momsregistrering</p><p className="font-medium text-slate-700">SE556000000001</p></div>
+          </div>
+        )}
+        {active === 'anvandare' && (
+          <div className="divide-y divide-slate-50">
+            {[{ n: 'David Westlund', r: 'Admin' }, { n: 'Anna Karlsson', r: 'Uthyrare' }, { n: 'Mikael Sten', r: 'Lager' }].map((u) => (
+              <div key={u.n} className="flex items-center justify-between py-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-500 text-[12px] font-bold">{u.n[0]}</div>
+                  <p className="text-[13px] font-medium text-slate-800">{u.n}</p>
+                </div>
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{u.r}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {active === 'integrationer' && (
+          <div className="space-y-3">
+            {[{ n: 'Fortnox', d: 'Bokföring & fakturering', c: true }, { n: 'Serviceprotokoll', d: 'Maskinservice & besiktning', c: true }, { n: 'Visma', d: 'Ekonomisystem', c: false }].map((i) => (
+              <div key={i.n} className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-slate-50"><Globe className="w-4 h-4 text-slate-400" /></div>
+                  <div>
+                    <p className="text-[13px] font-medium text-slate-800">{i.n}</p>
+                    <p className="text-[11px] text-slate-400">{i.d}</p>
+                  </div>
+                </div>
+                {i.c ? (
+                  <span className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700"><Check className="w-3 h-3" /> Ansluten</span>
+                ) : (
+                  <span className="text-[11px] font-semibold px-2 py-1 rounded-full bg-slate-100 text-slate-500">Ej ansluten</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ── Page ──────────────────────────────────────────────────────────── */
 const TITLES: Record<Tab, { title: string; subtitle: string }> = {
-  dashboard: { title: 'Dashboard', subtitle: 'onsdag 4 juni 2026' },
-  maskiner:  { title: 'Maskinflotta', subtitle: '8 maskiner registrerade' },
-  kunder:    { title: 'Kunder', subtitle: '6 aktiva kunder' },
-  order:     { title: 'Uthyrningsorder', subtitle: '8 order totalt' },
+  dashboard:     { title: 'Dashboard', subtitle: 'onsdag 17 juni 2026' },
+  maskiner:      { title: 'Maskinflotta', subtitle: '8 maskiner registrerade' },
+  kunder:        { title: 'Kunder', subtitle: '6 aktiva kunder' },
+  order:         { title: 'Uthyrningsorder', subtitle: '8 order totalt' },
+  mallar:        { title: 'Prismallar', subtitle: `${TEMPLATES.length} mallar` },
+  artiklar:      { title: 'Artikelregister', subtitle: `${ARTICLES.length} artiklar` },
+  statistik:     { title: 'Statistik', subtitle: 'Lönsamhet & beläggning' },
+  installningar: { title: 'Inställningar', subtitle: 'Konto, företag & integrationer' },
 };
 
 export default function DemoPage() {
@@ -459,10 +799,14 @@ export default function DemoPage() {
         <DemoSidebar active={tab} onNav={setTab} />
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           <DemoHeader title={title} subtitle={subtitle} />
-          {tab === 'dashboard' && <DashboardTab />}
-          {tab === 'maskiner'  && <MaskinerTab />}
-          {tab === 'kunder'    && <KunderTab />}
-          {tab === 'order'     && <OrderTab />}
+          {tab === 'dashboard'     && <DashboardTab />}
+          {tab === 'maskiner'      && <MaskinerTab />}
+          {tab === 'kunder'        && <KunderTab />}
+          {tab === 'order'         && <OrderTab />}
+          {tab === 'mallar'        && <MallarTab />}
+          {tab === 'artiklar'      && <ArtiklarTab />}
+          {tab === 'statistik'     && <StatistikTab />}
+          {tab === 'installningar' && <InstallningarTab />}
         </div>
       </div>
     </div>
