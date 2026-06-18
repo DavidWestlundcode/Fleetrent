@@ -657,6 +657,15 @@ export default function LandingPage() {
                 <p className="text-[10px] text-slate-400">Toyota 8FBN25</p>
               </div>
             </div>
+            <div className="absolute -bottom-4 right-8 z-20 hidden lg:flex items-center gap-2.5 bg-white rounded-2xl border border-slate-200 shadow-2xl px-3.5 py-2.5 animate-float3">
+              <div className="w-8 h-8 bg-violet-100 rounded-xl flex items-center justify-center shrink-0">
+                <FileSignature className="w-4 h-4 text-violet-600" />
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold text-slate-800">Avtal signerat med BankID</p>
+                <p className="text-[10px] text-slate-400">Lindström Bygg AB</p>
+              </div>
+            </div>
             <DashboardMockup />
           </div>
         </div>
