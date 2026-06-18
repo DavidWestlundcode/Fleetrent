@@ -832,20 +832,26 @@ export const useStore = create<AppStore>()((set, get) => ({
     if (organizationId) {
       const client = sb();
       const newActiveOrders = get().customers.find((c) => c.id === orderData.customerId)?.activeOrders ?? 1;
-      const ops: Promise<{ error: unknown }>[] = [
-        client.from('orders').insert(toDbOrder(newOrder, organizationId)) as unknown as Promise<{ error: unknown }>,
-        client.from('order_events').insert({
-          id: eventId, order_id: id, organization_id: organizationId,
-          type: 'skapad', description: 'Order skapad', timestamp: now, user_id: userId ?? null,
-        }) as unknown as Promise<{ error: unknown }>,
-        client.from('customers').update({ active_orders: newActiveOrders }).eq('id', orderData.customerId) as unknown as Promise<{ error: unknown }>,
-      ];
-      if (!isReservation) {
-        ops.push(client.from('machines').update({ status: 'uthyrd', updated_at: now }).eq('id', orderData.machineId) as unknown as Promise<{ error: unknown }>);
-      }
-      Promise.all(ops).then((results) => {
-        results.forEach((r, i) => {
-          if (r.error) console.error(`sync addOrder[${i}]:`, r.error);
+      // order_events has a FK on order_id, so the order row must commit before it — can't run in the same Promise.all.
+      client.from('orders').insert(toDbOrder(newOrder, organizationId)).then(({ error }) => {
+        if (error) {
+          console.error('sync addOrder[orders]:', error);
+          return;
+        }
+        const ops: Promise<{ error: unknown }>[] = [
+          client.from('order_events').insert({
+            id: eventId, order_id: id, organization_id: organizationId,
+            type: 'skapad', description: 'Order skapad', timestamp: now, user_id: userId ?? null,
+          }) as unknown as Promise<{ error: unknown }>,
+          client.from('customers').update({ active_orders: newActiveOrders }).eq('id', orderData.customerId) as unknown as Promise<{ error: unknown }>,
+        ];
+        if (!isReservation) {
+          ops.push(client.from('machines').update({ status: 'uthyrd', updated_at: now }).eq('id', orderData.machineId) as unknown as Promise<{ error: unknown }>);
+        }
+        Promise.all(ops).then((results) => {
+          results.forEach((r, i) => {
+            if (r.error) console.error(`sync addOrder[${i}]:`, r.error);
+          });
         });
       });
     }
