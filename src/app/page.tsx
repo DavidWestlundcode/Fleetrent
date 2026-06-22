@@ -204,54 +204,56 @@ function DashboardMockup() {
   );
 }
 
-function MobileMockup() {
+function DashboardPhoneMockup() {
   return (
     <div className="relative w-[200px] bg-[#0B1120] border border-white/10 rounded-[28px] overflow-hidden shadow-2xl mx-auto">
       <div className="flex justify-center pt-3 pb-1">
         <div className="w-20 h-5 bg-black rounded-full" />
       </div>
       <div className="px-3 pb-4 space-y-2.5">
-        <div className="text-center">
-          <div className="text-[10px] font-bold text-white">Skanna QR-kod</div>
-          <div className="text-[8px] text-white/40 mt-0.5">Håll kameran mot koden</div>
-        </div>
-        <div className="relative bg-black/60 rounded-xl h-32 flex items-center justify-center overflow-hidden border border-white/10">
-          <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-blue-400 rounded-tl-md" />
-          <div className="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-blue-400 rounded-tr-md" />
-          <div className="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-blue-400 rounded-bl-md" />
-          <div className="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-blue-400 rounded-br-md" />
-          <div className="absolute left-3 right-3 h-px bg-blue-400/70 top-1/2" />
-          <div className="grid grid-cols-5 gap-0.5 opacity-30">
-            {Array.from({ length: 25 }).map((_, i) => (
-              <div key={i} className={`w-2.5 h-2.5 rounded-sm ${[0, 1, 2, 5, 7, 10, 12, 14, 17, 19, 22, 23, 24].includes(i) ? 'bg-white' : 'bg-transparent'}`} />
-            ))}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[11px] font-bold text-white">Dashboard</div>
+            <div className="text-[8px] text-white/40 mt-0.5">Denna månad</div>
+          </div>
+          <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+            <div className="w-1 h-1 rounded-full bg-emerald-400" />
+            <span className="text-[7px] font-semibold text-emerald-400">LIVE</span>
           </div>
         </div>
+
         <div className="bg-white/[0.06] border border-white/[0.08] rounded-xl p-2.5">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-blue-600/30 rounded-lg flex items-center justify-center shrink-0">
-              <Truck className="w-3.5 h-3.5 text-blue-400" />
-            </div>
-            <div>
-              <div className="text-[10px] font-semibold text-white">Toyota 8FBN25</div>
-              <div className="text-[8px] text-white/40">Motviktstruck 2.5T</div>
+          <div className="text-[8px] text-white/40 uppercase tracking-wide">Beläggningsgrad</div>
+          <div className="flex items-end gap-1.5 mt-0.5">
+            <div className="text-[20px] font-bold text-white leading-none">78%</div>
+            <div className="flex items-center gap-0.5 text-emerald-400 text-[9px] font-semibold mb-0.5">
+              <TrendingUp className="w-2.5 h-2.5" /> +9%
             </div>
           </div>
-          <div className="mt-2 grid grid-cols-2 gap-1.5">
-            {[
-              { l: 'Status', v: 'Uthyrd', c: 'text-blue-400' },
-              { l: 'Kund', v: 'Lindström AB', c: 'text-white/60' },
-              { l: 'Order', v: 'ORD-241', c: 'text-white/60' },
-              { l: 'Retur', v: '15 maj', c: 'text-amber-400' },
-            ].map(({ l, v, c }) => (
-              <div key={l}>
-                <div className="text-[7px] text-white/30 uppercase tracking-wide">{l}</div>
-                <div className={`text-[9px] font-medium ${c} mt-0.5`}>{v}</div>
-              </div>
+          <div className="flex items-end gap-1 h-10 mt-2">
+            {[40, 55, 45, 70, 60, 85, 78].map((h, i) => (
+              <div key={i} className={`flex-1 rounded-t-sm ${i === 6 ? 'bg-blue-500' : 'bg-blue-500/25'}`} style={{ height: `${h}%` }} />
             ))}
           </div>
         </div>
-        <button className="w-full bg-blue-600 rounded-xl py-2 text-[10px] font-bold text-white">Registrera retur</button>
+
+        <div className="bg-white/[0.06] border border-white/[0.08] rounded-xl p-2.5">
+          <div className="text-[9px] font-semibold text-white/70 mb-2">Senaste händelser</div>
+          {[
+            { text: 'Ny order skapad', sub: 'Toyota 8FBN25', time: '2 min', color: 'bg-blue-500' },
+            { text: 'Retur registrerad', sub: 'Volvo L60H', time: '18 min', color: 'bg-emerald-500' },
+            { text: 'Faktura skickad', sub: 'Lindström AB', time: '1 h', color: 'bg-violet-500' },
+          ].map(({ text, sub, time, color }) => (
+            <div key={text} className="flex items-center gap-2 py-1.5 border-b border-white/[0.05] last:border-0">
+              <div className={`w-1.5 h-1.5 rounded-full ${color} shrink-0`} />
+              <div className="flex-1 min-w-0">
+                <div className="text-[9px] font-medium text-white/80 truncate">{text}</div>
+                <div className="text-[8px] text-white/30 truncate">{sub}</div>
+              </div>
+              <div className="text-[7px] text-white/25 shrink-0">{time}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -1096,9 +1098,9 @@ export default function LandingPage() {
             {/* Left column */}
             <div className="space-y-10 order-2 lg:order-1">
               {[
-                { title: 'Automatiserade flöden', desc: 'Från offert och avtal till fakturaunderlag — utan manuella mellansteg eller dubbelarbete.' },
-                { title: 'QR-baserad returhantering', desc: 'Retur registreras på sekunder. Verkstadspersonalen skannar koden, ingen inloggning eller telefonsamtal krävs.' },
-                { title: 'Digital signering med BankID', desc: 'Avtal signeras säkert och juridiskt bindande direkt i mobilen, utan papper.' },
+                { title: 'Mer tid för kärnverksamheten', desc: 'Mindre administration betyder mer tid till kunder, maskiner och tillväxt istället för pappersarbete.' },
+                { title: 'Snabbare betalt', desc: 'Order blir fakturaunderlag direkt vid retur — inga glömda debiteringar eller dröjande fakturor.' },
+                { title: 'Högre beläggningsgrad', desc: 'Full överblick över flottan gör det enklare att hyra ut fler maskiner, oftare.' },
               ].map(({ title, desc }) => (
                 <AnimateIn key={title} direction="left">
                   <h3 className="text-[15px] font-semibold text-white mb-2">{title}</h3>
@@ -1109,15 +1111,15 @@ export default function LandingPage() {
 
             {/* Phone */}
             <AnimateIn direction="scale" className="order-1 lg:order-2 mx-auto">
-              <MobileMockup />
+              <DashboardPhoneMockup />
             </AnimateIn>
 
             {/* Right column */}
             <div className="space-y-10 order-3">
               {[
-                { title: 'Realtidsanalys & lönsamhet', desc: 'ROI, beläggningsgrad och intäkter per maskin uppdateras live i dashboarden.' },
-                { title: 'Integrerat med Fortnox & Serviceprotokoll', desc: 'Fakturering och maskindata synkroniseras automatiskt — inga dubbla register.' },
-                { title: 'Byggt för maskinuthyrning', desc: 'Inte en generisk plattform anpassad i efterhand, utan utformad specifikt för branschen.' },
+                { title: 'Färre fel och missförstånd', desc: 'Automatiska flöden minskar risken för manuella misstag och glapp mellan kontor och verkstad.' },
+                { title: 'Nöjdare kunder', desc: 'Tydliga avtal, snabba returer och proffsig hantering stärker förtroendet för er som leverantör.' },
+                { title: 'Väx utan att anställa fler', desc: 'Ett system som skalar med verksamheten utan att administrationen växer i samma takt.' },
               ].map(({ title, desc }) => (
                 <AnimateIn key={title} direction="right">
                   <h3 className="text-[15px] font-semibold text-white mb-2">{title}</h3>
