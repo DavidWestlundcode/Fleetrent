@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import {
   Zap, Truck, BarChart3, QrCode, Wrench, Users, CheckCircle,
-  ArrowRight, Shield, Clock, TrendingUp, Bell, Search,
+  ArrowRight, Shield, TrendingUp, Bell, Search,
   LayoutDashboard, FileText, Tag, Star, Activity, ChevronRight,
   Camera, Sparkles, X, Check, Brain, ArrowUpRight, Database,
   Target, RefreshCw, Cpu, Monitor, Upload, FileSignature, Mail, PenLine, Gauge, FileX2,
@@ -1072,44 +1072,59 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── QR Feature callout ── */}
+      {/* ── 6 reasons ── */}
       <section className="py-16 sm:py-28 px-4 sm:px-6 bg-[#060D1A] relative overflow-hidden border-t border-white/[0.04]">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 right-1/4 w-[500px] h-[400px] bg-blue-600/[0.05] rounded-full blur-[100px]" />
           <div className="absolute bottom-0 left-1/4 w-[400px] h-[300px] bg-violet-600/[0.05] rounded-full blur-[100px]" />
         </div>
-        <div className="max-w-6xl mx-auto relative">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-            <AnimateIn direction="left">
-              <div className="inline-flex items-center gap-2 text-blue-300 text-[12px] font-semibold mb-6">
-                <QrCode className="w-3.5 h-3.5" />
-                QR-returhantering
-              </div>
-              <h2 className="text-2xl sm:text-[40px] font-bold text-white tracking-tight leading-tight mb-5">
-                Retur på sekunder,
-                <br />
-                <span className="text-blue-400">inte minuter</span>
-              </h2>
-              <p className="text-[15px] text-slate-400 leading-relaxed mb-8">
-                Varje maskin får en unik QR-kod. Verkstadspersonalen skannar koden med sin smartphone och registrerar returen direkt – utan inloggning, utan papper, utan telefonsamtal.
-              </p>
-              <div className="space-y-4">
-                {[
-                  { icon: Clock, text: 'Retur registreras på under 10 sekunder' },
-                  { icon: Bell, text: 'Automatisk notis till ansvarig vid retur' },
-                  { icon: Shield, text: 'Fungerar utan internetanslutning' },
-                  { icon: Activity, text: 'Systemet uppdateras i realtid' },
-                ].map(({ icon: Icon, text }) => (
-                  <div key={text} className="flex items-center gap-3">
-                    <Icon className="w-4 h-4 text-blue-400 shrink-0" />
-                    <span className="text-[14px] text-slate-300 font-medium">{text}</span>
-                  </div>
-                ))}
-              </div>
-            </AnimateIn>
-            <AnimateIn direction="right" className="flex justify-center lg:justify-end">
+        <div className="max-w-5xl mx-auto relative">
+          <AnimateIn className="text-center max-w-2xl mx-auto mb-16 sm:mb-20">
+            <div className="inline-flex items-center gap-2 text-blue-300 text-[12px] font-semibold mb-5">
+              <Sparkles className="w-3.5 h-3.5" />
+              Varför FleetOS
+            </div>
+            <h2 className="text-2xl sm:text-[40px] font-bold text-white tracking-tight leading-tight mb-5">
+              6 anledningar att börja använda FleetOS
+            </h2>
+            <p className="text-[15px] text-slate-400 leading-relaxed">
+              Byggt för maskinuthyrare som vill lägga mindre tid på administration och mer tid på det som faktiskt skapar värde.
+            </p>
+          </AnimateIn>
+
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-x-14 gap-y-12 items-center">
+            {/* Left column */}
+            <div className="space-y-10 order-2 lg:order-1">
+              {[
+                { title: 'Automatiserade flöden', desc: 'Från offert och avtal till fakturaunderlag — utan manuella mellansteg eller dubbelarbete.' },
+                { title: 'QR-baserad returhantering', desc: 'Retur registreras på sekunder. Verkstadspersonalen skannar koden, ingen inloggning eller telefonsamtal krävs.' },
+                { title: 'Digital signering med BankID', desc: 'Avtal signeras säkert och juridiskt bindande direkt i mobilen, utan papper.' },
+              ].map(({ title, desc }) => (
+                <AnimateIn key={title} direction="left">
+                  <h3 className="text-[15px] font-semibold text-white mb-2">{title}</h3>
+                  <p className="text-[13px] text-slate-400 leading-relaxed">{desc}</p>
+                </AnimateIn>
+              ))}
+            </div>
+
+            {/* Phone */}
+            <AnimateIn direction="scale" className="order-1 lg:order-2 mx-auto">
               <MobileMockup />
             </AnimateIn>
+
+            {/* Right column */}
+            <div className="space-y-10 order-3">
+              {[
+                { title: 'Realtidsanalys & lönsamhet', desc: 'ROI, beläggningsgrad och intäkter per maskin uppdateras live i dashboarden.' },
+                { title: 'Integrerat med Fortnox & Serviceprotokoll', desc: 'Fakturering och maskindata synkroniseras automatiskt — inga dubbla register.' },
+                { title: 'Byggt för maskinuthyrning', desc: 'Inte en generisk plattform anpassad i efterhand, utan utformad specifikt för branschen.' },
+              ].map(({ title, desc }) => (
+                <AnimateIn key={title} direction="right">
+                  <h3 className="text-[15px] font-semibold text-white mb-2">{title}</h3>
+                  <p className="text-[13px] text-slate-400 leading-relaxed">{desc}</p>
+                </AnimateIn>
+              ))}
+            </div>
           </div>
         </div>
       </section>
