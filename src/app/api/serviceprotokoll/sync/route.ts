@@ -44,7 +44,7 @@ async function fetchAllPages(url: string, token: string, maxPages = 200, lastSyn
   while (page < maxPages) {
     const res = await fetch(`${url}?request.skip=${skip}&request.take=${take}${syncParam}${extraParams}`, {
       headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(30000),
     });
     if (!res.ok) break;
     const data = await res.json();
@@ -342,8 +342,8 @@ export async function POST(request: NextRequest) {
         .filter(r => existingMap.has(r.sp_id))
         .map(r => ({ ...r, id: existingMap.get(r.sp_id)! }));
 
-      // Bulk insert new customers in batches of 200
-      const BATCH = 200;
+      // Bulk insert new customers in batches of 50 — smaller batches avoid PostgREST statement timeout
+      const BATCH = 50;
       for (let i = 0; i < toInsert.length; i += BATCH) {
         const { error } = await admin.from('customers').insert(toInsert.slice(i, i + BATCH));
         if (error) errors.push(`Insert batch ${i}: ${error.message}`);
@@ -381,10 +381,25 @@ export async function POST(request: NextRequest) {
     let debug: Record<string, any> = { spCustomerNo, rawCount: 0, firstObject: null };
     if (spCustomerNo) {
       try {
-        // Try both casing variants since SP API casing is unknown
         const url = `${SP_API}/ServiceObject/Get`;
-        const customerObjects = await fetchAllPages(url, token, 20, undefined, `&request.customerNo=${encodeURIComponent(spCustomerNo)}&request.includeCustomInfo=true`);
+        // includeCustomInfo=true makes each SP page significantly heavier — fetch basic objects first
+        const customerObjects = await fetchAllPages(url, token, 20, undefined, `&request.customerNo=${encodeURIComponent(spCustomerNo)}`);
         debug.rawCount = customerObjects.length;
+
+        // Diagnose: if SP returned 0 objects, do a raw fetch to see the actual HTTP status and body
+        if (customerObjects.length === 0) {
+          try {
+            const diagRes = await fetch(
+              `${url}?request.skip=0&request.take=5&request.customerNo=${encodeURIComponent(spCustomerNo)}`,
+              { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
+            );
+            debug.diagStatus = diagRes.status;
+            debug.diagBody = (await diagRes.text()).slice(0, 800);
+          } catch (diagErr) {
+            debug.diagStatus = 'fetch-error';
+            debug.diagBody = diagErr instanceof Error ? diagErr.message : String(diagErr);
+          }
+        }
         const first = customerObjects[0];
         debug.firstObjectKeys = first ? Object.keys(first) : [];
         debug.firstSpId = first ? String(first.Id ?? first.id ?? first.UniqueID ?? first.ObjectId ?? '') : '';
@@ -444,15 +459,18 @@ export async function POST(request: NextRequest) {
             return admin.from('machines').update(updates).eq('id', id);
           }));
         }
-        // Remove machines no longer linked to this org's customer number in SP
+        // Remove machines no longer linked to this org's customer number in SP.
+        // Guard: if SP returned 0 objects, treat as a fetch failure — never delete on empty result.
         const currentSpIds = new Set(
           customerObjects
             .map((obj) => String(obj.Id ?? obj.id ?? obj.UniqueID ?? obj.ObjectId ?? ''))
             .filter(Boolean),
         );
-        const toRemoveIds = [...existingSpIdMap.entries()]
-          .filter(([spId]) => !currentSpIds.has(spId))
-          .map(([, id]) => id);
+        const toRemoveIds = currentSpIds.size > 0
+          ? [...existingSpIdMap.entries()]
+              .filter(([spId]) => !currentSpIds.has(spId))
+              .map(([, id]) => id)
+          : [];
         let removedMachines = 0;
         if (toRemoveIds.length > 0) {
           // Only delete machines with no orders to avoid orphaning data
@@ -553,29 +571,38 @@ export async function GET(request: NextRequest) {
       });
       console.log(`[SP-sync] ${orgName}: ${rentable.length} tagged as '${RENTABLE_TAG}'`);
 
+      // Bulk-fetch existing sp_ids to avoid N+1 queries
+      const { data: rentableExistingRows } = await admin.from('machines')
+        .select('id, sp_id')
+        .eq('organization_id', org.id)
+        .not('sp_id', 'is', null);
+      const rentableExistingSet = new Set((rentableExistingRows ?? []).map((r) => String(r.sp_id)));
+
       let newMachines = 0;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rentableToInsert: any[] = [];
       for (const obj of rentable) {
         const spId = String(obj.Id ?? obj.id ?? obj.SerialNo ?? '');
-        if (!spId) continue;
-        const { data: existing } = await admin.from('machines').select('id').eq('organization_id', org.id).eq('sp_id', spId).maybeSingle();
-        if (!existing) {
-          const rentableSpecs = parseSpSpecs(obj);
-          await admin.from('machines').insert({
-            organization_id: org.id,
-            name: obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
-            brand: obj.Brand ?? obj.Manufacturer ?? '',
-            model: obj.Model ?? obj.Type ?? '',
-            serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
-            internal_code: obj.MachineNo ?? obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
-            category: rentableSpecs.category ?? 'ovrig',
-            fuel_type: 'okand',
-            status: 'i_lager',
-            sp_id: spId,
-            ...rentableSpecs,
-          });
-          newMachines++;
-          total.machines++;
-        }
+        if (!spId || rentableExistingSet.has(spId)) continue;
+        const rentableSpecs = parseSpSpecs(obj);
+        rentableToInsert.push({
+          organization_id: org.id,
+          name: obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
+          brand: obj.Brand ?? obj.Manufacturer ?? '',
+          model: obj.Model ?? obj.Type ?? '',
+          serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
+          internal_code: obj.MachineNo ?? obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
+          category: rentableSpecs.category ?? 'ovrig',
+          fuel_type: 'okand',
+          status: 'i_lager',
+          sp_id: spId,
+          ...rentableSpecs,
+        });
+      }
+      for (let i = 0; i < rentableToInsert.length; i += 100) {
+        const { error } = await admin.from('machines').insert(rentableToInsert.slice(i, i + 100));
+        if (!error) { newMachines += rentableToInsert.slice(i, i + 100).length; total.machines += rentableToInsert.slice(i, i + 100).length; }
+        else console.error(`[SP-sync] ${orgName}: rentable insert batch ${i}: ${error.message}`);
       }
       console.log(`[SP-sync] ${orgName}: ${newMachines} new machines inserted`);
 
@@ -651,7 +678,7 @@ export async function GET(request: NextRequest) {
         .filter(r => cronExistingMap.has(r.sp_id))
         .map(r => ({ ...r, id: cronExistingMap.get(r.sp_id)! }));
 
-      const CBATCH = 200;
+      const CBATCH = 50;
       for (let i = 0; i < cronToInsert.length; i += CBATCH) {
         const { error } = await admin.from('customers').insert(cronToInsert.slice(i, i + CBATCH));
         if (!error) total.customers += cronToInsert.slice(i, i + CBATCH).length;
@@ -715,15 +742,18 @@ export async function GET(request: NextRequest) {
             total.machines++;
           }
         }
-        // Remove machines no longer linked to this org's customer number in SP
+        // Remove machines no longer linked to this org's customer number in SP.
+        // Guard: if SP returned 0 objects, treat as a fetch failure — never delete on empty result.
         const currentSpIdsCron = new Set(
           customerObjects
             .map((obj) => String(obj.Id ?? obj.id ?? obj.UniqueID ?? ''))
             .filter(Boolean),
         );
-        const toRemoveCron = [...existingMachineMap.entries()]
-          .filter(([spId]) => !currentSpIdsCron.has(spId))
-          .map(([, id]) => id);
+        const toRemoveCron = currentSpIdsCron.size > 0
+          ? [...existingMachineMap.entries()]
+              .filter(([spId]) => !currentSpIdsCron.has(spId))
+              .map(([, id]) => id)
+          : [];
         if (toRemoveCron.length > 0) {
           const { data: withOrdersCron } = await admin.from('orders').select('machine_id').in('machine_id', toRemoveCron);
           const hasOrdersCron = new Set((withOrdersCron ?? []).map((r) => r.machine_id));
