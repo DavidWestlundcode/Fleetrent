@@ -386,18 +386,30 @@ export async function POST(request: NextRequest) {
         const customerObjects = await fetchAllPages(url, token, 20, undefined, `&request.customerNo=${encodeURIComponent(spCustomerNo)}`);
         debug.rawCount = customerObjects.length;
 
-        // Diagnose: if SP returned 0 objects, do a raw fetch to see the actual HTTP status and body
+        // Diagnose: if SP returned 0 objects, test both with and without customerNo
         if (customerObjects.length === 0) {
           try {
             const diagRes = await fetch(
               `${url}?request.skip=0&request.take=5&request.customerNo=${encodeURIComponent(spCustomerNo)}`,
-              { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
+              { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(30000) },
             );
             debug.diagStatus = diagRes.status;
             debug.diagBody = (await diagRes.text()).slice(0, 800);
           } catch (diagErr) {
             debug.diagStatus = 'fetch-error';
             debug.diagBody = diagErr instanceof Error ? diagErr.message : String(diagErr);
+          }
+          // Also test without customerNo — if this works, the problem is specific to customerNo=1000
+          try {
+            const diagBaseRes = await fetch(
+              `${url}?request.skip=0&request.take=3`,
+              { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(30000) },
+            );
+            debug.diagBaseStatus = diagBaseRes.status;
+            debug.diagBaseBody = (await diagBaseRes.text()).slice(0, 400);
+          } catch (diagBaseErr) {
+            debug.diagBaseStatus = 'fetch-error';
+            debug.diagBaseBody = diagBaseErr instanceof Error ? diagBaseErr.message : String(diagBaseErr);
           }
         }
         const first = customerObjects[0];
