@@ -5,11 +5,19 @@ import { createAdminClient } from '@/lib/supabase/admin';
 const SP_API = 'https://app.serviceprotokoll.se/api/v1';
 
 async function getSPToken(integrationKey: string): Promise<string | null> {
-  const res = await fetch(`${SP_API}/Auth/GetToken`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ IntegrationKey: integrationKey }),
-  });
+  const reqBody = JSON.stringify({ IntegrationKey: integrationKey });
+  const reqHeaders = { 'Content-Type': 'application/json' };
+
+  async function doPost(url: string) {
+    return fetch(url, { method: 'POST', headers: reqHeaders, body: reqBody, redirect: 'manual' });
+  }
+
+  let res = await doPost(`${SP_API}/Auth/GetToken`);
+  if (res.status === 301 || res.status === 302 || res.status === 307 || res.status === 308) {
+    const location = res.headers.get('location');
+    if (!location) return null;
+    res = await doPost(location);
+  }
   if (!res.ok) return null;
   const data = await res.json();
   return data.Token ?? null;

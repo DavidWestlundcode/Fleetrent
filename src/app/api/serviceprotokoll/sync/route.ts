@@ -24,17 +24,33 @@ function mapCustomerAddresses(c: any) {
 }
 
 async function getSPToken(integrationKey: string): Promise<{ token: string } | { error: string }> {
-  try {
-    const res = await fetch(`${SP_API}/Auth/GetToken`, {
+  const body = JSON.stringify({ IntegrationKey: integrationKey });
+  const headers = { 'Content-Type': 'application/json' };
+
+  async function doPost(url: string): Promise<Response> {
+    return fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ IntegrationKey: integrationKey }),
+      headers,
+      body,
+      redirect: 'manual',
       signal: AbortSignal.timeout(15000),
     });
-    const body = await res.text();
-    if (!res.ok) return { error: `HTTP ${res.status}: ${body.slice(0, 200)}` };
-    const data = JSON.parse(body);
-    if (!data.Token) return { error: `Inget Token i svar: ${body.slice(0, 200)}` };
+  }
+
+  try {
+    let res = await doPost(`${SP_API}/Auth/GetToken`);
+
+    // Follow redirects manually to preserve POST method (fetch converts POST→GET on 301/302)
+    if (res.status === 301 || res.status === 302 || res.status === 307 || res.status === 308) {
+      const location = res.headers.get('location');
+      if (!location) return { error: `Redirect ${res.status} utan Location-header` };
+      res = await doPost(location);
+    }
+
+    const text = await res.text();
+    if (!res.ok) return { error: `HTTP ${res.status}: ${text.slice(0, 200)}` };
+    const data = JSON.parse(text);
+    if (!data.Token) return { error: `Inget Token i svar: ${text.slice(0, 200)}` };
     return { token: data.Token };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
