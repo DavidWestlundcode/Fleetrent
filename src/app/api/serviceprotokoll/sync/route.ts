@@ -57,6 +57,16 @@ async function getSPToken(integrationKey: string): Promise<{ token: string } | {
   }
 }
 
+async function spGet(url: string, token: string): Promise<Response> {
+  const headers = { Authorization: `Bearer ${token}` };
+  const res = await fetch(url, { headers, redirect: 'manual', signal: AbortSignal.timeout(30000) });
+  if (res.status === 301 || res.status === 302 || res.status === 307 || res.status === 308) {
+    const location = res.headers.get('location');
+    if (location) return fetch(location, { headers, signal: AbortSignal.timeout(30000) });
+  }
+  return res;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function fetchAllPages(url: string, token: string, maxPages = 200, lastSync?: string, extraParams = ''): Promise<any[]> {
   const results = [];
@@ -65,10 +75,7 @@ async function fetchAllPages(url: string, token: string, maxPages = 200, lastSyn
   let page = 0;
   const syncParam = lastSync ? `&request.lastSync=${encodeURIComponent(lastSync)}` : '';
   while (page < maxPages) {
-    const res = await fetch(`${url}?request.skip=${skip}&request.take=${take}${syncParam}${extraParams}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(30000),
-    });
+    const res = await spGet(`${url}?request.skip=${skip}&request.take=${take}${syncParam}${extraParams}`, token);
     if (!res.ok) break;
     const data = await res.json();
     const items = data.Result ?? [];
@@ -178,9 +185,9 @@ async function fetchSpMachinesPerCustomer(customerNos: string[], token: string):
         let skip = 0;
         const take = 100;
         for (let page = 0; page < 3; page++) {
-          const res = await fetch(
+          const res = await spGet(
             `${SP_API}/ServiceObject/Get?request.skip=${skip}&request.take=${take}&request.customerNo=${encodeURIComponent(customerNo)}`,
-            { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(5000) },
+            token,
           );
           if (!res.ok) break;
           const data = await res.json();
@@ -413,9 +420,9 @@ export async function POST(request: NextRequest) {
         // Diagnose: if SP returned 0 objects, test both with and without customerNo
         if (customerObjects.length === 0) {
           try {
-            const diagRes = await fetch(
+            const diagRes = await spGet(
               `${url}?request.skip=0&request.take=5&request.customerNo=${encodeURIComponent(spCustomerNo)}`,
-              { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(30000) },
+              token,
             );
             debug.diagStatus = diagRes.status;
             debug.diagBody = (await diagRes.text()).slice(0, 800);
@@ -425,10 +432,7 @@ export async function POST(request: NextRequest) {
           }
           // Also test without customerNo — if this works, the problem is specific to customerNo=1000
           try {
-            const diagBaseRes = await fetch(
-              `${url}?request.skip=0&request.take=3`,
-              { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(30000) },
-            );
+            const diagBaseRes = await spGet(`${url}?request.skip=0&request.take=3`, token);
             debug.diagBaseStatus = diagBaseRes.status;
             debug.diagBaseBody = (await diagBaseRes.text()).slice(0, 400);
           } catch (diagBaseErr) {

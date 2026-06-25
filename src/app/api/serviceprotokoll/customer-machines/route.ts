@@ -48,13 +48,22 @@ export async function GET(request: NextRequest) {
   const token = await getSPToken(integrationKey);
   if (!token) return NextResponse.json({ error: 'Kunde inte autentisera mot Serviceprotokoll' }, { status: 400 });
 
+  async function spGet(url: string) {
+    const headers = { Authorization: `Bearer ${token}` };
+    const r = await fetch(url, { headers, redirect: 'manual', signal: AbortSignal.timeout(8000) });
+    if (r.status === 301 || r.status === 302 || r.status === 307 || r.status === 308) {
+      const loc = r.headers.get('location');
+      if (loc) return fetch(loc, { headers, signal: AbortSignal.timeout(8000) });
+    }
+    return r;
+  }
+
   const results = [];
   let skip = 0;
   const take = 100;
   while (true) {
-    const res = await fetch(
+    const res = await spGet(
       `${SP_API}/ServiceObject/Get?request.skip=${skip}&request.take=${take}&request.customerNo=${encodeURIComponent(customerNo)}`,
-      { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
     );
     if (!res.ok) break;
     const data = await res.json();
