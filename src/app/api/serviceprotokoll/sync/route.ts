@@ -23,15 +23,22 @@ function mapCustomerAddresses(c: any) {
   };
 }
 
-async function getSPToken(integrationKey: string): Promise<string | null> {
-  const res = await fetch(`${SP_API}/Auth/GetToken`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ IntegrationKey: integrationKey }),
-  });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.Token ?? null;
+async function getSPToken(integrationKey: string): Promise<{ token: string } | { error: string }> {
+  try {
+    const res = await fetch(`${SP_API}/Auth/GetToken`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ IntegrationKey: integrationKey }),
+      signal: AbortSignal.timeout(15000),
+    });
+    const body = await res.text();
+    if (!res.ok) return { error: `HTTP ${res.status}: ${body.slice(0, 200)}` };
+    const data = JSON.parse(body);
+    if (!data.Token) return { error: `Inget Token i svar: ${body.slice(0, 200)}` };
+    return { token: data.Token };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -214,8 +221,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ingen Serviceprotokoll-nyckel konfigurerad' }, { status: 400 });
     }
 
-    const token = await getSPToken(integrationKey);
-    if (!token) return NextResponse.json({ error: 'Kunde inte autentisera mot Serviceprotokoll' }, { status: 400 });
+    const tokenResult = await getSPToken(integrationKey);
+    if ('error' in tokenResult) return NextResponse.json({ error: `Kunde inte autentisera mot Serviceprotokoll: ${tokenResult.error}` }, { status: 400 });
+    const token = tokenResult.token;
 
     let machinesImported = 0;
     let customersImported = 0;
@@ -565,12 +573,13 @@ export async function GET(request: NextRequest) {
 
     console.log(`[SP-sync] Syncing org: ${orgName} (${org.id})`);
 
-    const token = await getSPToken(key);
-    if (!token) {
-      console.error(`[SP-sync] Could not get SP token for org ${orgName} — check integration key`);
+    const tokenResult = await getSPToken(key);
+    if ('error' in tokenResult) {
+      console.error(`[SP-sync] Could not get SP token for org ${orgName}: ${tokenResult.error}`);
       total.errors++;
       continue;
     }
+    const token = tokenResult.token;
 
     try {
       // machines
