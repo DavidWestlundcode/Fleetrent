@@ -413,8 +413,7 @@ export async function POST(request: NextRequest) {
     if (spCustomerNo) {
       try {
         const url = `${SP_API}/ServiceObject/Get`;
-        // includeCustomInfo=true makes each SP page significantly heavier — fetch basic objects first
-        const customerObjects = await fetchAllPages(url, token, 20, undefined, `&request.customerNo=${encodeURIComponent(spCustomerNo)}`);
+        const customerObjects = await fetchAllPages(url, token, 20, undefined, `&request.customerNo=${encodeURIComponent(spCustomerNo)}&request.includeCustomInfo=true`);
         debug.rawCount = customerObjects.length;
 
         // Diagnose: if SP returned 0 objects, test both with and without customerNo
