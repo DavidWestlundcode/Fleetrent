@@ -290,8 +290,11 @@ function SettingsInner() {
     if (!orgId) return;
     setSpKeySaving(true);
     const supabase = createClient();
-    await supabase.from('organizations').update({ sp_integration_key: spKey || null }).eq('id', orgId);
+    const trimmedKey = spKey.trim();
+    const { error } = await supabase.from('organizations').update({ sp_integration_key: trimmedKey || null }).eq('id', orgId);
     setSpKeySaving(false);
+    if (error) { setSpSyncError(`Kunde inte spara nyckel: ${error.message}`); return; }
+    setSpKey(trimmedKey);
     setSpKeySaved(true);
     setTimeout(() => setSpKeySaved(false), 2000);
   };

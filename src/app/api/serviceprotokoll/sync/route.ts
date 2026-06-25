@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
     const admin = createAdminClient();
     const { data: orgRow } = await admin.from('organizations').select('sp_integration_key, sp_last_sync, sp_customer_no').eq('id', orgId).single();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const integrationKey = (orgRow as any)?.sp_integration_key as string | null;
+    const integrationKey = ((orgRow as any)?.sp_integration_key as string | null)?.trim() || null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const lastSync = forceFullSync ? null : ((orgRow as any)?.sp_last_sync as string | null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
