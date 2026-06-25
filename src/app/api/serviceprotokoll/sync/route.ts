@@ -502,17 +502,24 @@ export async function POST(request: NextRequest) {
           }));
         }
         // Remove machines no longer linked to this org's customer number in SP.
-        // Guard: if SP returned 0 objects, treat as a fetch failure — never delete on empty result.
+        // Guard 1: never delete if SP returned 0 objects (treat as fetch failure).
+        // Guard 2: never delete if SP returned fewer than 50% of stored count (partial fetch / SP anomaly).
         const currentSpIds = new Set(
           customerObjects
             .map((obj) => String(obj.Id ?? obj.id ?? obj.UniqueID ?? obj.ObjectId ?? ''))
             .filter(Boolean),
         );
-        const toRemoveIds = currentSpIds.size > 0
+        const storedCount = existingSpIdMap.size;
+        const spReturnedEnough = currentSpIds.size > 0 &&
+          (storedCount === 0 || currentSpIds.size >= storedCount * 0.5);
+        const toRemoveIds = spReturnedEnough
           ? [...existingSpIdMap.entries()]
               .filter(([spId]) => !currentSpIds.has(spId))
               .map(([, id]) => id)
           : [];
+        if (!spReturnedEnough && currentSpIds.size > 0) {
+          errors.push(`Borttagning hoppades över: SP returnerade ${currentSpIds.size} av ${storedCount} maskiner (under 50%)`);
+        }
         let removedMachines = 0;
         if (toRemoveIds.length > 0) {
           // Only delete machines with no orders to avoid orphaning data
@@ -786,13 +793,17 @@ export async function GET(request: NextRequest) {
           }
         }
         // Remove machines no longer linked to this org's customer number in SP.
-        // Guard: if SP returned 0 objects, treat as a fetch failure — never delete on empty result.
+        // Guard 1: never delete if SP returned 0 objects (treat as fetch failure).
+        // Guard 2: never delete if SP returned fewer than 50% of stored count (partial fetch / SP anomaly).
         const currentSpIdsCron = new Set(
           customerObjects
             .map((obj) => String(obj.Id ?? obj.id ?? obj.UniqueID ?? ''))
             .filter(Boolean),
         );
-        const toRemoveCron = currentSpIdsCron.size > 0
+        const storedCronCount = existingMachineMap.size;
+        const cronReturnedEnough = currentSpIdsCron.size > 0 &&
+          (storedCronCount === 0 || currentSpIdsCron.size >= storedCronCount * 0.5);
+        const toRemoveCron = cronReturnedEnough
           ? [...existingMachineMap.entries()]
               .filter(([spId]) => !currentSpIdsCron.has(spId))
               .map(([, id]) => id)
