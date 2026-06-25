@@ -127,15 +127,18 @@ function parseSpSpecs(obj: any): {
     return undefined;
   };
 
-  // Year: try CustomInfo first, then top-level SP fields (ModelYear, ManufactureYear, Arsmodell etc.)
+  // Year: try CustomInfo first, then top-level SP fields, then Installation date
   let year = getField('Årsmodell', 'Arsmodell', 'ModelYear', 'ManufactureYear', 'year', 'Year');
   if (!year) {
-    // Check top-level SP object fields for year
     const topLevelYear = obj?.ModelYear ?? obj?.ManufactureYear ?? obj?.Arsmodell ?? obj?.ArsModell ?? obj?.Year;
     if (topLevelYear) {
       const y = parseInt(String(topLevelYear));
       if (y > 1900 && y < 2100) year = y;
     }
+  }
+  if (!year && obj?.Installation) {
+    const y = parseInt(String(obj.Installation).slice(0, 4));
+    if (y > 1900 && y < 2100) year = y;
   }
 
   // Category from SP custom field "Kategori"
