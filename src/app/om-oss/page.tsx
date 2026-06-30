@@ -12,10 +12,6 @@ export default function OmOssPage() {
       <p className="mb-6">
         Vi grundades med målet att modernisera en bransch där pappersblanketter och kalkylblad fortfarande är norm. Vår plattform ger maskinuthyrare full kontroll över sin flotta — från offert och avtal till fakturering och servicehistorik — i ett och samma system.
       </p>
-      <p className="mb-6">
-        FleetOS används av maskinuthyrare i hela Sverige. Vi bygger nära våra kunder och prioriterar funktioner som löser verkliga problem i vardagen.
-      </p>
-
       <div className="not-prose flex items-center justify-center gap-10 sm:gap-16 my-12">
         <div className="flex flex-col items-center gap-3">
           <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border border-slate-200 shadow-sm bg-slate-100">
