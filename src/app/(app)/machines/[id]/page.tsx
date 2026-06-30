@@ -84,6 +84,9 @@ export default function MachineDetailPage() {
     machine.bucketVolume && { label: 'Skopvolym', value: `${machine.bucketVolume.toLocaleString('sv-SE')} liter` },
     machine.workingWeight && { label: 'Tjänstevikt', value: `${machine.workingWeight.toLocaleString('sv-SE')} kg` },
     machine.enginePower && { label: 'Motoreffekt', value: `${machine.enginePower.toLocaleString('sv-SE')} kW` },
+    machine.mastType && { label: 'Stativ', value: machine.mastType },
+    machine.powerUnit && { label: 'Aggregat', value: machine.powerUnit },
+    machine.cabin && { label: 'Hytt', value: machine.cabin },
   ].filter(Boolean) as { label: string; value: string }[];
 
   const totalCosts = machine.purchasePrice + machine.leasingCost * 12 + machine.financingCost * 12 +

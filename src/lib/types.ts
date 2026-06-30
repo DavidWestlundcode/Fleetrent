@@ -85,6 +85,9 @@ export interface Machine {
   bucketVolume?: number;  // liter – Skopvolym
   workingWeight?: number; // kg – Tjänstevikt
   enginePower?: number;   // kW – Motoreffekt
+  mastType?: string;      // Stativ (t.ex. Duplex, Triplex)
+  powerUnit?: string;     // Aggregat
+  cabin?: string;         // Hytt
   year: number;
   operatingHours: number;
   status: MachineStatus;

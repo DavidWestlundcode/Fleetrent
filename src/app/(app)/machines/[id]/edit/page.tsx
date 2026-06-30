@@ -67,6 +67,25 @@ const SPEC_FIELDS: Record<MachineCategory, { key: string; label: string; unit: s
   ],
 };
 
+// Text specs (not numeric) — only relevant for trucktyper
+const TEXT_SPEC_FIELDS: Partial<Record<MachineCategory, { key: string; label: string }[]>> = {
+  motviktstruck: [
+    { key: 'mastType', label: 'Stativ' },
+    { key: 'powerUnit', label: 'Aggregat' },
+    { key: 'cabin', label: 'Hytt' },
+  ],
+  ledstaplare: [
+    { key: 'mastType', label: 'Stativ' },
+    { key: 'powerUnit', label: 'Aggregat' },
+    { key: 'cabin', label: 'Hytt' },
+  ],
+  skjutstativtruck: [
+    { key: 'mastType', label: 'Stativ' },
+    { key: 'powerUnit', label: 'Aggregat' },
+    { key: 'cabin', label: 'Hytt' },
+  ],
+};
+
 export default function EditMachinePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -82,6 +101,7 @@ export default function EditMachinePage() {
     insuranceCost: 0, serviceCost: 0, otherCosts: 0,
     liftHeight: 0, buildHeight: 0, forkLength: 0, freeLift: 0,
     maxReach: 0, digDepth: 0, bucketVolume: 0, workingWeight: 0, enginePower: 0,
+    mastType: '', powerUnit: '', cabin: '',
   });
 
   useEffect(() => {
@@ -106,6 +126,9 @@ export default function EditMachinePage() {
         bucketVolume: machine.bucketVolume ?? 0,
         workingWeight: machine.workingWeight ?? 0,
         enginePower: machine.enginePower ?? 0,
+        mastType: machine.mastType ?? '',
+        powerUnit: machine.powerUnit ?? '',
+        cabin: machine.cabin ?? '',
       });
     }
   }, [machine]);
@@ -127,11 +150,15 @@ export default function EditMachinePage() {
       bucketVolume: form.bucketVolume || undefined,
       workingWeight: form.workingWeight || undefined,
       enginePower: form.enginePower || undefined,
+      mastType: form.mastType || undefined,
+      powerUnit: form.powerUnit || undefined,
+      cabin: form.cabin || undefined,
     });
     router.push(`/machines/${id}`);
   };
 
   const specFields = SPEC_FIELDS[form.category] ?? [];
+  const textSpecFields = TEXT_SPEC_FIELDS[form.category] ?? [];
 
   return (
     <div className="flex flex-col flex-1 overflow-auto">
@@ -220,6 +247,24 @@ export default function EditMachinePage() {
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none">{unit}</span>
                       </div>
+                    </Field>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {textSpecFields.length > 0 && (
+              <div className="mt-5 pt-5 border-t border-slate-100">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Övriga specifikationer</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {textSpecFields.map(({ key, label }) => (
+                    <Field key={key} label={label}>
+                      <input
+                        value={(form[key as keyof typeof form] as string) || ''}
+                        onChange={(e) => set(key, e.target.value)}
+                        className={inputCls}
+                        placeholder={`T.ex. ${label}`}
+                      />
                     </Field>
                   ))}
                 </div>

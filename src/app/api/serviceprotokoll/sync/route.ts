@@ -107,6 +107,10 @@ function parseSpSpecs(obj: any): {
   build_height?: number;
   fork_length?: number;
   purchase_price?: number;
+  working_weight?: number;
+  mast_type?: string;
+  power_unit?: string;
+  cabin?: string;
   category?: string;
 } {
   // CustomInfo is an array of { Name, Value } when SP flag includeCustomInfo=true is used
@@ -123,6 +127,14 @@ function parseSpSpecs(obj: any): {
         const v = parseNumericValue(entry.Value);
         if (v !== undefined) return v;
       }
+    }
+    return undefined;
+  };
+
+  const getTextField = (...names: string[]): string | undefined => {
+    for (const name of names) {
+      const entry = customFields.find((f) => f.Name?.toLowerCase() === name.toLowerCase());
+      if (entry?.Value && entry.Value.trim() && entry.Value.trim() !== '.') return entry.Value.trim();
     }
     return undefined;
   };
@@ -153,6 +165,10 @@ function parseSpSpecs(obj: any): {
     build_height: getField('Bygghöjd', 'bygghöjd', 'build_height'),
     fork_length: getField('Gafflar', 'gafflar', 'fork_length', 'Gaffelhängd'),
     purchase_price: getField('Inköpspris', 'inköpspris', 'purchase_price'),
+    working_weight: getField('Vikt', 'vikt', 'working_weight'),
+    mast_type: getTextField('Stativ', 'stativ', 'mast_type'),
+    power_unit: getTextField('Aggregat', 'aggregat', 'power_unit'),
+    cabin: getTextField('Hytt', 'hytt', 'cabin'),
     category: mapSpCategory(categoryRaw),
   };
 }
