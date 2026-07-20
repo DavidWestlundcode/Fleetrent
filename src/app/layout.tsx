@@ -11,7 +11,8 @@ export const metadata: Metadata = {
   },
   description: 'FleetOS är det moderna uthyrningssystemet för maskinföretag i Sverige. Hantera maskinflotta, uthyrningsordrar, kunder och fakturering – enkelt och effektivt. Integrerat med Fortnox.',
   keywords: [
-    'maskinuthyrningssystem', 'uthyrningssystem maskiner', 'system maskinuthyrning',
+    'maskinuthyrningssystem', 'affärssystem för maskinuthyrning', 'affärssystem maskinuthyrning',
+    'uthyrningssystem maskiner', 'system maskinuthyrning',
     'hyresorderhantering', 'maskinflotta system', 'truckuthyrning system',
     'uthyrningshantering Sverige', 'maskinuthyrning mjukvara', 'uthyrningsprogram',
     'FleetOS', 'maskinregister', 'orderhantering maskiner',

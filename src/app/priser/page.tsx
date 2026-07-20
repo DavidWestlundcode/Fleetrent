@@ -1,6 +1,75 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Check, ArrowRight, Zap, PenLine } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
+
+export const metadata: Metadata = {
+  title: 'Priser – maskinuthyrningssystem från 2 499 kr/mån',
+  description: 'Se priser för FleetOS, affärssystemet för maskinuthyrning. Basic från 2 499 kr/mån och Premium från 3 999 kr/mån. Ingen bindningstid, hela plattformen inkluderad.',
+  keywords: ['pris maskinuthyrningssystem', 'kostnad affärssystem maskinuthyrning', 'FleetOS pris', 'uthyrningssystem pris'],
+  alternates: { canonical: 'https://fleetos.se/priser' },
+  openGraph: {
+    title: 'Priser – maskinuthyrningssystem från 2 499 kr/mån',
+    description: 'Enkla, transparenta priser för FleetOS. Ingen bindningstid, hela plattformen inkluderad.',
+    url: 'https://fleetos.se/priser',
+  },
+};
+
+const FAQS = [
+  {
+    q: 'Kan jag byta plan?',
+    a: 'Ja, kontakta oss så hjälper vi dig uppgradera eller nedgradera när som helst.',
+  },
+  {
+    q: 'Finns det en bindningstid?',
+    a: 'Nej. Du betalar månad för månad och kan avsluta när du vill.',
+  },
+  {
+    q: 'Ingår support?',
+    a: 'Ja, support via e-post ingår i båda planerna. Premium-kunder får prioriterad hantering.',
+  },
+  {
+    q: 'Hur fungerar e-signeringen?',
+    a: 'E-signering ingår i båda planerna. Du skickar hyresavtalet direkt från FleetOS och kunden signerar digitalt via e-post. En rörlig kostnad tillkommer per skickat avtal — kontakta oss för aktuell prislista.',
+  },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: 'FleetOS',
+  description: 'Maskinuthyrningssystem för uthyrningsföretag i Sverige.',
+  offers: [
+    {
+      '@type': 'Offer',
+      name: 'Basic',
+      priceCurrency: 'SEK',
+      price: '2499',
+      priceValidUntil: `${new Date().getFullYear() + 1}-12-31`,
+      availability: 'https://schema.org/InStock',
+      url: 'https://fleetos.se/priser',
+    },
+    {
+      '@type': 'Offer',
+      name: 'Premium',
+      priceCurrency: 'SEK',
+      price: '3999',
+      priceValidUntil: `${new Date().getFullYear() + 1}-12-31`,
+      availability: 'https://schema.org/InStock',
+      url: 'https://fleetos.se/priser',
+    },
+  ],
+};
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQS.map(({ q, a }) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
+};
 
 const BASIC_FEATURES = [
   'Hela plattformen inkluderad',
@@ -26,6 +95,8 @@ const PREMIUM_FEATURES = [
 export default function PriserPage() {
   return (
     <div className="min-h-screen bg-white">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       {/* Navbar */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -64,7 +135,7 @@ export default function PriserPage() {
               Enkla, transparenta priser
             </h1>
             <p className="text-[17px] text-slate-500 max-w-lg mx-auto leading-relaxed">
-              Välj den plan som passar ditt företag. Ingen bindningstid, ingen installationsavgift.
+              FleetOS är affärssystemet byggt specifikt för maskinuthyrning. Välj den plan som passar ditt företag — ingen bindningstid, ingen installationsavgift.
             </p>
           </div>
 
@@ -149,24 +220,7 @@ export default function PriserPage() {
           <div className="mt-20 max-w-2xl mx-auto">
             <h2 className="text-[24px] font-bold text-slate-900 text-center mb-10">Vanliga frågor</h2>
             <div className="space-y-6">
-              {[
-                {
-                  q: 'Kan jag byta plan?',
-                  a: 'Ja, kontakta oss så hjälper vi dig uppgradera eller nedgradera när som helst.',
-                },
-                {
-                  q: 'Finns det en bindningstid?',
-                  a: 'Nej. Du betalar månad för månad och kan avsluta när du vill.',
-                },
-                {
-                  q: 'Ingår support?',
-                  a: 'Ja, support via e-post ingår i båda planerna. Premium-kunder får prioriterad hantering.',
-                },
-                {
-                  q: 'Hur fungerar e-signeringen?',
-                  a: 'E-signering ingår i båda planerna. Du skickar hyresavtalet direkt från FleetOS och kunden signerar digitalt via e-post. En rörlig kostnad tillkommer per skickat avtal — kontakta oss för aktuell prislista.',
-                },
-              ].map(({ q, a }) => (
+              {FAQS.map(({ q, a }) => (
                 <div key={q} className="border-b border-slate-100 pb-6">
                   <h3 className="font-semibold text-slate-900 mb-2">{q}</h3>
                   <p className="text-[14px] text-slate-500 leading-relaxed">{a}</p>

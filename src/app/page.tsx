@@ -29,10 +29,17 @@ const jsonLd = {
   operatingSystem: 'Web',
   url: 'https://fleetos.se',
   description: 'Modernt uthyrningssystem för maskinföretag i Sverige. Hantera maskinflotta, uthyrningsordrar, kunder och fakturering.',
-  offers: { '@type': 'Offer', priceCurrency: 'SEK', price: '0', availability: 'https://schema.org/InStock' },
+  offers: {
+    '@type': 'AggregateOffer',
+    priceCurrency: 'SEK',
+    lowPrice: '2499',
+    highPrice: '3999',
+    offerCount: '2',
+    availability: 'https://schema.org/InStock',
+  },
   publisher: { '@type': 'Organization', name: 'FleetOS', url: 'https://fleetos.se' },
   inLanguage: 'sv-SE',
-  keywords: 'maskinuthyrningssystem, uthyrningssystem maskiner, maskinflotta, orderhantering, Fortnox integration',
+  keywords: 'maskinuthyrningssystem, affärssystem för maskinuthyrning, uthyrningssystem maskiner, maskinflotta, orderhantering, Fortnox integration',
 };
 
 /* ─── Static data ─────────────────────────────────────────────────── */
