@@ -1,9 +1,8 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Bell, Menu } from 'lucide-react';
-import { useStore } from '@/store';
 import { useMobileNav } from '@/components/layout/MobileNav';
-import NotificationPanel from '@/components/layout/NotificationPanel';
+import NotificationPanel, { useNotifications } from '@/components/layout/NotificationPanel';
 import GlobalSearch from '@/components/layout/GlobalSearch';
 
 interface HeaderProps {
@@ -13,41 +12,10 @@ interface HeaderProps {
 }
 
 export default function Header({ title, subtitle, actions }: HeaderProps) {
-  const { orders, machines, customers } = useStore();
   const { open } = useMobileNav();
   const [showNotifs, setShowNotifs] = useState(false);
-
-  const alertCount = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const in3days = new Date(today);
-    in3days.setDate(in3days.getDate() + 3);
-
-    let count = 0;
-
-    orders.forEach((o) => {
-      if (o.status === 'aktiv' && o.plannedReturnDate) {
-        const ret = new Date(o.plannedReturnDate);
-        ret.setHours(0, 0, 0, 0);
-        if (ret <= in3days) count++;
-      }
-      if (o.status === 'reserverad' && o.startDate) {
-        const start = new Date(o.startDate);
-        start.setHours(0, 0, 0, 0);
-        const diff = Math.round((start.getTime() - today.getTime()) / 86400000);
-        if (diff <= 1) count++;
-      }
-      if (o.status === 'klar_for_fakturering' && !o.sentToAccounting) count++;
-    });
-
-    machines.forEach((m) => {
-      if (m.status === 'service' || m.status === 'skadad') count++;
-    });
-
-    return count;
-  }, [orders, machines]);
+  const { notifications, dismiss } = useNotifications();
+  const alertCount = notifications.length;
 
   return (
     <header className="flex items-center justify-between px-4 md:px-6 h-[56px] bg-white border-b border-slate-100 shrink-0 gap-3">
@@ -78,7 +46,9 @@ export default function Header({ title, subtitle, actions }: HeaderProps) {
               </span>
             )}
           </button>
-          {showNotifs && <NotificationPanel onClose={() => setShowNotifs(false)} />}
+          {showNotifs && (
+            <NotificationPanel notifications={notifications} onDismiss={dismiss} onClose={() => setShowNotifs(false)} />
+          )}
         </div>
         {actions}
       </div>

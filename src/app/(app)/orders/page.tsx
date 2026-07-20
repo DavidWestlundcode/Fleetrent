@@ -2,14 +2,15 @@
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, Search, Trash2, ClipboardList } from 'lucide-react';
+import { Plus, Search, Trash2, ClipboardList, Download, ArrowUp, ArrowDown } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { OrderStatusBadge } from '@/components/ui/StatusBadge';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import EmptyState from '@/components/ui/EmptyState';
+import { exportToCsv } from '@/lib/csv';
 import { useStore } from '@/store';
 import { formatCurrency, formatDate, daysUntil } from '@/lib/utils';
-import type { Order, OrderStatus } from '@/lib/types';
+import type { Order, OrderStatus, Machine, Customer } from '@/lib/types';
 
 const DAYS_THRESHOLD = 30;
 
@@ -29,6 +30,23 @@ import Pagination from '@/components/ui/Pagination';
 
 const PAGE_SIZE = 50;
 
+function SortHeader<K extends string>({ label, column, activeKey, dir, onSort, className = '' }: {
+  label: string; column: K; activeKey: K | null; dir: 'asc' | 'desc'; onSort: (col: K) => void; className?: string;
+}) {
+  const active = activeKey === column;
+  return (
+    <th
+      onClick={() => onSort(column)}
+      className={`text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors ${active ? 'text-slate-700' : 'text-slate-400 hover:text-slate-600'} ${className}`}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {active && (dir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
+      </span>
+    </th>
+  );
+}
+
 type StatusFilter = OrderStatus | 'all' | '30_dagar' | 'returning_soon';
 
 const VALID_STATUSES: OrderStatus[] = ['aktiv', 'reserverad', 'forsenad', 'klar_for_fakturering', 'avslutad', 'annullerad'];
@@ -37,6 +55,18 @@ function isReturningSoon(order: Order): boolean {
   if (order.status !== 'aktiv') return false;
   const days = daysUntil(order.plannedReturnDate);
   return days >= 0 && days <= 7;
+}
+
+function ordersToCsvRows(list: Order[], machines: Machine[], customers: Customer[]) {
+  return list.map((o) => ({
+    Ordernummer: o.orderNumber,
+    Kund: customers.find((c) => c.id === o.customerId)?.companyName ?? '',
+    Maskin: machines.find((m) => m.id === o.machineId)?.name ?? '',
+    Startdatum: o.startDate,
+    'Planerad retur': o.plannedReturnDate,
+    Belopp: o.totalPrice,
+    Status: o.status,
+  }));
 }
 
 function OrdersPageInner() {
@@ -50,7 +80,7 @@ function OrdersPageInner() {
     return 'all';
   });
   const [page, setPage] = useState(1);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; orderNumber: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; orderNumber: string; hasHistory: boolean } | null>(null);
 
   const hasActiveFilters = statusFilter !== 'all' || !!search;
   const clearAllFilters = () => { setStatusFilter('all'); setSearch(''); };
@@ -77,8 +107,58 @@ function OrdersPageInner() {
 
   useEffect(() => { setPage(1); }, [search, statusFilter]);
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  type SortKey = 'orderNumber' | 'startDate' | 'plannedReturnDate' | 'totalPrice';
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir('asc'); }
+  }
+
+  const sorted = useMemo(() => {
+    if (!sortKey) return filtered;
+    const dir = sortDir === 'asc' ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
+      return String(av ?? '').localeCompare(String(bv ?? ''), 'sv') * dir;
+    });
+  }, [filtered, sortKey, sortDir]);
+
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
+  const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  useEffect(() => { setSelected(new Set()); }, [page, filtered]);
+
+  const selectedOrders = orders.filter((o) => selected.has(o.id));
+  const allVisibleSelected = paginated.length > 0 && paginated.every((o) => selected.has(o.id));
+
+  function toggleSelectAllVisible() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) paginated.forEach((o) => next.delete(o.id));
+      else paginated.forEach((o) => next.add(o.id));
+      return next;
+    });
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function bulkDelete() {
+    selected.forEach((id) => deleteOrder(id));
+    setSelected(new Set());
+    setBulkDeleteConfirm(false);
+  }
 
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { all: orders.length };
@@ -100,13 +180,22 @@ function OrdersPageInner() {
         title="Uthyrningsorder"
         subtitle={`${orders.length} order totalt`}
         actions={
-          <Link
-            href="/orders/new"
-            className="flex items-center gap-1.5 px-3.5 py-[7px] bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium rounded-xl shadow-sm transition-all"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Ny order
-          </Link>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => exportToCsv('ordrar.csv', ordersToCsvRows(filtered, machines, customers))}
+              className="flex items-center gap-1.5 px-3.5 py-[7px] bg-white text-slate-700 border border-slate-200 text-[13px] font-medium rounded-xl hover:bg-slate-50 transition-all"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Exportera CSV
+            </button>
+            <Link
+              href="/orders/new"
+              className="flex items-center gap-1.5 px-3.5 py-[7px] bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium rounded-xl shadow-sm transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Ny order
+            </Link>
+          </div>
         }
       />
 
@@ -150,18 +239,47 @@ function OrdersPageInner() {
           />
         </div>
 
+        {/* Bulk actions toolbar */}
+        {selected.size > 0 && (
+          <div className="flex items-center gap-3 flex-wrap bg-slate-900 text-white rounded-xl px-4 py-2.5">
+            <span className="text-[12.5px] font-medium">{selected.size} valda</span>
+            <button onClick={() => setSelected(new Set())} className="text-[12px] text-slate-300 hover:text-white cursor-pointer">
+              Avmarkera
+            </button>
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                onClick={() => exportToCsv('ordrar.csv', ordersToCsvRows(selectedOrders, machines, customers))}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Exportera
+              </button>
+              <button
+                onClick={() => setBulkDeleteConfirm(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium bg-red-600 hover:bg-red-700 rounded-lg transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Ta bort
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Table */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[750px]">
             <thead>
               <tr className="border-b border-slate-100">
-                <th className="text-left px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Ordernr</th>
+                <th className="w-10 px-3 py-3">
+                  <input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectAllVisible} className="cursor-pointer" />
+                </th>
+                <SortHeader label="Ordernr" column="orderNumber" activeKey={sortKey} dir={sortDir} onSort={toggleSort} className="px-5" />
                 <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Kund</th>
                 <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Maskin</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Start</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Retur</th>
-                <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Belopp</th>
+                <SortHeader label="Start" column="startDate" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortHeader label="Retur" column="plannedReturnDate" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                <SortHeader label="Belopp" column="totalPrice" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                 <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Status</th>
                 <th className="px-4 py-3" />
               </tr>
@@ -169,7 +287,7 @@ function OrdersPageInner() {
             <tbody className="divide-y divide-slate-50">
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8}>
+                  <td colSpan={9}>
                     {hasActiveFilters ? (
                       <EmptyState icon={Search} title="Inga träffar" description="Inga ordrar matchar sökningen eller filtret." actionLabel="Rensa filter" onAction={clearAllFilters} />
                     ) : (
@@ -188,6 +306,9 @@ function OrdersPageInner() {
                     key={order.id}
                     className={`hover:bg-slate-50/80 transition-colors group ${isOverdue ? 'bg-red-50/40' : ''}`}
                   >
+                    <td className="px-3 py-3.5">
+                      <input type="checkbox" checked={selected.has(order.id)} onChange={() => toggleSelect(order.id)} className="cursor-pointer" />
+                    </td>
                     <td className="px-5 py-3.5">
                       <span className="text-[13px] font-medium text-slate-800">{order.orderNumber}</span>
                     </td>
@@ -219,7 +340,8 @@ function OrdersPageInner() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setDeleteTarget({ id: order.id, orderNumber: order.orderNumber });
+                            const hasHistory = !!order.actualReturnDate || !!order.sentToAccounting || (order.invoicePeriods?.length ?? 0) > 0;
+                            setDeleteTarget({ id: order.id, orderNumber: order.orderNumber, hasHistory });
                           }}
                           className="p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                         >
@@ -242,9 +364,20 @@ function OrdersPageInner() {
       <ConfirmDialog
         open={!!deleteTarget}
         title="Radera order"
-        message={`Är du säker på att du vill radera order ${deleteTarget?.orderNumber}? Åtgärden kan inte ångras.`}
+        message={
+          deleteTarget?.hasHistory
+            ? `Order ${deleteTarget?.orderNumber} har återlämnings-/faktureringshistorik. Om du raderar den nollställs maskinens och kundens totaler bakåt. Detta går inte att ångra.`
+            : `Är du säker på att du vill radera order ${deleteTarget?.orderNumber}? Åtgärden kan inte ångras.`
+        }
         onConfirm={() => { if (deleteTarget) deleteOrder(deleteTarget.id); setDeleteTarget(null); }}
         onCancel={() => setDeleteTarget(null)}
+      />
+      <ConfirmDialog
+        open={bulkDeleteConfirm}
+        title="Radera ordrar"
+        message={`Är du säker på att du vill radera ${selected.size} order${selected.size !== 1 ? 'er' : ''}? Åtgärden kan inte ångras.`}
+        onConfirm={bulkDelete}
+        onCancel={() => setBulkDeleteConfirm(false)}
       />
     </div>
   );

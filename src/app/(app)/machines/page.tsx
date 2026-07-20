@@ -2,10 +2,12 @@
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, LayoutGrid, LayoutList, Truck, Sparkles, X, Loader2, Search, Lock, SlidersHorizontal, ChevronDown } from 'lucide-react';
+import { Plus, LayoutGrid, LayoutList, Truck, Sparkles, X, Loader2, Search, Lock, SlidersHorizontal, ChevronDown, Download, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { MachineStatusBadge } from '@/components/ui/StatusBadge';
 import EmptyState from '@/components/ui/EmptyState';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { exportToCsv } from '@/lib/csv';
 import { useStore } from '@/store';
 import { formatCurrency } from '@/lib/utils';
 import { CATEGORY_LABELS, FUEL_LABELS, type MachineStatus, type Machine, type MachineCategory, type FuelType } from '@/lib/types';
@@ -13,6 +15,23 @@ import type { SearchCriteria } from '@/app/api/search-machines/route';
 import Pagination from '@/components/ui/Pagination';
 
 const PAGE_SIZE = 50;
+
+function SortHeader<K extends string>({ label, column, activeKey, dir, onSort, className = '' }: {
+  label: string; column: K; activeKey: K | null; dir: 'asc' | 'desc'; onSort: (col: K) => void; className?: string;
+}) {
+  const active = activeKey === column;
+  return (
+    <th
+      onClick={() => onSort(column)}
+      className={`text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors ${active ? 'text-slate-700' : 'text-slate-400 hover:text-slate-600'} ${className}`}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {active && (dir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
+      </span>
+    </th>
+  );
+}
 
 const EXAMPLES = [
   'Motviktstruck, el, kapacitet max 2000 kg',
@@ -90,7 +109,7 @@ const VALID_MACHINE_STATUSES: MachineStatus[] = ['i_lager', 'uthyrd', 'reservera
 
 function MachinesPageInner() {
   const searchParams = useSearchParams();
-  const { machines, orders, maxMachines } = useStore();
+  const { machines, orders, maxMachines, updateMachine, deleteMachine } = useStore();
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -121,6 +140,7 @@ function MachinesPageInner() {
   const emptyRange = (): NumRange => ({ min: '', max: '' });
   const [categories, setCategories] = useState<Set<MachineCategory>>(new Set());
   const [fuels, setFuels] = useState<Set<FuelType>>(new Set());
+  const [locationFilter, setLocationFilter] = useState('');
   const [capacity, setCapacity] = useState<NumRange>(emptyRange());
   const [liftHeight, setLiftHeight] = useState<NumRange>(emptyRange());
   const [buildHeight, setBuildHeight] = useState<NumRange>(emptyRange());
@@ -133,8 +153,13 @@ function MachinesPageInner() {
   const [enginePower, setEnginePower] = useState<NumRange>(emptyRange());
   const [year, setYear] = useState<NumRange>(emptyRange());
 
+  const machineLocations = useMemo(
+    () => Array.from(new Set(machines.map((m) => m.location).filter(Boolean))).sort(),
+    [machines]
+  );
+
   const activeManualFilterCount = [
-    categories.size > 0, fuels.size > 0,
+    categories.size > 0, fuels.size > 0, !!locationFilter,
     capacity.min || capacity.max, liftHeight.min || liftHeight.max,
     buildHeight.min || buildHeight.max, forkLength.min || forkLength.max,
     freeLift.min || freeLift.max, maxReach.min || maxReach.max,
@@ -144,7 +169,7 @@ function MachinesPageInner() {
   ].filter(Boolean).length;
 
   function clearManualFilters() {
-    setCategories(new Set()); setFuels(new Set());
+    setCategories(new Set()); setFuels(new Set()); setLocationFilter('');
     setCapacity(emptyRange()); setLiftHeight(emptyRange());
     setBuildHeight(emptyRange()); setForkLength(emptyRange());
     setFreeLift(emptyRange()); setMaxReach(emptyRange());
@@ -246,6 +271,7 @@ function MachinesPageInner() {
     // Manual filters
     if (categories.size > 0) result = result.filter((m) => categories.has(m.category));
     if (fuels.size > 0) result = result.filter((m) => fuels.has(m.fuelType));
+    if (locationFilter) result = result.filter((m) => m.location === locationFilter);
     result = result.filter((m) =>
       applyRange(m.capacity, capacity) &&
       applyRange(m.liftHeight, liftHeight) &&
@@ -261,15 +287,74 @@ function MachinesPageInner() {
     );
     return result;
   }, [machines, statusFilter, aiActive, aiCriteria, textSearch,
-      categories, fuels, capacity, liftHeight, buildHeight, forkLength,
+      categories, fuels, locationFilter, capacity, liftHeight, buildHeight, forkLength,
       freeLift, maxReach, digDepth, bucketVolume, workingWeight, enginePower, year]);
 
   useEffect(() => { setPage(1); }, [statusFilter, aiActive, textSearch,
-    categories, fuels, capacity, liftHeight, buildHeight, forkLength,
+    categories, fuels, locationFilter, capacity, liftHeight, buildHeight, forkLength,
     freeLift, maxReach, digDepth, bucketVolume, workingWeight, enginePower, year]);
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  type SortKey = 'name' | 'category' | 'capacity' | 'operatingHours' | 'totalRevenue' | 'totalRentals';
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir('asc'); }
+  }
+
+  const sorted = useMemo(() => {
+    if (!sortKey) return filtered;
+    const dir = sortDir === 'asc' ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      const av = sortKey === 'category' ? CATEGORY_LABELS[a.category] : a[sortKey];
+      const bv = sortKey === 'category' ? CATEGORY_LABELS[b.category] : b[sortKey];
+      if (typeof av === 'string' || typeof bv === 'string') return String(av).localeCompare(String(bv), 'sv') * dir;
+      return ((av as number) - (bv as number)) * dir;
+    });
+  }, [filtered, sortKey, sortDir]);
+
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
+  const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  useEffect(() => { setSelected(new Set()); }, [page, filtered]);
+
+  const selectedMachines = machines.filter((m) => selected.has(m.id));
+  const allVisibleSelected = paginated.length > 0 && paginated.every((m) => selected.has(m.id));
+
+  function toggleSelectAllVisible() {
+    setSelected((prev) => {
+      if (allVisibleSelected) {
+        const next = new Set(prev);
+        paginated.forEach((m) => next.delete(m.id));
+        return next;
+      }
+      const next = new Set(prev);
+      paginated.forEach((m) => next.add(m.id));
+      return next;
+    });
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function bulkChangeStatus(status: MachineStatus) {
+    selected.forEach((id) => updateMachine(id, { status }));
+    setSelected(new Set());
+  }
+
+  function bulkDelete() {
+    selected.forEach((id) => deleteMachine(id));
+    setSelected(new Set());
+    setBulkDeleteConfirm(false);
+  }
 
   const statusLabels: Record<string, string> = {
     all: 'Alla', i_lager: 'I lager', uthyrd: 'Uthyrd',
@@ -304,6 +389,13 @@ function MachinesPageInner() {
                 Lägg till maskin
               </Link>
             )}
+            <button
+              onClick={() => exportToCsv('maskiner.csv', machinesToCsvRows(filtered))}
+              className="flex items-center gap-1.5 px-3.5 py-[7px] bg-white text-slate-700 border border-slate-200 text-[13px] font-medium rounded-xl hover:bg-slate-50 transition-all"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Exportera CSV
+            </button>
           </div>
         }
       />
@@ -477,6 +569,23 @@ function MachinesPageInner() {
               </div>
             </div>
 
+            {/* Plats */}
+            {machineLocations.length > 0 && (
+              <div>
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Plats</p>
+                <select
+                  value={locationFilter}
+                  onChange={(e) => setLocationFilter(e.target.value)}
+                  className="px-3 py-1.5 text-[12.5px] bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                >
+                  <option value="">Alla platser</option>
+                  {machineLocations.map((loc) => (
+                    <option key={loc} value={loc}>{loc}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* Specifikationer */}
             <div>
               <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Specifikationer</p>
@@ -551,6 +660,42 @@ function MachinesPageInner() {
           </div>
         </div>
 
+        {/* Bulk actions toolbar */}
+        {selected.size > 0 && (
+          <div className="flex items-center gap-3 flex-wrap bg-slate-900 text-white rounded-xl px-4 py-2.5">
+            <span className="text-[12.5px] font-medium">{selected.size} valda</span>
+            <button onClick={() => setSelected(new Set())} className="text-[12px] text-slate-300 hover:text-white cursor-pointer">
+              Avmarkera
+            </button>
+            <div className="ml-auto flex items-center gap-2">
+              <select
+                onChange={(e) => { if (e.target.value) bulkChangeStatus(e.target.value as MachineStatus); e.target.value = ''; }}
+                defaultValue=""
+                className="px-2.5 py-1.5 text-[12px] bg-slate-800 border border-slate-700 rounded-lg cursor-pointer"
+              >
+                <option value="" disabled>Ändra status...</option>
+                {VALID_MACHINE_STATUSES.map((s) => (
+                  <option key={s} value={s}>{statusLabels[s]}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => exportToCsv('maskiner.csv', machinesToCsvRows(selectedMachines))}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Exportera
+              </button>
+              <button
+                onClick={() => setBulkDeleteConfirm(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium bg-red-600 hover:bg-red-700 rounded-lg transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Ta bort
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Table View */}
         {viewMode === 'table' && (
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
@@ -558,14 +703,17 @@ function MachinesPageInner() {
             <table className="w-full text-sm min-w-[700px]">
               <thead>
                 <tr className="border-b border-slate-100">
-                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Maskin</th>
-                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Kategori</th>
+                  <th className="w-10 px-3 py-3">
+                    <input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectAllVisible} className="cursor-pointer" />
+                  </th>
+                  <SortHeader label="Maskin" column="name" activeKey={sortKey} dir={sortDir} onSort={toggleSort} className="px-5" />
+                  <SortHeader label="Kategori" column="category" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Drivmedel</th>
-                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Kapacitet</th>
-                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Timmar</th>
+                  <SortHeader label="Kapacitet" column="capacity" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                  <SortHeader label="Timmar" column="operatingHours" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Status</th>
-                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Intäkt</th>
-                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Uthyrn.</th>
+                  <SortHeader label="Intäkt" column="totalRevenue" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
+                  <SortHeader label="Uthyrn." column="totalRentals" activeKey={sortKey} dir={sortDir} onSort={toggleSort} />
                   <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Plats</th>
                   <th className="px-4 py-3" />
                 </tr>
@@ -573,7 +721,7 @@ function MachinesPageInner() {
               <tbody className="divide-y divide-slate-50">
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={10}>
+                    <td colSpan={11}>
                       {hasActiveFilters ? (
                         <EmptyState icon={Search} title="Inga träffar" description="Inga maskiner matchar sökningen eller filtren." actionLabel="Rensa filter" onAction={clearAllFilters} />
                       ) : (
@@ -584,6 +732,9 @@ function MachinesPageInner() {
                 )}
                 {paginated.map((machine) => (
                   <tr key={machine.id} className="hover:bg-slate-50/80 transition-colors group">
+                    <td className="px-3 py-3.5">
+                      <input type="checkbox" checked={selected.has(machine.id)} onChange={() => toggleSelect(machine.id)} className="cursor-pointer" />
+                    </td>
                     <td className="px-5 py-3.5">
                       <div>
                         <p className="text-[13px] font-medium text-slate-800">{machine.name}</p>
@@ -694,8 +845,33 @@ function MachinesPageInner() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={bulkDeleteConfirm}
+        title="Ta bort maskiner"
+        message={`Är du säker på att du vill ta bort ${selected.size} maskin${selected.size !== 1 ? 'er' : ''}? Åtgärden kan inte ångras.`}
+        onConfirm={bulkDelete}
+        onCancel={() => setBulkDeleteConfirm(false)}
+      />
     </div>
   );
+}
+
+function machinesToCsvRows(list: Machine[]) {
+  return list.map((m) => ({
+    Namn: m.name,
+    'Intern kod': m.internalCode,
+    Fabrikat: m.brand,
+    Modell: m.model,
+    Kategori: CATEGORY_LABELS[m.category],
+    Drivmedel: FUEL_LABELS[m.fuelType],
+    'Kapacitet (kg)': m.capacity,
+    Drifttimmar: m.operatingHours,
+    Status: m.status,
+    Plats: m.location,
+    'Total intäkt': m.totalRevenue,
+    'Antal uthyrningar': m.totalRentals,
+  }));
 }
 
 export default function MachinesPage() {

@@ -1,8 +1,9 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { X, AlertTriangle, Clock, Calendar, Wrench, AlertCircle, FileCheck } from 'lucide-react';
 import { useStore } from '@/store';
+import { getDismissed, dismissNotification, pruneDismissed } from '@/lib/notificationDismissals';
 
 type NotifType = 'error' | 'warning' | 'info' | 'success';
 
@@ -28,8 +29,11 @@ const colors: Record<NotifType, string> = {
   success: 'border-l-emerald-400 bg-emerald-50/60',
 };
 
-function useNotifications(): Notification[] {
-  const { orders, machines, customers } = useStore();
+function computeNotifications(
+  orders: ReturnType<typeof useStore.getState>['orders'],
+  machines: ReturnType<typeof useStore.getState>['machines'],
+  customers: ReturnType<typeof useStore.getState>['customers']
+): Notification[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -163,12 +167,36 @@ function useNotifications(): Notification[] {
   return notifs.sort((a, b) => order[a.type] - order[b.type]);
 }
 
+export function useNotifications() {
+  const { orders, machines, customers } = useStore();
+  const [dismissed, setDismissed] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => { setDismissed(getDismissed()); }, []);
+
+  const all = computeNotifications(orders, machines, customers);
+
+  useEffect(() => {
+    pruneDismissed(new Set(all.map((n) => n.id)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [all.map((n) => n.id).join(',')]);
+
+  const notifications = all.filter((n) => !dismissed.has(n.id));
+
+  const dismiss = (id: string) => {
+    dismissNotification(id);
+    setDismissed((prev) => new Set(prev).add(id));
+  };
+
+  return { notifications, dismiss };
+}
+
 interface Props {
+  notifications: Notification[];
+  onDismiss: (id: string) => void;
   onClose: () => void;
 }
 
-export default function NotificationPanel({ onClose }: Props) {
-  const notifications = useNotifications();
+export default function NotificationPanel({ notifications, onDismiss, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -213,18 +241,25 @@ export default function NotificationPanel({ onClose }: Props) {
         ) : (
           <div className="p-2 space-y-1">
             {notifications.map((n) => (
-              <Link
+              <div
                 key={n.id}
-                href={n.href}
-                onClick={onClose}
-                className={`flex items-start gap-3 px-3 py-2.5 rounded-xl border-l-[3px] transition-colors hover:brightness-95 cursor-pointer ${colors[n.type]}`}
+                className={`group flex items-start gap-3 px-3 py-2.5 rounded-xl border-l-[3px] transition-colors hover:brightness-95 ${colors[n.type]}`}
               >
-                {icons[n.type]}
-                <div className="min-w-0">
-                  <p className="text-[12.5px] font-semibold text-slate-800 leading-snug">{n.title}</p>
-                  <p className="text-[11.5px] text-slate-500 mt-0.5 truncate">{n.desc}</p>
-                </div>
-              </Link>
+                <Link href={n.href} onClick={onClose} className="flex items-start gap-3 min-w-0 flex-1 cursor-pointer">
+                  {icons[n.type]}
+                  <div className="min-w-0">
+                    <p className="text-[12.5px] font-semibold text-slate-800 leading-snug">{n.title}</p>
+                    <p className="text-[11.5px] text-slate-500 mt-0.5 truncate">{n.desc}</p>
+                  </div>
+                </Link>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDismiss(n.id); }}
+                  title="Markera som läst"
+                  className="opacity-0 group-hover:opacity-100 shrink-0 p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-white/70 transition-all cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             ))}
           </div>
         )}

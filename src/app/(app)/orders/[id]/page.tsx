@@ -1074,7 +1074,11 @@ export default function OrderDetailPage() {
       <ConfirmDialog
         open={dialog === 'delete'}
         title="Radera order"
-        message={`Radera order ${order.orderNumber}? Detta går inte att ångra.`}
+        message={
+          order.actualReturnDate || order.sentToAccounting || (order.invoicePeriods?.length ?? 0) > 0
+            ? `Order ${order.orderNumber} har återlämnings-/faktureringshistorik. Om du raderar den nollställs maskinens och kundens totaler bakåt. Detta går inte att ångra.`
+            : `Radera order ${order.orderNumber}? Detta går inte att ångra.`
+        }
         onConfirm={confirmDeleteOrder}
         onCancel={() => setDialog(null)}
       />
