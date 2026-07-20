@@ -567,7 +567,7 @@ export default function LandingPage() {
           </div>
           <nav className="hidden md:flex items-center justify-center gap-1 absolute left-1/2 -translate-x-1/2">
             {[
-              { label: 'Funktioner', href: '#features' },
+              { label: 'Funktioner', href: '/funktioner' },
               { label: 'Hur det fungerar', href: '#how-it-works' },
               { label: 'Integrationer', href: '#integrations' },
               { label: 'Priser', href: '/priser' },
