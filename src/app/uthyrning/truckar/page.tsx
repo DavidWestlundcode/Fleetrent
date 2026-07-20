@@ -124,7 +124,7 @@ export default function TruckarPage() {
 
       <h2>Vad skiljer FleetOS från ett generellt affärssystem?</h2>
       <p className="mb-4">
-        Generella affärssystem som Fortnox och Visma är byggda för bokföring — inte för att hantera en rörlig maskinpark. De saknar begrepp som beläggningsgrad, hyresperiod, returnstatus, serviceintervall och QR-koder.
+        Traditionella affärssystem och bokföringsprogram är byggda för redovisning — inte för att hantera en rörlig maskinpark. De saknar begrepp som beläggningsgrad, hyresperiod, returnstatus, serviceintervall och QR-koder.
       </p>
       <p className="mb-10">
         FleetOS är byggt specifikt för maskinuthyrning. Istället för att du anpassar ett generellt system till din verksamhet är det tvärtom — FleetOS pratar samma språk som din verksamhet. Och med Fortnox-integrationen behöver du inte välja: du får specialiserad uthyrningshantering <em>och</em> din bokföring synkroniseras automatiskt.

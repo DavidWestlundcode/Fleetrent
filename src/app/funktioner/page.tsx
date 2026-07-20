@@ -31,7 +31,7 @@ const features = [
 const faqs = [
   {
     q: 'Vad är ett affärssystem för maskinuthyrning?',
-    a: 'Ett affärssystem för maskinuthyrning är en programvara byggd specifikt för att hantera hela flödet i ett uthyrningsföretag: maskinregister, bokningar, hyresavtal, prissättning per hyresperiod, service och fakturering. Till skillnad från ett generellt affärssystem (som Fortnox eller Visma) förstår det begrepp som beläggningsgrad, hyrestid och maskinstatus.',
+    a: 'Ett affärssystem för maskinuthyrning är en programvara byggd specifikt för att hantera hela flödet i ett uthyrningsföretag: maskinregister, bokningar, hyresavtal, prissättning per hyresperiod, service och fakturering. Till skillnad från ett generellt bokföringsprogram förstår det begrepp som beläggningsgrad, hyrestid och maskinstatus.',
   },
   {
     q: 'Vad är skillnaden mellan ett maskinuthyrningssystem och ett vanligt bokföringsprogram?',
@@ -87,7 +87,7 @@ export default function FunktionerPage() {
 
       <h2>Vad skiljer FleetOS från ett generellt affärssystem?</h2>
       <p className="mb-4">
-        Generella affärssystem som Fortnox och Visma är byggda för bokföring — inte för att hantera en rörlig maskinpark. De saknar begrepp som beläggningsgrad, hyresperiod, returstatus, serviceintervall och QR-koder i fält.
+        Traditionella affärssystem och bokföringsprogram är byggda för redovisning — inte för att hantera en rörlig maskinpark. De saknar begrepp som beläggningsgrad, hyresperiod, returstatus, serviceintervall och QR-koder i fält.
       </p>
       <p className="mb-10">
         FleetOS är byggt specifikt för maskinuthyrning. Istället för att du anpassar ett generellt system till din verksamhet är det tvärtom — FleetOS pratar samma språk som din verksamhet, och med Fortnox-integrationen synkroniseras bokföringen automatiskt i bakgrunden.
