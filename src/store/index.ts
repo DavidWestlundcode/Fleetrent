@@ -202,6 +202,11 @@ function fromDbOrder(r: DbRow): Order {
     returnNotes: r.return_notes as string | undefined,
     returnImages: (r.return_images as string[]) ?? [],
     returnOperatingHours: r.return_operating_hours != null ? (r.return_operating_hours as number) : undefined,
+    pickupCondition: r.pickup_condition as ReturnCondition | undefined,
+    pickupNotes: r.pickup_notes as string | undefined,
+    pickupImages: (r.pickup_images as string[]) ?? [],
+    pickupOperatingHours: r.pickup_operating_hours != null ? (r.pickup_operating_hours as number) : undefined,
+    pickupCompletedAt: r.pickup_completed_at as string | undefined,
     events,
     rentalArticleId: r.rental_article_id as string | undefined,
     insuranceArticleId: r.insurance_article_id as string | undefined,
@@ -257,6 +262,11 @@ function toDbOrder(o: Order, orgId: string): DbRow {
     return_notes: o.returnNotes ?? null,
     return_images: o.returnImages,
     return_operating_hours: o.returnOperatingHours ?? null,
+    pickup_condition: o.pickupCondition ?? null,
+    pickup_notes: o.pickupNotes ?? null,
+    pickup_images: o.pickupImages,
+    pickup_operating_hours: o.pickupOperatingHours ?? null,
+    pickup_completed_at: o.pickupCompletedAt ?? null,
     rental_article_id: o.rentalArticleId ?? null,
     insurance_article_id: o.insuranceArticleId ?? null,
     transport_article_id: o.transportArticleId ?? null,
@@ -474,7 +484,7 @@ interface AppStore {
   updateCustomer: (id: string, updates: Partial<Customer>) => void;
   deleteCustomer: (id: string) => void;
 
-  addOrder: (order: Omit<Order, 'id' | 'orderNumber' | 'createdAt' | 'events' | 'returnImages'>) => string;
+  addOrder: (order: Omit<Order, 'id' | 'orderNumber' | 'createdAt' | 'events' | 'returnImages' | 'pickupImages'>) => string;
   updateOrder: (id: string, updates: Partial<Order>) => void;
   editOrder: (orderId: string, data: {
     machineId: string;
@@ -507,8 +517,15 @@ interface AppStore {
     returnCondition: string;
     returnNotes: string;
     returnOperatingHours: number;
+    returnImages: string[];
     sendToService: boolean;
     finalTotalPrice?: number;
+  }) => void;
+  pickupMachine: (orderId: string, data: {
+    pickupCondition: string;
+    pickupNotes: string;
+    pickupOperatingHours: number;
+    pickupImages: string[];
   }) => void;
 
   addTemplate: (template: Omit<PriceTemplate, 'id' | 'createdAt'>) => string;
@@ -817,6 +834,7 @@ export const useStore = create<AppStore>()((set, get) => ({
       id,
       orderNumber,
       returnImages: [],
+      pickupImages: [],
       events: [{ id: eventId, type: 'skapad', description: `Order skapad${byName}`, timestamp: now, userId: userId ?? '' }],
       createdAt: now,
       createdBy: userId ?? '',
@@ -1056,6 +1074,7 @@ export const useStore = create<AppStore>()((set, get) => ({
               returnCondition: data.returnCondition as Order['returnCondition'],
               returnNotes: data.returnNotes,
               returnOperatingHours: data.returnOperatingHours,
+              returnImages: data.returnImages,
               ...(data.finalTotalPrice !== undefined ? { totalPrice: data.finalTotalPrice } : {}),
               events: [
                 ...o.events,
@@ -1112,6 +1131,7 @@ export const useStore = create<AppStore>()((set, get) => ({
           return_condition: data.returnCondition,
           return_notes: data.returnNotes,
           return_operating_hours: data.returnOperatingHours,
+          return_images: data.returnImages,
           ...(data.finalTotalPrice !== undefined ? { total_price: data.finalTotalPrice } : {}),
         }).eq('id', orderId) as unknown as Promise<{ error: unknown }>,
       ];
@@ -1123,6 +1143,61 @@ export const useStore = create<AppStore>()((set, get) => ({
       }
       Promise.all(ops).then((results) => {
         results.forEach((r, i) => { if (r.error) console.error(`sync returnMachine[${i}]:`, r.error); });
+      });
+    }
+  },
+
+  pickupMachine: (orderId, data) => {
+    const now = new Date().toISOString();
+    const { organizationId, userId, userName } = get();
+    const order = get().orders.find((o) => o.id === orderId);
+    if (!order) return;
+    const eventId = crypto.randomUUID();
+    const byName = userName ? ` av ${userName}` : '';
+
+    set((s) => ({
+      orders: s.orders.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              pickupCondition: data.pickupCondition as Order['pickupCondition'],
+              pickupNotes: data.pickupNotes,
+              pickupOperatingHours: data.pickupOperatingHours,
+              pickupImages: data.pickupImages,
+              pickupCompletedAt: now,
+              events: [
+                ...o.events,
+                {
+                  id: eventId,
+                  type: 'utlamning',
+                  description: `Maskin utlämnad${byName}. Skick: ${data.pickupCondition}.`,
+                  timestamp: now,
+                  userId: userId ?? '',
+                },
+              ],
+            }
+          : o
+      ),
+    }));
+
+    if (organizationId) {
+      const client = sb();
+      const ops: Promise<{ error: unknown }>[] = [
+        client.from('order_events').insert({
+          id: eventId, order_id: orderId, organization_id: organizationId,
+          type: 'utlamning', description: `Maskin utlämnad. Skick: ${data.pickupCondition}.`,
+          timestamp: now, user_id: userId ?? null,
+        }) as unknown as Promise<{ error: unknown }>,
+        client.from('orders').update({
+          pickup_condition: data.pickupCondition,
+          pickup_notes: data.pickupNotes,
+          pickup_operating_hours: data.pickupOperatingHours,
+          pickup_images: data.pickupImages,
+          pickup_completed_at: now,
+        }).eq('id', orderId) as unknown as Promise<{ error: unknown }>,
+      ];
+      Promise.all(ops).then((results) => {
+        results.forEach((r, i) => { if (r.error) console.error(`sync pickupMachine[${i}]:`, r.error); });
       });
     }
   },

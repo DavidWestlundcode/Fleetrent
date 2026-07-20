@@ -2,9 +2,10 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Clock, Truck, Building2, Calendar, CheckCircle2, Trash2, Pencil, Send, Loader2, ExternalLink, Receipt, Plus, ChevronDown, ChevronUp, FileSignature } from 'lucide-react';
+import { ArrowLeft, Clock, Truck, Building2, Calendar, CheckCircle2, Trash2, Pencil, Send, Loader2, ExternalLink, Receipt, Plus, ChevronDown, ChevronUp, FileSignature, Camera } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { MachineStatusBadge, OrderStatusBadge } from '@/components/ui/StatusBadge';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useStore } from '@/store';
 import { formatCurrency, formatDate, formatDateTime, daysBetween, daysUntil, calcBreakdown, countBusinessDays } from '@/lib/utils';
 import { ARTICLE_UNIT_LABELS } from '@/lib/types';
@@ -25,6 +26,7 @@ export default function OrderDetailPage() {
   const [savingInvoice, setSavingInvoice] = useState(false);
   const [sendingPeriodId, setSendingPeriodId] = useState<string | null>(null);
   const [periodFortnoxError, setPeriodFortnoxError] = useState<string | null>(null);
+  const [dialog, setDialog] = useState<'cancel' | 'delete' | 'markSent' | null>(null);
 
   const order = orders.find((o) => o.id === id);
   if (!order) {
@@ -66,17 +68,17 @@ export default function OrderDetailPage() {
   const rentalDisc = order.rentalDiscount ?? 0;
   const newInvoiceAmount = newInvoiceBreakdown.total * (1 - rentalDisc / 100);
 
-  const handleCancelOrder = () => {
-    if (confirm('Är du säker på att du vill annullera denna order?')) {
-      updateOrder(order.id, { status: 'annullerad' });
-    }
+  const handleCancelOrder = () => setDialog('cancel');
+  const handleDeleteOrder = () => setDialog('delete');
+
+  const confirmCancelOrder = () => {
+    updateOrder(order.id, { status: 'annullerad' });
+    setDialog(null);
   };
 
-  const handleDeleteOrder = () => {
-    if (confirm(`Radera order ${order.orderNumber}? Detta går inte att ångra.`)) {
-      deleteOrder(order.id);
-      router.push('/orders');
-    }
+  const confirmDeleteOrder = () => {
+    deleteOrder(order.id);
+    router.push('/orders');
   };
 
   const handleCheckZignedStatus = async () => {
@@ -161,10 +163,10 @@ export default function OrderDetailPage() {
     }
   };
 
-  const handleMarkSentManually = () => {
-    if (confirm('Markera order som skickad till bokföringsprogrammet manuellt?')) {
-      updateOrder(order.id, { sentToAccounting: true });
-    }
+  const handleMarkSentManually = () => setDialog('markSent');
+  const confirmMarkSentManually = () => {
+    updateOrder(order.id, { sentToAccounting: true });
+    setDialog(null);
   };
 
   return (
@@ -176,6 +178,15 @@ export default function OrderDetailPage() {
           <div className="flex items-center gap-2">
             {(order.status === 'aktiv' || order.status === 'reserverad') && (
               <>
+                {!order.pickupCompletedAt && (
+                  <Link
+                    href={`/pickup/${order.id}?from=order`}
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <Camera className="w-4 h-4" />
+                    Registrera utlämning
+                  </Link>
+                )}
                 <Link
                   href={`/return/${order.id}?from=order`}
                   className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors"
@@ -264,7 +275,7 @@ export default function OrderDetailPage() {
         </Link>
 
         {fortnoxError && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
             <div className="w-5 h-5 rounded-full bg-red-200 flex items-center justify-center shrink-0 mt-0.5">
               <span className="text-red-700 text-xs font-bold">!</span>
             </div>
@@ -287,7 +298,7 @@ export default function OrderDetailPage() {
         )}
 
         {zignedError && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
             <div className="w-5 h-5 rounded-full bg-red-200 flex items-center justify-center shrink-0 mt-0.5">
               <span className="text-red-700 text-xs font-bold">!</span>
             </div>
@@ -299,7 +310,7 @@ export default function OrderDetailPage() {
         )}
 
         {order.signingStatus === 'pending' && (
-          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-center gap-3">
+          <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 flex items-center gap-3">
             <FileSignature className="w-5 h-5 text-indigo-500 shrink-0" />
             <div className="flex-1">
               <p className="text-sm font-semibold text-indigo-800">Väntar på kundens signering</p>
@@ -324,7 +335,7 @@ export default function OrderDetailPage() {
         )}
 
         {order.signingStatus === 'signed' && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
             <p className="text-sm font-semibold text-emerald-800 flex-1">Hyresavtalet är signerat av kunden.</p>
             <button
@@ -338,7 +349,7 @@ export default function OrderDetailPage() {
         )}
 
         {isOverdue && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
             <Clock className="w-5 h-5 text-red-500 shrink-0" />
             <div>
               <p className="font-semibold text-red-800">Försenad retur!</p>
@@ -351,7 +362,7 @@ export default function OrderDetailPage() {
           {/* Main Info */}
           <div className="lg:col-span-2 space-y-6">
             {/* Order Summary */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-semibold text-slate-900">Orderdetaljer</h2>
                 <OrderStatusBadge status={order.status} />
@@ -359,7 +370,7 @@ export default function OrderDetailPage() {
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1">
                     <Building2 className="w-3.5 h-3.5" /> Kund
                   </div>
                   <Link href={`/customers/${customer?.id}`} className="text-sm font-medium text-blue-600 hover:underline">
@@ -369,16 +380,16 @@ export default function OrderDetailPage() {
                 </div>
                 {order.facilityName && (
                   <div>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1">
                       <Building2 className="w-3.5 h-3.5" /> Anläggning
                     </div>
-                    <p className="text-sm font-medium text-slate-800">{order.facilityName}</p>
+                    <p className="text-[13px] font-medium text-slate-800">{order.facilityName}</p>
                   </div>
                 )}
                 {order.ordererName && (
                   <div>
-                    <p className="text-xs text-slate-400 mb-1">Beställare</p>
-                    <p className="text-sm font-medium text-slate-800">{order.ordererName}</p>
+                    <p className="text-[11px] text-slate-400 mb-1">Beställare</p>
+                    <p className="text-[13px] font-medium text-slate-800">{order.ordererName}</p>
                     {order.ordererPhone && (
                       <a href={`tel:${order.ordererPhone}`} className="text-xs text-blue-600 hover:underline block">{order.ordererPhone}</a>
                     )}
@@ -388,7 +399,7 @@ export default function OrderDetailPage() {
                   </div>
                 )}
                 <div>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1">
                     <Truck className="w-3.5 h-3.5" /> Maskin
                   </div>
                   <Link href={`/machines/${machine?.id}`} className="text-sm font-medium text-blue-600 hover:underline">
@@ -397,32 +408,32 @@ export default function OrderDetailPage() {
                   <p className="text-xs text-slate-500">{machine?.brand} {machine?.model}</p>
                 </div>
                 <div>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1">
                     <Calendar className="w-3.5 h-3.5" /> Skapad
                   </div>
-                  <p className="text-sm font-medium text-slate-800">{formatDate(order.createdAt)}</p>
+                  <p className="text-[13px] font-medium text-slate-800">{formatDate(order.createdAt)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400 mb-1">Startdatum</p>
-                  <p className="text-sm font-medium text-slate-800">{formatDate(order.startDate)}</p>
+                  <p className="text-[11px] text-slate-400 mb-1">Startdatum</p>
+                  <p className="text-[13px] font-medium text-slate-800">{formatDate(order.startDate)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400 mb-1">Planerad retur</p>
+                  <p className="text-[11px] text-slate-400 mb-1">Planerad retur</p>
                   <p className={`text-sm font-medium ${isOverdue ? 'text-red-600' : 'text-slate-800'}`}>
                     {order.plannedReturnDate ? formatDate(order.plannedReturnDate) : 'Löpande'}
                   </p>
                 </div>
                 {order.actualReturnDate && (
                   <div>
-                    <p className="text-xs text-slate-400 mb-1">Faktisk retur</p>
-                    <p className="text-sm font-medium text-slate-800">{formatDate(order.actualReturnDate)}</p>
+                    <p className="text-[11px] text-slate-400 mb-1">Faktisk retur</p>
+                    <p className="text-[13px] font-medium text-slate-800">{formatDate(order.actualReturnDate)}</p>
                   </div>
                 )}
               </div>
 
               {order.accessories.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-slate-100">
-                  <p className="text-xs text-slate-400 mb-2">Tillbehör</p>
+                  <p className="text-[11px] text-slate-400 mb-2">Tillbehör</p>
                   <div className="flex flex-wrap gap-2">
                     {order.accessories.map((acc, i) => (
                       <span key={i} className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full">{acc}</span>
@@ -435,13 +446,13 @@ export default function OrderDetailPage() {
                 <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4">
                   {order.customerNotes && (
                     <div>
-                      <p className="text-xs text-slate-400 mb-1">Kundanteckning</p>
+                      <p className="text-[11px] text-slate-400 mb-1">Kundanteckning</p>
                       <p className="text-sm text-slate-700">{order.customerNotes}</p>
                     </div>
                   )}
                   {order.internalNotes && (
                     <div>
-                      <p className="text-xs text-slate-400 mb-1">Intern anteckning</p>
+                      <p className="text-[11px] text-slate-400 mb-1">Intern anteckning</p>
                       <p className="text-sm text-slate-700">{order.internalNotes}</p>
                     </div>
                   )}
@@ -451,12 +462,12 @@ export default function OrderDetailPage() {
 
             {/* Return Info */}
             {order.returnCondition && (
-              <div className="bg-white rounded-xl border border-slate-200 p-5">
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
                 <h2 className="font-semibold text-slate-900 mb-4">Returinformation</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
-                    <p className="text-xs text-slate-400 mb-1">Skick vid retur</p>
-                    <p className="text-sm font-medium text-slate-800 capitalize">
+                    <p className="text-[11px] text-slate-400 mb-1">Skick vid retur</p>
+                    <p className="text-[13px] font-medium text-slate-800 capitalize">
                       {order.returnCondition === 'bra' ? 'Bra' :
                        order.returnCondition === 'skadat' ? 'Skadat' :
                        order.returnCondition === 'kraver_service' ? 'Kräver service' : 'Kräver kontroll'}
@@ -464,13 +475,13 @@ export default function OrderDetailPage() {
                   </div>
                   {order.returnOperatingHours && (
                     <div>
-                      <p className="text-xs text-slate-400 mb-1">Drifttimmar vid retur</p>
-                      <p className="text-sm font-medium text-slate-800">{order.returnOperatingHours.toLocaleString('sv-SE')} h</p>
+                      <p className="text-[11px] text-slate-400 mb-1">Drifttimmar vid retur</p>
+                      <p className="text-[13px] font-medium text-slate-800">{order.returnOperatingHours.toLocaleString('sv-SE')} h</p>
                     </div>
                   )}
                   {order.returnNotes && (
                     <div>
-                      <p className="text-xs text-slate-400 mb-1">Returkommentar</p>
+                      <p className="text-[11px] text-slate-400 mb-1">Returkommentar</p>
                       <p className="text-sm text-slate-700">{order.returnNotes}</p>
                     </div>
                   )}
@@ -480,7 +491,7 @@ export default function OrderDetailPage() {
 
             {/* Fakturering */}
             {(order.status === 'aktiv' || order.status === 'klar_for_fakturering' || sortedInvoices.length > 0) && (
-              <div className="bg-white rounded-xl border border-slate-200 p-5">
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <Receipt className="w-4 h-4 text-slate-500" />
@@ -706,7 +717,7 @@ export default function OrderDetailPage() {
 
               if (rows.length === 0) return null;
               return (
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
                   <div className="px-5 py-4 border-b border-slate-100">
                     <h2 className="font-semibold text-slate-900">Artiklar</h2>
                   </div>
@@ -753,8 +764,39 @@ export default function OrderDetailPage() {
               );
             })()}
 
+            {/* Photo documentation */}
+            {(order.pickupImages.length > 0 || order.returnImages.length > 0) && (
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-4">
+                <h2 className="font-semibold text-slate-900">Dokumentation</h2>
+                {order.pickupImages.length > 0 && (
+                  <div>
+                    <p className="text-[11px] text-slate-400 mb-2">Vid utlämning{order.pickupCondition ? ` · ${order.pickupCondition}` : ''}</p>
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                      {order.pickupImages.map((url) => (
+                        <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="block aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-100 hover:opacity-90 transition-opacity">
+                          <img src={url} alt="Utlämningsfoto" className="w-full h-full object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {order.returnImages.length > 0 && (
+                  <div>
+                    <p className="text-[11px] text-slate-400 mb-2">Vid retur{order.returnCondition ? ` · ${order.returnCondition}` : ''}</p>
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                      {order.returnImages.map((url) => (
+                        <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="block aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-100 hover:opacity-90 transition-opacity">
+                          <img src={url} alt="Returfoto" className="w-full h-full object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Event Log */}
-            <div className="bg-white rounded-xl border border-slate-200">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm">
               <div className="px-5 py-4 border-b border-slate-100">
                 <h2 className="font-semibold text-slate-900">Händelselogg</h2>
               </div>
@@ -766,7 +808,7 @@ export default function OrderDetailPage() {
                       {i < order.events.length - 1 && <div className="w-px h-full bg-slate-200 mt-1" />}
                     </div>
                     <div className="flex-1 pb-3">
-                      <p className="text-sm font-medium text-slate-800">{event.description}</p>
+                      <p className="text-[13px] font-medium text-slate-800">{event.description}</p>
                       <p className="text-xs text-slate-500 mt-0.5">
                         {formatDateTime(event.timestamp)}
                         {event.userId && <span className="ml-1.5">· {getMemberName(event.userId)}</span>}
@@ -797,7 +839,7 @@ export default function OrderDetailPage() {
               const rentalNet = rentalGross * (1 - rentalDisc / 100);
 
               return (
-                <div className="bg-white rounded-xl border border-slate-200 p-5">
+                <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
                   <h3 className="font-semibold text-slate-900 mb-4">Ekonomi</h3>
                   <div className="space-y-4">
 
@@ -926,7 +968,7 @@ export default function OrderDetailPage() {
             })()}
 
             {/* Duration */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
               <h3 className="font-semibold text-slate-900 mb-3">Hyresperiod</h3>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -955,7 +997,7 @@ export default function OrderDetailPage() {
             </div>
 
             {/* Created by */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
               <h3 className="font-semibold text-slate-900 mb-3">Orderinfo</h3>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -993,7 +1035,7 @@ export default function OrderDetailPage() {
 
             {/* Machine Quick Info */}
             {machine && (
-              <div className="bg-white rounded-xl border border-slate-200 p-5">
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
                 <h3 className="font-semibold text-slate-900 mb-3">Maskininfo</h3>
                 <div className="flex items-center gap-2 mb-3">
                   <MachineStatusBadge status={machine.status} />
@@ -1020,6 +1062,31 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={dialog === 'cancel'}
+        title="Annullera order"
+        message="Är du säker på att du vill annullera denna order?"
+        confirmLabel="Annullera"
+        onConfirm={confirmCancelOrder}
+        onCancel={() => setDialog(null)}
+      />
+      <ConfirmDialog
+        open={dialog === 'delete'}
+        title="Radera order"
+        message={`Radera order ${order.orderNumber}? Detta går inte att ångra.`}
+        onConfirm={confirmDeleteOrder}
+        onCancel={() => setDialog(null)}
+      />
+      <ConfirmDialog
+        open={dialog === 'markSent'}
+        danger={false}
+        title="Markera som skickad"
+        message="Markera order som skickad till bokföringsprogrammet manuellt?"
+        confirmLabel="Markera"
+        onConfirm={confirmMarkSentManually}
+        onCancel={() => setDialog(null)}
+      />
     </div>
   );
 }

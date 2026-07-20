@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
 import { formatCurrency } from '@/lib/utils';
 import Pagination from '@/components/ui/Pagination';
+import EmptyState from '@/components/ui/EmptyState';
 
 const PAGE_SIZE = 48;
 
@@ -14,6 +15,9 @@ export default function CustomersPage() {
   const [search, setSearch] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [page, setPage] = useState(1);
+
+  const hasActiveFilters = !!search;
+  const clearAllFilters = () => setSearch('');
 
   const filtered = useMemo(
     () => customers.filter((c) => {
@@ -138,7 +142,13 @@ export default function CustomersPage() {
             );
           })}
           {filtered.length === 0 && (
-            <div className="col-span-3 py-14 text-center text-[13px] text-slate-400">Inga kunder hittades</div>
+            <div className="col-span-3">
+              {hasActiveFilters ? (
+                <EmptyState icon={Search} title="Inga träffar" description="Inga kunder matchar sökningen." actionLabel="Rensa sökning" onAction={clearAllFilters} />
+              ) : (
+                <EmptyState icon={Building2} title="Inga kunder ännu" description="Lägg till din första kund för att komma igång." actionLabel="Lägg till kund" actionHref="/customers/new" />
+              )}
+            </div>
           )}
         </div>
         <Pagination page={page} totalPages={totalPages} totalItems={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />

@@ -1,0 +1,6 @@
+ALTER TABLE orders
+  ADD COLUMN IF NOT EXISTS pickup_condition TEXT,
+  ADD COLUMN IF NOT EXISTS pickup_notes TEXT,
+  ADD COLUMN IF NOT EXISTS pickup_images TEXT[] NOT NULL DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS pickup_operating_hours NUMERIC,
+  ADD COLUMN IF NOT EXISTS pickup_completed_at TIMESTAMPTZ;

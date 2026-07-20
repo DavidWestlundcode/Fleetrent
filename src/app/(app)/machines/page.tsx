@@ -1,9 +1,11 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, LayoutGrid, LayoutList, Truck, Sparkles, X, Loader2, Search, Lock, SlidersHorizontal, ChevronDown } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { MachineStatusBadge } from '@/components/ui/StatusBadge';
+import EmptyState from '@/components/ui/EmptyState';
 import { useStore } from '@/store';
 import { formatCurrency } from '@/lib/utils';
 import { CATEGORY_LABELS, FUEL_LABELS, type MachineStatus, type Machine, type MachineCategory, type FuelType } from '@/lib/types';
@@ -84,7 +86,10 @@ function applyAICriteria(machines: Machine[], criteria: SearchCriteria): Machine
   });
 }
 
-export default function MachinesPage() {
+const VALID_MACHINE_STATUSES: MachineStatus[] = ['i_lager', 'uthyrd', 'reserverad', 'service', 'skadad', 'utfasad'];
+
+function MachinesPageInner() {
+  const searchParams = useSearchParams();
   const { machines, orders, maxMachines } = useStore();
 
   const today = new Date().toISOString().split('T')[0];
@@ -103,7 +108,10 @@ export default function MachinesPage() {
       .sort((a, b) => a.startDate.localeCompare(b.startDate))[0] ?? null;
 
   const atMachineLimit = machines.length >= maxMachines;
-  const [statusFilter, setStatusFilter] = useState<MachineStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<MachineStatus | 'all'>(() => {
+    const status = searchParams.get('status');
+    return status && VALID_MACHINE_STATUSES.includes(status as MachineStatus) ? (status as MachineStatus) : 'all';
+  });
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
@@ -190,6 +198,15 @@ export default function MachinesPage() {
     setAiQuery('');
     setAiError('');
   };
+
+  const hasActiveFilters = statusFilter !== 'all' || aiActive || !!textSearch || activeManualFilterCount > 0;
+
+  function clearAllFilters() {
+    setStatusFilter('all');
+    setTextSearch('');
+    clearAI();
+    clearManualFilters();
+  }
 
   const activeCriteriaChips = useMemo(() => {
     if (!aiCriteria) return [];
@@ -548,6 +565,7 @@ export default function MachinesPage() {
                   <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Timmar</th>
                   <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Status</th>
                   <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Intäkt</th>
+                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Uthyrn.</th>
                   <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Plats</th>
                   <th className="px-4 py-3" />
                 </tr>
@@ -555,7 +573,13 @@ export default function MachinesPage() {
               <tbody className="divide-y divide-slate-50">
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-14 text-center text-[13px] text-slate-400">Inga maskiner hittades</td>
+                    <td colSpan={10}>
+                      {hasActiveFilters ? (
+                        <EmptyState icon={Search} title="Inga träffar" description="Inga maskiner matchar sökningen eller filtren." actionLabel="Rensa filter" onAction={clearAllFilters} />
+                      ) : (
+                        <EmptyState icon={Truck} title="Inga maskiner ännu" description="Lägg till din första maskin för att komma igång." actionLabel="Lägg till maskin" actionHref="/machines/new" />
+                      )}
+                    </td>
                   </tr>
                 )}
                 {paginated.map((machine) => (
@@ -589,6 +613,7 @@ export default function MachinesPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3.5 text-[13px] font-medium text-slate-700">{formatCurrency(machine.totalRevenue)}</td>
+                    <td className="px-4 py-3.5 text-[13px] text-slate-600">{machine.totalRentals} st</td>
                     <td className="px-4 py-3.5 text-[12px] text-slate-400">{machine.location}</td>
                     <td className="px-4 py-3.5">
                       <Link href={`/machines/${machine.id}`} className="text-[12px] font-medium text-blue-600 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -631,10 +656,15 @@ export default function MachinesPage() {
                   </div>
                 </div>
                 <h3 className="text-[13px] font-semibold text-slate-800 leading-tight">{machine.name}</h3>
-                <p className="text-[11px] text-slate-400 mt-1">{machine.brand} {machine.model}</p>
-                {machine.capacity > 0 && (
-                  <p className="text-[11px] text-slate-500 mt-0.5">{machine.capacity.toLocaleString('sv-SE')} kg</p>
-                )}
+                <p className="text-[11px] text-slate-400 mt-1">{machine.brand} {machine.model} · {machine.internalCode}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {[
+                    machine.capacity > 0 ? `${machine.capacity.toLocaleString('sv-SE')} kg` : null,
+                    FUEL_LABELS[machine.fuelType],
+                    `${machine.operatingHours.toLocaleString('sv-SE')} h`,
+                    machine.location || null,
+                  ].filter(Boolean).join(' · ')}
+                </p>
                 <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between">
                   <div>
                     <p className="text-[10px] text-slate-400 uppercase tracking-wide">Intäkt</p>
@@ -648,7 +678,13 @@ export default function MachinesPage() {
               </Link>
             ))}
             {filtered.length === 0 && (
-              <div className="col-span-4 py-14 text-center text-[13px] text-slate-400">Inga maskiner hittades</div>
+              <div className="col-span-4">
+                {hasActiveFilters ? (
+                  <EmptyState icon={Search} title="Inga träffar" description="Inga maskiner matchar sökningen eller filtren." actionLabel="Rensa filter" onAction={clearAllFilters} />
+                ) : (
+                  <EmptyState icon={Truck} title="Inga maskiner ännu" description="Lägg till din första maskin för att komma igång." actionLabel="Lägg till maskin" actionHref="/machines/new" />
+                )}
+              </div>
             )}
             {filtered.length > 0 && (
               <div className="col-span-full mt-2">
@@ -659,5 +695,13 @@ export default function MachinesPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function MachinesPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center flex-1 text-slate-400">Laddar...</div>}>
+      <MachinesPageInner />
+    </Suspense>
   );
 }

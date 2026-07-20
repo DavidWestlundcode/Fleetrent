@@ -6,6 +6,7 @@ import { ArrowLeft, Save, Sparkles, Camera, X, Loader2, CheckCircle2, PenLine } 
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
 import { CATEGORY_LABELS, FUEL_LABELS, type MachineCategory, type FuelType } from '@/lib/types';
+import { uploadMachinePhoto } from '@/lib/supabase/storage';
 
 type Mode = 'choose' | 'ai' | 'manual';
 
@@ -91,9 +92,18 @@ const emptyForm = {
 
 type FormState = typeof emptyForm;
 
+function dataUrlToFile(dataUrl: string, filename: string): File {
+  const [meta, base64] = dataUrl.split(',');
+  const mime = meta.match(/data:(.*);base64/)?.[1] ?? 'image/jpeg';
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new File([bytes], filename, { type: mime });
+}
+
 export default function NewMachinePage() {
   const router = useRouter();
-  const { addMachine } = useStore();
+  const { addMachine, organizationId } = useStore();
 
   const [mode, setMode] = useState<Mode>('choose');
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -104,6 +114,7 @@ export default function NewMachinePage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
   const [aiError, setAiError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const nameplateRef = useRef<HTMLInputElement>(null);
   const machineRef = useRef<HTMLInputElement>(null);
@@ -168,8 +179,25 @@ export default function NewMachinePage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
+
+    let images: string[] = [];
+    if (organizationId && (nameplateImage || machineImage)) {
+      const folderId = crypto.randomUUID();
+      const files: { file: File }[] = [];
+      if (nameplateImage) files.push({ file: dataUrlToFile(nameplateImage, 'typskylt.jpg') });
+      if (machineImage) files.push({ file: dataUrlToFile(machineImage, 'maskin.jpg') });
+      try {
+        images = await Promise.all(
+          files.map(({ file }) => uploadMachinePhoto(file, organizationId, folderId))
+        );
+      } catch {
+        images = []; // Maskinen sparas ändå, bara utan bilder om uppladdningen misslyckas.
+      }
+    }
+
     const id = addMachine({
       ...form,
       liftHeight: form.liftHeight || undefined,
@@ -185,7 +213,7 @@ export default function NewMachinePage() {
       powerUnit: form.powerUnit || undefined,
       cabin: form.cabin || undefined,
       status: 'i_lager',
-      images: [], documents: [],
+      images, documents: [],
       qrCode: '',
       totalRevenue: 0, totalRentals: 0, totalRentalDays: 0, totalServiceCost: 0,
     });
@@ -414,9 +442,9 @@ export default function NewMachinePage() {
               <button type="button" onClick={() => setMode('choose')} className="text-sm text-slate-500 hover:text-slate-700">← Tillbaka</button>
               <div className="flex items-center gap-3">
                 <Link href="/machines" className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50">Avbryt</Link>
-                <button type="submit" className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-                  <Save className="w-4 h-4" />
-                  Spara maskin
+                <button type="submit" disabled={saving} className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  {saving ? 'Sparar...' : 'Spara maskin'}
                 </button>
               </div>
             </div>

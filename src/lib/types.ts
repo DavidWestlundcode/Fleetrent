@@ -181,6 +181,11 @@ export interface Order {
   returnNotes?: string;
   returnImages: string[];
   returnOperatingHours?: number;
+  pickupCondition?: ReturnCondition;
+  pickupNotes?: string;
+  pickupImages: string[];
+  pickupOperatingHours?: number;
+  pickupCompletedAt?: string;
   events: OrderEvent[];
   rentalArticleId?: string;
   insuranceArticleId?: string;

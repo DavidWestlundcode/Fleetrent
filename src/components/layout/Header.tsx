@@ -1,9 +1,10 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { Bell, Search, Menu } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import { useStore } from '@/store';
 import { useMobileNav } from '@/components/layout/MobileNav';
 import NotificationPanel from '@/components/layout/NotificationPanel';
+import GlobalSearch from '@/components/layout/GlobalSearch';
 
 interface HeaderProps {
   title: string;
@@ -64,14 +65,7 @@ export default function Header({ title, subtitle, actions }: HeaderProps) {
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <div className="relative hidden md:block">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Sök..."
-            className="pl-8 pr-3 py-1.5 text-[13px] bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 w-44 transition-all placeholder:text-slate-400"
-          />
-        </div>
+        <GlobalSearch />
         <div className="relative">
           <button
             onClick={() => setShowNotifs((v) => !v)}

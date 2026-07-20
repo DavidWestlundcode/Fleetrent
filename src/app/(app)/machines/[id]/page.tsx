@@ -7,11 +7,12 @@ import {
 } from 'recharts';
 import {
   ArrowLeft, Edit, QrCode, Wrench, TrendingUp, Calendar, Hash,
-  Zap, MapPin, Clock, BarChart2, Trash2, AlertTriangle, CalendarPlus, Building2,
+  Zap, MapPin, Clock, BarChart2, Trash2, CalendarPlus, Building2,
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { MachineStatusBadge } from '@/components/ui/StatusBadge';
 import { OrderStatusBadge } from '@/components/ui/StatusBadge';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useStore } from '@/store';
 import {
   formatCurrency, formatDate, calculateRecoveryPercent, calculateROI,
@@ -142,7 +143,7 @@ export default function MachineDetailPage() {
           {/* Machine Info */}
           <div className="lg:col-span-2 space-y-6">
             {/* Basic Info Card */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
               <div className="flex items-start justify-between mb-4">
                 <h2 className="font-semibold text-slate-900">Maskininformation</h2>
                 <div className="flex flex-col items-end gap-1">
@@ -178,11 +179,11 @@ export default function MachineDetailPage() {
                   { label: 'Inköpsdatum', value: formatDate(machine.purchaseDate), icon: Calendar },
                 ].map(({ label, value, icon: Icon }) => (
                   <div key={label}>
-                    <p className="text-xs text-slate-400 flex items-center gap-1 mb-0.5">
+                    <p className="text-[11px] text-slate-400 flex items-center gap-1 mb-0.5">
                       <Icon className="w-3 h-3" />
                       {label}
                     </p>
-                    <p className="text-sm font-medium text-slate-800">{value}</p>
+                    <p className="text-[13px] font-medium text-slate-800">{value}</p>
                   </div>
                 ))}
               </div>
@@ -192,8 +193,8 @@ export default function MachineDetailPage() {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {specItems.map(({ label, value }) => (
                       <div key={label}>
-                        <p className="text-xs text-slate-400 mb-0.5">{label}</p>
-                        <p className="text-sm font-medium text-slate-800">{value}</p>
+                        <p className="text-[11px] text-slate-400 mb-0.5">{label}</p>
+                        <p className="text-[13px] font-medium text-slate-800">{value}</p>
                       </div>
                     ))}
                   </div>
@@ -201,14 +202,34 @@ export default function MachineDetailPage() {
               )}
               {machine.notes && (
                 <div className="mt-4 pt-4 border-t border-slate-100">
-                  <p className="text-xs text-slate-400 mb-1">Anteckningar</p>
+                  <p className="text-[11px] text-slate-400 mb-1">Anteckningar</p>
                   <p className="text-sm text-slate-700">{machine.notes}</p>
                 </div>
               )}
             </div>
 
+            {/* Photos */}
+            {machine.images.length > 0 && (
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
+                <h2 className="font-semibold text-slate-900 mb-4">Bilder</h2>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {machine.images.map((url) => (
+                    <a
+                      key={url}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-100 hover:opacity-90 transition-opacity"
+                    >
+                      <img src={url} alt="Maskinbild" className="w-full h-full object-cover" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Revenue Chart */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
               <h2 className="font-semibold text-slate-900 mb-4">Intäkter senaste 6 månader</h2>
               <ResponsiveContainer width="100%" height={180}>
                 <AreaChart data={revenueChartData} margin={{ top: 0, right: 0, left: -10, bottom: 0 }}>
@@ -228,7 +249,7 @@ export default function MachineDetailPage() {
             </div>
 
             {/* Order History */}
-            <div className="bg-white rounded-xl border border-slate-200">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm">
               <div className="px-5 py-4 border-b border-slate-100">
                 <h2 className="font-semibold text-slate-900">Uthyrningshistorik</h2>
               </div>
@@ -257,7 +278,7 @@ export default function MachineDetailPage() {
                             {customer ? (
                               <Link href={`/customers/${customer.id}`} className="hover:text-blue-600 transition-colors">
                                 <p className="text-sm text-slate-700 font-medium">{customer.companyName}</p>
-                                <p className="text-xs text-slate-400">{customer.orgNumber}</p>
+                                <p className="text-[11px] text-slate-400">{customer.orgNumber}</p>
                               </Link>
                             ) : '–'}
                           </td>
@@ -276,7 +297,7 @@ export default function MachineDetailPage() {
 
             {/* Service History */}
             {machineService.length > 0 && (
-              <div className="bg-white rounded-xl border border-slate-200">
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm">
                 <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
                   <Wrench className="w-4 h-4 text-slate-500" />
                   <h2 className="font-semibold text-slate-900">Servicehistorik</h2>
@@ -285,7 +306,7 @@ export default function MachineDetailPage() {
                   {machineService.map((s) => (
                     <div key={s.id} className="px-5 py-3.5">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-slate-800">{s.description}</p>
+                        <p className="text-[13px] font-medium text-slate-800">{s.description}</p>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                           s.status === 'avslutad' ? 'bg-emerald-100 text-emerald-700' :
                           s.status === 'pagaende' ? 'bg-blue-100 text-blue-700' :
@@ -308,7 +329,7 @@ export default function MachineDetailPage() {
           <div className="space-y-4">
             {/* Current customer */}
             {currentCustomer && (
-              <div className="bg-white rounded-xl border border-slate-200 p-5">
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
                 <h3 className="font-semibold text-slate-900 mb-3">Nuvarande kund</h3>
                 <Link href={`/customers/${currentCustomer.id}`} className="flex items-center gap-3 group">
                   <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
@@ -316,7 +337,7 @@ export default function MachineDetailPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors truncate">{currentCustomer.companyName}</p>
-                    <p className="text-xs text-slate-400">Org.nr {currentCustomer.orgNumber}</p>
+                    <p className="text-[11px] text-slate-400">Org.nr {currentCustomer.orgNumber}</p>
                   </div>
                 </Link>
                 {activeOrder && (
@@ -329,7 +350,7 @@ export default function MachineDetailPage() {
             )}
 
             {/* Profitability */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
               <h3 className="font-semibold text-slate-900 mb-4">Lönsamhet</h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
@@ -382,7 +403,7 @@ export default function MachineDetailPage() {
             </div>
 
             {/* Quick Stats */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
               <h3 className="font-semibold text-slate-900 mb-3">Nyckeltal</h3>
               <div className="space-y-3">
                 {[
@@ -402,7 +423,7 @@ export default function MachineDetailPage() {
             </div>
 
             {/* Actions */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-2">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-2">
               <h3 className="font-semibold text-slate-900 mb-3">Åtgärder</h3>
               <Link
                 href="/orders/new"
@@ -435,35 +456,13 @@ export default function MachineDetailPage() {
             </div>
 
             {/* Delete confirmation modal */}
-            {showDeleteConfirm && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-                <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 max-w-sm w-full">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                      <AlertTriangle className="w-5 h-5 text-red-600" />
-                    </div>
-                    <h3 className="font-semibold text-slate-900">Ta bort maskin</h3>
-                  </div>
-                  <p className="text-sm text-slate-600 mb-5">
-                    Är du säker på att du vill ta bort <strong>{machine.name}</strong>? Åtgärden kan inte ångras.
-                  </p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowDeleteConfirm(false)}
-                      className="flex-1 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer"
-                    >
-                      Avbryt
-                    </button>
-                    <button
-                      onClick={handleDelete}
-                      className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 cursor-pointer"
-                    >
-                      Ta bort
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            <ConfirmDialog
+              open={showDeleteConfirm}
+              title="Ta bort maskin"
+              message={`Är du säker på att du vill ta bort ${machine.name}? Åtgärden kan inte ångras.`}
+              onConfirm={handleDelete}
+              onCancel={() => setShowDeleteConfirm(false)}
+            />
           </div>
         </div>
       </div>

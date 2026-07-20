@@ -114,7 +114,7 @@ export default function DashboardPage() {
 
       <div className="flex-1 p-3 sm:p-6 space-y-5">
         {/* Alerts */}
-        {(stats.overdueOrders > 0 || stats.onService > 0 || stats.damaged > 0) && (
+        {(stats.overdueOrders > 0 || stats.onService > 0 || stats.damaged > 0 || stats.returningIn7Days > 0) && (
           <div className="bg-red-50 border border-red-200/80 rounded-2xl p-4">
             <div className="flex items-center gap-2 text-red-800 text-[13px] font-semibold mb-2.5">
               <AlertTriangle className="w-4 h-4" />
@@ -140,10 +140,10 @@ export default function DashboardPage() {
                 </Link>
               )}
               {stats.returningIn7Days > 0 && (
-                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-700 text-[12px] font-medium rounded-lg">
+                <Link href="/orders?returningSoon=1" className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-100 hover:bg-sky-200 text-sky-700 text-[12px] font-medium rounded-lg transition-colors cursor-pointer">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  {stats.returningIn7Days} return inom 7 dagar
-                </span>
+                  {stats.returningIn7Days} returer inom 7 dagar
+                </Link>
               )}
             </div>
           </div>

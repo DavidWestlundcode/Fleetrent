@@ -2,7 +2,7 @@
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { Truck, Clock, User, Calendar, CheckCircle2, AlertTriangle, Wrench, Printer, Plus } from 'lucide-react';
+import { Truck, Clock, User, Calendar, CheckCircle2, AlertTriangle, Wrench, Printer, Plus, Camera } from 'lucide-react';
 import { useStore } from '@/store';
 import { MachineStatusBadge, OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { formatDate, daysUntil } from '@/lib/utils';
@@ -137,10 +137,19 @@ export default function QRPage() {
               </div>
             </div>
 
-            {/* Return Button */}
+            {/* Pickup / Return buttons */}
+            {!activeOrder.pickupCompletedAt && (
+              <Link
+                href={`/pickup/${activeOrder.id}`}
+                className="mt-4 flex items-center justify-center gap-2 w-full py-4 bg-blue-600 text-white font-bold text-base rounded-xl hover:bg-blue-700 active:scale-95 transition-all"
+              >
+                <Camera className="w-5 h-5" />
+                Registrera utlämning
+              </Link>
+            )}
             <Link
               href={`/return/${activeOrder.id}`}
-              className="mt-4 flex items-center justify-center gap-2 w-full py-4 bg-emerald-600 text-white font-bold text-base rounded-xl hover:bg-emerald-700 active:scale-95 transition-all"
+              className={`flex items-center justify-center gap-2 w-full py-4 bg-emerald-600 text-white font-bold text-base rounded-xl hover:bg-emerald-700 active:scale-95 transition-all ${activeOrder.pickupCompletedAt ? 'mt-4' : 'mt-3'}`}
             >
               <CheckCircle2 className="w-5 h-5" />
               Avsluta order

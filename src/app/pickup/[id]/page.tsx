@@ -2,34 +2,34 @@
 import { useState, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle2, Truck, ArrowLeft, AlertTriangle, Wrench } from 'lucide-react';
+import { CheckCircle2, Truck, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { useStore } from '@/store';
-import { formatDate, daysBetween, countBusinessDays, calcBreakdown, formatCurrency } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { MachineStatusBadge } from '@/components/ui/StatusBadge';
 import PhotoCapture from '@/components/ui/PhotoCapture';
 
-type ReturnCondition = 'bra' | 'skadat' | 'kraver_service' | 'kraver_kontroll';
+type PickupCondition = 'bra' | 'skadat' | 'kraver_service' | 'kraver_kontroll';
 
-const CONDITIONS: { value: ReturnCondition; label: string; desc: string; color: string }[] = [
+const CONDITIONS: { value: PickupCondition; label: string; desc: string; color: string }[] = [
   { value: 'bra', label: 'Bra skick', desc: 'Maskinen är i normalt skick utan skador', color: 'border-emerald-500 bg-emerald-50 text-emerald-700' },
-  { value: 'skadat', label: 'Skadad', desc: 'Maskinen har skador som behöver åtgärdas', color: 'border-red-500 bg-red-50 text-red-700' },
+  { value: 'skadat', label: 'Skadad', desc: 'Maskinen har befintliga skador — dokumentera med foto', color: 'border-red-500 bg-red-50 text-red-700' },
   { value: 'kraver_service', label: 'Kräver service', desc: 'Behöver genomgång av servicetekniker', color: 'border-orange-500 bg-orange-50 text-orange-700' },
-  { value: 'kraver_kontroll', label: 'Kräver kontroll', desc: 'Behöver kontrolleras innan ny uthyrning', color: 'border-amber-500 bg-amber-50 text-amber-700' },
+  { value: 'kraver_kontroll', label: 'Kräver kontroll', desc: 'Behöver kontrolleras innan utlämning', color: 'border-amber-500 bg-amber-50 text-amber-700' },
 ];
 
-function ReturnPageInner() {
+function PickupPageInner() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromOrder = searchParams.get('from') === 'order';
-  const { orders, machines, customers, organizationId, returnMachine, initialized } = useStore();
+  const { orders, machines, customers, organizationId, pickupMachine, initialized } = useStore();
 
   const order = orders.find((o) => o.id === id);
   const machine = order ? machines.find((m) => m.id === order.machineId) : null;
   const customer = order ? customers.find((c) => c.id === order.customerId) : null;
 
   const [step, setStep] = useState<1 | 2>(1);
-  const [condition, setCondition] = useState<ReturnCondition | null>(null);
+  const [condition, setCondition] = useState<PickupCondition | null>(null);
   const [notes, setNotes] = useState('');
   const [operatingHours, setOperatingHours] = useState(machine?.operatingHours ?? 0);
   const [images, setImages] = useState<string[]>([]);
@@ -66,32 +66,13 @@ function ReturnPageInner() {
     );
   }
 
-  const today = new Date().toISOString();
-  const isOpenEnded = order.openEnded === true || !order.plannedReturnDate;
-  const rentalDays = isOpenEnded
-    ? (order.chargeWeekends ? daysBetween(order.startDate, today) : countBusinessDays(order.startDate, today))
-    : daysBetween(order.startDate, today);
-
-  const priceBreakdown = isOpenEnded
-    ? calcBreakdown(rentalDays, order.dailyPrice, order.weeklyPrice, order.monthlyPrice)
-    : null;
-  const rentalCost = priceBreakdown ? priceBreakdown.total : 0;
-  const insuranceCostAtReturn = isOpenEnded && order.insuranceMonthlyRate
-    ? Math.ceil(rentalDays / 30) * order.insuranceMonthlyRate
-    : 0;
-  const finalTotalPrice = isOpenEnded
-    ? rentalCost + (order.transportCost ?? 0) + insuranceCostAtReturn + (order.deposit ?? 0)
-    : undefined;
-
   const handleSubmit = () => {
     if (!condition) return;
-    returnMachine(order.id, {
-      returnCondition: condition,
-      returnNotes: notes,
-      returnOperatingHours: operatingHours,
-      returnImages: images,
-      sendToService: condition === 'kraver_service' || condition === 'skadat',
-      finalTotalPrice,
+    pickupMachine(order.id, {
+      pickupCondition: condition,
+      pickupNotes: notes,
+      pickupOperatingHours: operatingHours,
+      pickupImages: images,
     });
     if (fromOrder) {
       router.push(`/orders/${order.id}`);
@@ -107,18 +88,14 @@ function ReturnPageInner() {
           <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="w-8 h-8 text-emerald-600" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Order avslutad!</h2>
-          <p className="text-slate-500 text-sm mb-6">
-            {machine.name} har markerats som{' '}
-            {condition === 'skadat' || condition === 'kraver_service' ? 'skickad till service' : 'tillbaka i lager'}.
-          </p>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Utlämning registrerad!</h2>
+          <p className="text-slate-500 text-sm mb-6">{machine.name} är dokumenterad och redo att lämnas ut till {customer?.companyName}.</p>
           <div className="bg-slate-50 rounded-xl p-4 text-left space-y-2 mb-6">
             <p className="text-sm text-slate-600"><span className="font-medium">Maskin:</span> {machine.name}</p>
             <p className="text-sm text-slate-600"><span className="font-medium">Kund:</span> {customer?.companyName}</p>
-            <p className="text-sm text-slate-600"><span className="font-medium">Hyresperiod:</span> {rentalDays} dagar</p>
             <p className="text-sm text-slate-600"><span className="font-medium">Skick:</span> {CONDITIONS.find((c) => c.value === condition)?.label}</p>
-            {finalTotalPrice !== undefined && (
-              <p className="text-sm text-slate-600"><span className="font-medium">Totalt:</span> {formatCurrency(finalTotalPrice)}</p>
+            {images.length > 0 && (
+              <p className="text-sm text-slate-600"><span className="font-medium">Foton:</span> {images.length} st</p>
             )}
           </div>
           <Link
@@ -141,13 +118,12 @@ function ReturnPageInner() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <p className="text-white font-bold">Returregistrering</p>
+          <p className="text-white font-bold">Utlämningsregistrering</p>
           <p className="text-slate-400 text-xs">{machine.name} · {order.orderNumber}</p>
         </div>
       </div>
 
       <div className="flex-1 px-4 py-6 max-w-md mx-auto w-full">
-        {/* Machine Info */}
         <div className="bg-white rounded-2xl p-5 mb-4">
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2 bg-blue-50 rounded-xl">
@@ -168,20 +144,8 @@ function ReturnPageInner() {
                 <p className="text-sm font-semibold text-slate-800">{customer?.companyName}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs text-slate-400">Uthyrd sedan</p>
+                <p className="text-xs text-slate-400">Startdatum</p>
                 <p className="text-sm font-semibold text-slate-800">{formatDate(order.startDate)}</p>
-              </div>
-            </div>
-            <div className="mt-2 pt-2 border-t border-slate-200 flex justify-between">
-              <div>
-                <p className="text-xs text-slate-400">Planerad retur</p>
-                <p className="text-sm font-semibold text-slate-700">
-                  {order.plannedReturnDate ? formatDate(order.plannedReturnDate) : 'Löpande'}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-slate-400">Faktiska dagar</p>
-                <p className="text-sm font-semibold text-slate-700">{rentalDays} dagar</p>
               </div>
             </div>
           </div>
@@ -190,7 +154,7 @@ function ReturnPageInner() {
         {step === 1 ? (
           <>
             <div className="bg-white rounded-2xl p-5 mb-4">
-              <h3 className="font-bold text-slate-900 mb-3">Maskinens skick vid retur</h3>
+              <h3 className="font-bold text-slate-900 mb-3">Maskinens skick vid utlämning</h3>
               <div className="space-y-2">
                 {CONDITIONS.map((c) => (
                   <button
@@ -208,15 +172,14 @@ function ReturnPageInner() {
             </div>
 
             <div className="bg-white rounded-2xl p-5 mb-4">
-              <h3 className="font-bold text-slate-900 mb-3">Drifttimmar vid retur</h3>
+              <h3 className="font-bold text-slate-900 mb-3">Drifttimmar vid utlämning</h3>
               <input
                 type="number"
                 value={operatingHours}
                 onChange={(e) => setOperatingHours(Number(e.target.value))}
-                min={machine.operatingHours}
+                min={0}
                 className="w-full px-4 py-3 text-lg font-semibold text-center bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <p className="text-xs text-slate-400 text-center mt-1">Vid avresa: {machine.operatingHours.toLocaleString('sv-SE')} h</p>
             </div>
 
             <button
@@ -234,7 +197,7 @@ function ReturnPageInner() {
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Beskriv maskinens skick, eventuella skador eller avvikelser..."
+                placeholder="Beskriv maskinens skick vid utlämning, eventuella befintliga skador eller avvikelser..."
                 className="w-full px-4 py-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mb-4"
                 rows={4}
               />
@@ -244,7 +207,7 @@ function ReturnPageInner() {
                   onChange={setImages}
                   orgId={organizationId}
                   folderId={machine.id}
-                  hint="Foton av maskinens skick vid retur — särskilt viktigt om skick avviker från utlämningen."
+                  hint="Foton av maskinens skick innan den lämnar gården — värdefullt vid eventuell tvist om skador."
                 />
               )}
             </div>
@@ -261,66 +224,9 @@ function ReturnPageInner() {
                   <span className="font-semibold">{operatingHours.toLocaleString('sv-SE')} h</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Hyresperiod</span>
-                  <span className="font-semibold">{rentalDays} dagar</span>
-                </div>
-                <div className="flex justify-between text-sm">
                   <span className="text-slate-500">Foton</span>
                   <span className="font-semibold">{images.length} st</span>
                 </div>
-                {(condition === 'skadat' || condition === 'kraver_service') && (
-                  <div className="mt-2 p-3 bg-orange-50 rounded-xl flex items-center gap-2">
-                    <Wrench className="w-4 h-4 text-orange-500" />
-                    <p className="text-xs text-orange-700 font-medium">Maskinen skickas automatiskt till service</p>
-                  </div>
-                )}
-                {isOpenEnded && priceBreakdown && (
-                  <div className="mt-3 pt-3 border-t border-slate-200">
-                    <p className="text-xs font-semibold text-slate-500 mb-2">Beräknad hyreskostnad</p>
-                    <div className="space-y-1">
-                      {priceBreakdown.months > 0 && (
-                        <div className="flex justify-between text-xs">
-                          <span className="text-slate-500">{priceBreakdown.months} mån à {formatCurrency(order.monthlyPrice)}</span>
-                          <span className="font-medium">{formatCurrency(priceBreakdown.months * order.monthlyPrice)}</span>
-                        </div>
-                      )}
-                      {priceBreakdown.weeks > 0 && (
-                        <div className="flex justify-between text-xs">
-                          <span className="text-slate-500">{priceBreakdown.weeks} veckor à {formatCurrency(order.weeklyPrice)}</span>
-                          <span className="font-medium">{formatCurrency(priceBreakdown.weeks * order.weeklyPrice)}</span>
-                        </div>
-                      )}
-                      {priceBreakdown.days > 0 && (
-                        <div className="flex justify-between text-xs">
-                          <span className="text-slate-500">{priceBreakdown.days} dagar à {formatCurrency(order.dailyPrice)}</span>
-                          <span className="font-medium">{formatCurrency(priceBreakdown.days * order.dailyPrice)}</span>
-                        </div>
-                      )}
-                      {insuranceCostAtReturn > 0 && (
-                        <div className="flex justify-between text-xs">
-                          <span className="text-slate-500">Försäkring ({Math.ceil(rentalDays / 30)} mån)</span>
-                          <span className="font-medium">{formatCurrency(insuranceCostAtReturn)}</span>
-                        </div>
-                      )}
-                      {order.transportCost > 0 && (
-                        <div className="flex justify-between text-xs">
-                          <span className="text-slate-500">Transport</span>
-                          <span className="font-medium">{formatCurrency(order.transportCost)}</span>
-                        </div>
-                      )}
-                      {order.deposit > 0 && (
-                        <div className="flex justify-between text-xs">
-                          <span className="text-slate-500">Deposition</span>
-                          <span className="font-medium">{formatCurrency(order.deposit)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-sm font-semibold pt-2 border-t border-slate-200">
-                        <span>Totalt</span>
-                        <span className="text-blue-600">{formatCurrency(finalTotalPrice ?? 0)}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -336,7 +242,7 @@ function ReturnPageInner() {
                 className="flex-1 py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-2"
               >
                 <CheckCircle2 className="w-5 h-5" />
-                Avsluta order
+                Bekräfta utlämning
               </button>
             </div>
           </>
@@ -346,10 +252,10 @@ function ReturnPageInner() {
   );
 }
 
-export default function ReturnPage() {
+export default function PickupPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-slate-900" />}>
-      <ReturnPageInner />
+      <PickupPageInner />
     </Suspense>
   );
 }

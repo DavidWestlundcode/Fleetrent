@@ -1,9 +1,12 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, Search, Trash2 } from 'lucide-react';
+import { Plus, Search, Trash2, ClipboardList } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { OrderStatusBadge } from '@/components/ui/StatusBadge';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import EmptyState from '@/components/ui/EmptyState';
 import { useStore } from '@/store';
 import { formatCurrency, formatDate, daysUntil } from '@/lib/utils';
 import type { Order, OrderStatus } from '@/lib/types';
@@ -26,11 +29,31 @@ import Pagination from '@/components/ui/Pagination';
 
 const PAGE_SIZE = 50;
 
-export default function OrdersPage() {
+type StatusFilter = OrderStatus | 'all' | '30_dagar' | 'returning_soon';
+
+const VALID_STATUSES: OrderStatus[] = ['aktiv', 'reserverad', 'forsenad', 'klar_for_fakturering', 'avslutad', 'annullerad'];
+
+function isReturningSoon(order: Order): boolean {
+  if (order.status !== 'aktiv') return false;
+  const days = daysUntil(order.plannedReturnDate);
+  return days >= 0 && days <= 7;
+}
+
+function OrdersPageInner() {
+  const searchParams = useSearchParams();
   const { orders, machines, customers, deleteOrder } = useStore();
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all' | '30_dagar'>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(() => {
+    if (searchParams.get('returningSoon') === '1') return 'returning_soon';
+    const status = searchParams.get('status');
+    if (status && VALID_STATUSES.includes(status as OrderStatus)) return status as OrderStatus;
+    return 'all';
+  });
   const [page, setPage] = useState(1);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; orderNumber: string } | null>(null);
+
+  const hasActiveFilters = statusFilter !== 'all' || !!search;
+  const clearAllFilters = () => { setStatusFilter('all'); setSearch(''); };
 
   const filtered = useMemo(() => {
     return orders
@@ -45,6 +68,7 @@ export default function OrdersPage() {
         const matchesStatus =
           statusFilter === 'all' ? true :
           statusFilter === '30_dagar' ? needsPartialInvoice(o) :
+          statusFilter === 'returning_soon' ? isReturningSoon(o) :
           o.status === statusFilter;
         return matchesSearch && matchesStatus;
       })
@@ -145,7 +169,13 @@ export default function OrdersPage() {
             <tbody className="divide-y divide-slate-50">
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-14 text-center text-[13px] text-slate-400">Inga order hittades</td>
+                  <td colSpan={8}>
+                    {hasActiveFilters ? (
+                      <EmptyState icon={Search} title="Inga träffar" description="Inga ordrar matchar sökningen eller filtret." actionLabel="Rensa filter" onAction={clearAllFilters} />
+                    ) : (
+                      <EmptyState icon={ClipboardList} title="Inga ordrar ännu" description="Skapa din första uthyrningsorder för att komma igång." actionLabel="Skapa order" actionHref="/orders/new" />
+                    )}
+                  </td>
                 </tr>
               )}
               {paginated.map((order) => {
@@ -189,7 +219,7 @@ export default function OrdersPage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (confirm(`Radera order ${order.orderNumber}?`)) deleteOrder(order.id);
+                            setDeleteTarget({ id: order.id, orderNumber: order.orderNumber });
                           }}
                           className="p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                         >
@@ -208,6 +238,22 @@ export default function OrdersPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Radera order"
+        message={`Är du säker på att du vill radera order ${deleteTarget?.orderNumber}? Åtgärden kan inte ångras.`}
+        onConfirm={() => { if (deleteTarget) deleteOrder(deleteTarget.id); setDeleteTarget(null); }}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
+  );
+}
+
+export default function OrdersPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center flex-1 text-slate-400">Laddar...</div>}>
+      <OrdersPageInner />
+    </Suspense>
   );
 }

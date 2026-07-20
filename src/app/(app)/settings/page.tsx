@@ -1,7 +1,8 @@
 ﻿'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Save, User, Building2, Bell, Globe, Mail, Loader2, CheckCircle2, XCircle, Link2, Link2Off, Shield, Phone } from 'lucide-react';
+import { Save, User, Building2, Globe, Mail, Loader2, CheckCircle2, XCircle, Link2, Link2Off, Shield, Phone } from 'lucide-react';
 import Header from '@/components/layout/Header';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
@@ -14,7 +15,6 @@ const TABS = [
   { id: 'profile', label: 'Min profil', icon: User },
   { id: 'company', label: 'Företagsinformation', icon: Building2 },
   { id: 'users', label: 'Användare', icon: User },
-  { id: 'notifications', label: 'Notiser', icon: Bell },
   { id: 'integrations', label: 'Integrationer', icon: Globe },
 ] as const;
 
@@ -32,6 +32,7 @@ function FortnoxCard() {
   const [connectedAt, setConnectedAt] = useState<string | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
 
   const loadStatus = useCallback(async () => {
     const res = await fetch('/api/fortnox/status');
@@ -51,7 +52,7 @@ function FortnoxCard() {
   }, [loadStatus, searchParams]);
 
   const handleDisconnect = async () => {
-    if (!confirm('Koppla bort Fortnox-integrationen?')) return;
+    setShowDisconnectConfirm(false);
     setDisconnecting(true);
     await fetch('/api/fortnox/disconnect', { method: 'POST' });
     setStatus('disconnected');
@@ -61,7 +62,7 @@ function FortnoxCard() {
   };
 
   return (
-    <div className="border border-slate-200 rounded-xl p-5">
+    <div className="border border-slate-200/80 rounded-2xl shadow-sm p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-[#00a651]/10 flex items-center justify-center shrink-0">
@@ -81,7 +82,7 @@ function FortnoxCard() {
                 Ansluten
               </span>
               <button
-                onClick={handleDisconnect}
+                onClick={() => setShowDisconnectConfirm(true)}
                 disabled={disconnecting}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors cursor-pointer disabled:opacity-50"
               >
@@ -114,6 +115,14 @@ function FortnoxCard() {
           {feedback.msg}
         </div>
       )}
+      <ConfirmDialog
+        open={showDisconnectConfirm}
+        title="Koppla bort Fortnox"
+        message="Koppla bort Fortnox-integrationen? Ordrar kommer inte längre skickas dit automatiskt."
+        confirmLabel="Koppla bort"
+        onConfirm={handleDisconnect}
+        onCancel={() => setShowDisconnectConfirm(false)}
+      />
     </div>
   );
 }
@@ -430,7 +439,7 @@ function SettingsInner() {
 
             {/* ---- MIN PROFIL ---- */}
             {activeTab === 'profile' && (
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
                 <h2 className="font-semibold text-slate-900 mb-1">Min profil</h2>
                 <p className="text-sm text-slate-500 mb-6">Uppdatera dina personliga uppgifter.</p>
                 <form onSubmit={handleSaveProfile} className="space-y-4 max-w-md">
@@ -501,7 +510,7 @@ function SettingsInner() {
 
             {/* ---- FÖRETAGSINFORMATION ---- */}
             {activeTab === 'company' && (
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
                 <h2 className="font-semibold text-slate-900 mb-4">Företagsinformation</h2>
 
                 {orgLoading ? (
@@ -569,7 +578,7 @@ function SettingsInner() {
             {/* ---- ANVÄNDARE ---- */}
             {activeTab === 'users' && (
               <div className="space-y-4">
-                <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
                   <h2 className="font-semibold text-slate-900 mb-4">Teammedlemmar</h2>
                   {members.length === 0 ? (
                     <p className="text-sm text-slate-400">Inga medlemmar hittades.</p>
@@ -610,7 +619,7 @@ function SettingsInner() {
                   )}
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
                   <h2 className="font-semibold text-slate-900 mb-1">Bjud in medarbetare</h2>
                   <p className="text-sm text-slate-500 mb-4">De får ett e-postmeddelande med en länk för att skapa sitt konto och ansluta till ditt företag.</p>
                   <form onSubmit={handleInvite} className="flex gap-2">
@@ -663,7 +672,7 @@ function SettingsInner() {
                   )}
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
                   <h2 className="font-semibold text-slate-900 mb-1">Skapa användare manuellt</h2>
                   <p className="text-sm text-slate-500 mb-4">Skapa ett konto direkt utan e-postinbjudan. Dela inloggningsuppgifterna med medarbetaren.</p>
                   <form onSubmit={handleCreateUser} className="space-y-3">
@@ -723,36 +732,9 @@ function SettingsInner() {
               </div>
             )}
 
-            {/* ---- NOTISER ---- */}
-            {activeTab === 'notifications' && (
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
-                <h2 className="font-semibold text-slate-900 mb-4">Notifikationer</h2>
-                <div className="space-y-4">
-                  {[
-                    { label: 'Försenade returer', desc: 'Notis när en maskin inte returneras i tid', enabled: true },
-                    { label: 'Kommande returer', desc: 'Påminnelse 3 dagar innan planerad retur', enabled: true },
-                    { label: 'Service påminnelse', desc: 'Notis när service är planerad om 7 dagar', enabled: true },
-                    { label: 'Ny order', desc: 'E-post vid ny order skapad', enabled: false },
-                    { label: 'Maskinskada', desc: 'Omedelbar notis vid registrerad skada', enabled: true },
-                  ].map((setting) => (
-                    <div key={setting.label} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
-                      <div>
-                        <p className="text-sm font-medium text-slate-800">{setting.label}</p>
-                        <p className="text-xs text-slate-500">{setting.desc}</p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" defaultChecked={setting.enabled} className="sr-only peer" />
-                        <div className="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* ---- INTEGRATIONER ---- */}
             {activeTab === 'integrations' && (
-              <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
                 <h2 className="font-semibold text-slate-900 mb-1">Integrationer</h2>
                 <p className="text-sm text-slate-500 mb-6">Anslut FleetOS till externa system</p>
                 <div className="space-y-4">
@@ -761,7 +743,7 @@ function SettingsInner() {
                   </Suspense>
 
                   {/* Serviceprotokoll */}
-                  <div className="border border-slate-200 rounded-xl p-5 space-y-4">
+                  <div className="border border-slate-200/80 rounded-2xl shadow-sm p-5 space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-semibold text-slate-800">Serviceprotokoll</p>

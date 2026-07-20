@@ -6,6 +6,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
 import { CATEGORY_LABELS, FUEL_LABELS, type MachineCategory, type FuelType, type MachineStatus } from '@/lib/types';
+import PhotoCapture from '@/components/ui/PhotoCapture';
 
 const inputCls = 'w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white';
 
@@ -89,8 +90,9 @@ const TEXT_SPEC_FIELDS: Partial<Record<MachineCategory, { key: string; label: st
 export default function EditMachinePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { machines, updateMachine } = useStore();
+  const { machines, updateMachine, organizationId } = useStore();
   const machine = machines.find((m) => m.id === id);
+  const [images, setImages] = useState<string[]>([]);
 
   const [form, setForm] = useState({
     name: '', model: '', brand: '', serialNumber: '', registrationNumber: '',
@@ -106,6 +108,7 @@ export default function EditMachinePage() {
 
   useEffect(() => {
     if (machine) {
+      setImages(machine.images);
       setForm({
         name: machine.name, model: machine.model, brand: machine.brand,
         serialNumber: machine.serialNumber, registrationNumber: machine.registrationNumber,
@@ -153,6 +156,7 @@ export default function EditMachinePage() {
       mastType: form.mastType || undefined,
       powerUnit: form.powerUnit || undefined,
       cabin: form.cabin || undefined,
+      images,
     });
     router.push(`/machines/${id}`);
   };
@@ -274,6 +278,13 @@ export default function EditMachinePage() {
             <Field label="Anteckningar">
               <textarea value={form.notes} onChange={(e) => set('notes', e.target.value)} className={`${inputCls} resize-none mt-4`} rows={3} />
             </Field>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 p-6">
+            <h2 className="font-semibold text-slate-900 mb-4">Bilder</h2>
+            {organizationId && (
+              <PhotoCapture images={images} onChange={setImages} orgId={organizationId} folderId={id} />
+            )}
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200 p-6">

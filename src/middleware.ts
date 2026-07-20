@@ -13,6 +13,7 @@ const PROTECTED_PATHS = [
   '/statistics',
   '/qr',
   '/return',
+  '/pickup',
 ];
 
 export async function middleware(request: NextRequest) {

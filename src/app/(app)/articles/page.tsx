@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react';
 import { Plus, Package, Edit, Trash2, Hash } from 'lucide-react';
 import Header from '@/components/layout/Header';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useStore } from '@/store';
 import { formatCurrency } from '@/lib/utils';
 import {
@@ -42,6 +43,7 @@ export default function ArticlesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const editIdRef = useRef<string | null>(null);
   const formRef = useRef(emptyForm);
@@ -336,9 +338,7 @@ export default function ArticlesPage() {
                         <Edit className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm('Radera artikel?')) deleteArticle(article.id);
-                        }}
+                        onClick={() => setDeleteTarget({ id: article.id, name: article.name })}
                         className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -351,6 +351,14 @@ export default function ArticlesPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Radera artikel"
+        message={`Är du säker på att du vill radera ${deleteTarget?.name}? Åtgärden kan inte ångras.`}
+        onConfirm={() => { if (deleteTarget) deleteArticle(deleteTarget.id); setDeleteTarget(null); }}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

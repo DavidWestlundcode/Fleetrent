@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Building2, Phone, Mail, MapPin, FileText, Plus, Trash2, Ban, RotateCcw, Users, Home, ChevronDown, ChevronRight, Edit, Wrench } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { OrderStatusBadge } from '@/components/ui/StatusBadge';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useStore } from '@/store';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { SpMachine } from '@/lib/types';
@@ -38,29 +39,27 @@ export default function CustomerDetailPage() {
   }
 
   const [openFacility, setOpenFacility] = useState<number | null>(null);
+  const [dialog, setDialog] = useState<'deactivate' | 'delete' | 'blocked' | null>(null);
   const activeOrders = customerOrders.filter((o) => o.status === 'aktiv' || o.status === 'reserverad');
   const completedOrders = customerOrders.filter((o) => o.status === 'avslutad');
   const isActive = customer.isActive !== false;
 
-  const handleDeactivate = () => {
-    if (confirm(`Inaktivera ${customer.companyName}? Kunden döljs från kundlistan men kan återaktiveras.`)) {
-      updateCustomer(customer.id, { isActive: false });
-    }
-  };
+  const handleDeactivate = () => setDialog('deactivate');
 
   const handleActivate = () => {
     updateCustomer(customer.id, { isActive: true });
   };
 
-  const handleDelete = () => {
-    if (activeOrders.length > 0) {
-      alert(`Kan inte radera kund med ${activeOrders.length} aktiv${activeOrders.length !== 1 ? 'a' : ''} order. Avsluta orderna först.`);
-      return;
-    }
-    if (confirm(`Radera ${customer.companyName} permanent? Detta går inte att ångra.`)) {
-      deleteCustomer(customer.id);
-      router.push('/customers');
-    }
+  const handleDelete = () => setDialog(activeOrders.length > 0 ? 'blocked' : 'delete');
+
+  const confirmDeactivate = () => {
+    updateCustomer(customer.id, { isActive: false });
+    setDialog(null);
+  };
+
+  const confirmDelete = () => {
+    deleteCustomer(customer.id);
+    router.push('/customers');
   };
 
   return (
@@ -121,7 +120,7 @@ export default function CustomerDetailPage() {
         </Link>
 
         {!isActive && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
             <Ban className="w-5 h-5 text-amber-500 shrink-0" />
             <div className="flex-1">
               <p className="text-sm font-semibold text-amber-800">Inaktiv kund</p>
@@ -135,7 +134,7 @@ export default function CustomerDetailPage() {
 
         {/* Företagsinfo + Statistik */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
             <div className="flex items-center gap-3 mb-5">
               <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 text-blue-600">
                 <Building2 className="w-6 h-6" />
@@ -148,15 +147,15 @@ export default function CustomerDetailPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <div>
-                  <p className="text-xs text-slate-400 mb-0.5">Kontaktperson</p>
-                  <p className="text-sm font-medium text-slate-800">{customer.contactPerson}</p>
+                  <p className="text-[11px] text-slate-400 mb-0.5">Kontaktperson</p>
+                  <p className="text-[13px] font-medium text-slate-800">{customer.contactPerson}</p>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-slate-700">
                   <Phone className="w-4 h-4 text-slate-400 shrink-0" />
                   <a href={`tel:${customer.phone}`} className="hover:text-blue-600">{customer.phone}</a>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400 mb-0.5">Fakturaepost</p>
+                  <p className="text-[11px] text-slate-400 mb-0.5">Fakturaepost</p>
                   <div className="flex items-center gap-2 text-sm text-slate-700">
                     <Mail className="w-4 h-4 text-slate-400 shrink-0" />
                     <a href={`mailto:${customer.email}`} className="hover:text-blue-600">{customer.email}</a>
@@ -165,7 +164,7 @@ export default function CustomerDetailPage() {
               </div>
               <div className="space-y-3">
                 <div>
-                  <p className="text-xs text-slate-400 mb-0.5">Fakturaadress</p>
+                  <p className="text-[11px] text-slate-400 mb-0.5">Fakturaadress</p>
                   <div className="flex items-start gap-2 text-sm text-slate-700">
                     <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                     <span>{customer.invoiceAddress}</span>
@@ -175,13 +174,13 @@ export default function CustomerDetailPage() {
             </div>
             {customer.notes && (
               <div className="mt-4 pt-4 border-t border-slate-100">
-                <p className="text-xs text-slate-400 mb-1">Anteckningar</p>
+                <p className="text-[11px] text-slate-400 mb-1">Anteckningar</p>
                 <p className="text-sm text-slate-700">{customer.notes}</p>
               </div>
             )}
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
             <h3 className="font-semibold text-slate-900 mb-4">Statistik</h3>
             <div className="space-y-3">
               {([
@@ -204,7 +203,7 @@ export default function CustomerDetailPage() {
 
         {/* Anläggningar */}
         {customer.facilities && customer.facilities.length > 0 && (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
               <Home className="w-4 h-4 text-slate-500" />
               <h3 className="font-semibold text-slate-900">Anläggningar</h3>
@@ -224,9 +223,9 @@ export default function CustomerDetailPage() {
                         <MapPin className="w-4.5 h-4.5 text-blue-500" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-800">{f.name || 'Okänd anläggning'}</p>
+                        <p className="text-[13px] font-semibold text-slate-800">{f.name || 'Okänd anläggning'}</p>
                         {(f.address || f.city) && (
-                          <p className="text-xs text-slate-400 mt-0.5">{[f.address, f.zip, f.city].filter(Boolean).join(', ')}</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">{[f.address, f.zip, f.city].filter(Boolean).join(', ')}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
@@ -251,13 +250,13 @@ export default function CustomerDetailPage() {
                       <div className="bg-slate-50 border-t border-slate-100 px-5 py-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                           {f.contacts!.map((c, j) => (
-                            <div key={j} className="bg-white rounded-xl border border-slate-200 p-4 flex gap-3">
+                            <div key={j} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex gap-3">
                               <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center text-sm font-semibold text-blue-600 shrink-0">
                                 {c.name?.charAt(0)?.toUpperCase() ?? '?'}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-slate-800">{c.name}</p>
-                                {c.title && <p className="text-xs text-slate-400">{c.title}</p>}
+                                <p className="text-[13px] font-semibold text-slate-800">{c.name}</p>
+                                {c.title && <p className="text-[11px] text-slate-400">{c.title}</p>}
                                 <div className="mt-1.5 space-y-1">
                                   {c.phone && (
                                     <a href={`tel:${c.phone}`} className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline">
@@ -285,7 +284,7 @@ export default function CustomerDetailPage() {
 
         {/* Maskiner i Serviceprotokoll */}
         {customer.fortnoxCustomerNumber && (spMachines === null || spMachines.length > 0) && (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
               <Wrench className="w-4 h-4 text-slate-500" />
               <h3 className="font-semibold text-slate-900">Maskiner i Serviceprotokoll</h3>
@@ -303,9 +302,9 @@ export default function CustomerDetailPage() {
                       <Wrench className="w-4 h-4 text-slate-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-800">{m.name}</p>
+                      <p className="text-[13px] font-semibold text-slate-800">{m.name}</p>
                       {(m.brand || m.model) && (
-                        <p className="text-xs text-slate-400 mt-0.5">{[m.brand, m.model].filter(Boolean).join(' · ')}</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">{[m.brand, m.model].filter(Boolean).join(' · ')}</p>
                       )}
                     </div>
                     <div className="flex items-center gap-3 shrink-0 text-xs text-slate-500">
@@ -320,7 +319,7 @@ export default function CustomerDetailPage() {
         )}
 
         {/* Orderhistorik */}
-        <div className="bg-white rounded-xl border border-slate-200">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm">
           <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
             <FileText className="w-4 h-4 text-slate-500" />
             <h2 className="font-semibold text-slate-900">Orderhistorik</h2>
@@ -363,6 +362,30 @@ export default function CustomerDetailPage() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={dialog === 'deactivate'}
+        title="Inaktivera kund"
+        message={`Inaktivera ${customer.companyName}? Kunden döljs från kundlistan men kan återaktiveras.`}
+        confirmLabel="Inaktivera"
+        onConfirm={confirmDeactivate}
+        onCancel={() => setDialog(null)}
+      />
+      <ConfirmDialog
+        open={dialog === 'delete'}
+        title="Radera kund"
+        message={`Radera ${customer.companyName} permanent? Detta går inte att ångra.`}
+        onConfirm={confirmDelete}
+        onCancel={() => setDialog(null)}
+      />
+      <ConfirmDialog
+        open={dialog === 'blocked'}
+        infoOnly
+        danger={false}
+        title="Kan inte radera kund"
+        message={`Kunden har ${activeOrders.length} aktiv${activeOrders.length !== 1 ? 'a' : ''} order. Avsluta orderna först.`}
+        onCancel={() => setDialog(null)}
+      />
     </div>
   );
 }
