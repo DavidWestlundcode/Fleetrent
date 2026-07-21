@@ -10,6 +10,8 @@ const NAV_ITEMS = [
   { label: 'Priser', href: '/priser' },
 ];
 
+const MOBILE_NAV_ITEMS = [...NAV_ITEMS, { label: 'Logga in', href: '/login' }];
+
 export const metadata: Metadata = {
   title: 'Priser – maskinuthyrningssystem från 2 499 kr/mån',
   description: 'Se priser för FleetOS, affärssystemet för maskinuthyrning. Basic från 2 499 kr/mån och Premium från 3 999 kr/mån. Ingen bindningstid, hela plattformen inkluderad.',
@@ -108,15 +110,15 @@ export default function PriserPage() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
         <div className="relative max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <PublicMobileNav items={NAV_ITEMS} />
+            <PublicMobileNav items={MOBILE_NAV_ITEMS} />
             <Link href="/" className="hidden md:flex items-center gap-2">
               <Logo size={28} />
               <span className="font-bold text-slate-900 text-[15px] tracking-tight">FleetOS</span>
             </Link>
           </div>
-          <Link href="/" className="flex md:hidden items-center gap-2 absolute left-1/2 -translate-x-1/2">
-            <Logo size={28} />
-            <span className="font-bold text-slate-900 text-[15px] tracking-tight">FleetOS</span>
+          <Link href="/" className="flex md:hidden items-center gap-1.5 absolute left-1/2 -translate-x-1/2">
+            <Logo size={24} />
+            <span className="font-bold text-slate-900 text-[14px] tracking-tight">FleetOS</span>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
             {NAV_ITEMS.map(({ label, href }) => (
@@ -125,11 +127,11 @@ export default function PriserPage() {
               </Link>
             ))}
           </nav>
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="text-[13px] font-medium text-slate-600 hover:text-slate-900 transition-colors">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link href="/login" className="hidden sm:block text-[13px] font-medium text-slate-600 hover:text-slate-900 transition-colors">
               Logga in
             </Link>
-            <Link href="/kom-igang" className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold rounded-xl transition-colors">
+            <Link href="/kom-igang" className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold rounded-xl transition-colors">
               Kom igång <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
