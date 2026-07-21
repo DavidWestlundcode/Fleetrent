@@ -2,6 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Check, ArrowRight, Zap, PenLine } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
+import PublicMobileNav from '@/components/public/PublicMobileNav';
+
+const NAV_ITEMS = [
+  { label: 'Funktioner', href: '/funktioner' },
+  { label: 'Hur det fungerar', href: '/#how-it-works' },
+  { label: 'Priser', href: '/priser' },
+];
 
 export const metadata: Metadata = {
   title: 'Priser – maskinuthyrningssystem från 2 499 kr/mån',
@@ -105,17 +112,14 @@ export default function PriserPage() {
             <span className="font-bold text-slate-900 text-[15px] tracking-tight">FleetOS</span>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
-            {[
-              { label: 'Funktioner', href: '/funktioner' },
-              { label: 'Hur det fungerar', href: '/#how-it-works' },
-              { label: 'Priser', href: '/priser' },
-            ].map(({ label, href }) => (
+            {NAV_ITEMS.map(({ label, href }) => (
               <Link key={label} href={href} className="px-3 py-1.5 text-[13px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors font-medium">
                 {label}
               </Link>
             ))}
           </nav>
           <div className="flex items-center gap-3">
+            <PublicMobileNav items={NAV_ITEMS} />
             <Link href="/login" className="text-[13px] font-medium text-slate-600 hover:text-slate-900 transition-colors">
               Logga in
             </Link>

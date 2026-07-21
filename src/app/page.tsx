@@ -9,6 +9,14 @@ import {
 } from 'lucide-react';
 import { AnimateIn, CountUp } from '@/components/ui/AnimateIn';
 import { Logo } from '@/components/ui/Logo';
+import PublicMobileNav from '@/components/public/PublicMobileNav';
+
+const NAV_ITEMS = [
+  { label: 'Funktioner', href: '/funktioner' },
+  { label: 'Hur det fungerar', href: '#how-it-works' },
+  { label: 'Integrationer', href: '#integrations' },
+  { label: 'Priser', href: '/priser' },
+];
 
 export const metadata: Metadata = {
   title: 'FleetOS – Maskinuthyrningssystem för Sverige',
@@ -566,18 +574,14 @@ export default function LandingPage() {
             <span className="font-bold text-slate-900 text-[15px] tracking-tight">FleetOS</span>
           </div>
           <nav className="hidden md:flex items-center justify-center gap-1 absolute left-1/2 -translate-x-1/2">
-            {[
-              { label: 'Funktioner', href: '/funktioner' },
-              { label: 'Hur det fungerar', href: '#how-it-works' },
-              { label: 'Integrationer', href: '#integrations' },
-              { label: 'Priser', href: '/priser' },
-            ].map(({ label, href }) => (
+            {NAV_ITEMS.map(({ label, href }) => (
               <a key={label} href={href} className="px-3 py-1.5 text-[13px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors font-medium">
                 {label}
               </a>
             ))}
           </nav>
           <div className="flex items-center gap-2">
+            <PublicMobileNav items={NAV_ITEMS} />
             <Link href="/login" className="text-[13px] font-medium text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">
               Logga in
             </Link>
