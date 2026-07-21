@@ -30,7 +30,7 @@ export default function PublicMobileNav({ items }: { items: NavItem[] }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/60 py-2 z-50">
+        <div className="absolute left-0 top-full mt-2 w-[min(14rem,calc(100vw-2rem))] bg-white rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/60 py-2 z-50">
           {items.map(({ label, href }) => (
             <a
               key={label}
