@@ -18,8 +18,8 @@ export default function Header({ title, subtitle, actions }: HeaderProps) {
   const alertCount = notifications.length;
 
   return (
-    <header className="flex items-center justify-between px-4 md:px-6 h-[56px] bg-white border-b border-slate-100 shrink-0 gap-3">
-      <div className="flex items-center gap-3 min-w-0">
+    <header className="flex items-center justify-between px-4 md:px-6 h-[56px] bg-white border-b border-slate-100 shrink-0 gap-2 md:gap-3">
+      <div className="flex items-center gap-3 min-w-0 shrink-0">
         <button
           onClick={open}
           className="md:hidden p-1.5 -ml-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
@@ -32,9 +32,9 @@ export default function Header({ title, subtitle, actions }: HeaderProps) {
           {subtitle && <p className="text-[11px] text-slate-400 leading-tight mt-px truncate">{subtitle}</p>}
         </div>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <GlobalSearch />
-        <div className="relative">
+      <div className="flex items-center gap-2 min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="shrink-0"><GlobalSearch /></div>
+        <div className="relative shrink-0">
           <button
             onClick={() => setShowNotifs((v) => !v)}
             className="relative p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
@@ -50,7 +50,7 @@ export default function Header({ title, subtitle, actions }: HeaderProps) {
             <NotificationPanel notifications={notifications} onDismiss={dismiss} onClose={() => setShowNotifs(false)} />
           )}
         </div>
-        {actions}
+        {actions && <div className="shrink-0 flex items-center gap-2">{actions}</div>}
       </div>
     </header>
   );

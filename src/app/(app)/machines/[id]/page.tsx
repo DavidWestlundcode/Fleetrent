@@ -256,7 +256,8 @@ export default function MachineDetailPage() {
               {machineOrders.length === 0 ? (
                 <p className="px-5 py-8 text-center text-slate-400 text-sm">Inga uthyrningar registrerade</p>
               ) : (
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[560px]">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-100">
                       <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500">Order</th>
@@ -292,6 +293,7 @@ export default function MachineDetailPage() {
                     })}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
 

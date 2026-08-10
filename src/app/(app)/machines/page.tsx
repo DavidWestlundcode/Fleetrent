@@ -696,9 +696,9 @@ function MachinesPageInner() {
           </div>
         )}
 
-        {/* Table View */}
+        {/* Table View (desktop only — mobile always shows the card grid below) */}
         {viewMode === 'table' && (
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="hidden md:block bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[700px]">
               <thead>
@@ -782,9 +782,9 @@ function MachinesPageInner() {
           </div>
         )}
 
-        {/* Grid View */}
-        {viewMode === 'grid' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {/* Grid View (always shown on mobile; desktop only when toggled) */}
+        {(
+          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ${viewMode === 'grid' ? '' : 'md:hidden'}`}>
             {paginated.map((machine) => (
               <Link key={machine.id} href={`/machines/${machine.id}`} className="bg-white rounded-2xl border border-slate-200/80 p-5 hover:shadow-md hover:-translate-y-0.5 hover:border-blue-200 transition-all duration-200 cursor-pointer">
                 <div className="flex items-start justify-between mb-3.5">

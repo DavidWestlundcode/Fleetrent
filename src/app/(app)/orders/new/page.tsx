@@ -626,7 +626,8 @@ function NewOrderForm() {
 
               {orderArticles.length > 0 && (
                 <div className="mb-4 border border-slate-200 rounded-xl overflow-hidden">
-                  <table className="w-full">
+                  <div className="overflow-x-auto">
+                  <table className="w-full min-w-[520px]">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-100">
                         <th className="text-left px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Artikel</th>
@@ -667,6 +668,7 @@ function NewOrderForm() {
                       })}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
 

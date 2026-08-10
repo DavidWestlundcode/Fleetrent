@@ -205,7 +205,8 @@ export default function StatisticsPage() {
             <h2 className="text-[14px] font-semibold text-slate-900">Maskinlönsamhet – detaljvy</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">Sorterat efter total intäkt</p>
           </div>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[720px]">
             <thead>
               <tr className="border-b border-slate-100">
                 {['Maskin', 'Uthyrningar', 'Dagar', 'Total intäkt', 'Inköpspris', 'Återbetalt', 'ROI'].map((h) => (
@@ -249,6 +250,7 @@ export default function StatisticsPage() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>
