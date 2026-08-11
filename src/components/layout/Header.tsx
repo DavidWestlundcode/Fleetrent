@@ -32,7 +32,7 @@ export default function Header({ title, subtitle, actions }: HeaderProps) {
           {subtitle && <p className="text-[11px] text-slate-400 leading-tight mt-px truncate">{subtitle}</p>}
         </div>
       </div>
-      <div className="flex items-center gap-2 min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex items-center gap-2 min-w-0">
         <div className="shrink-0"><GlobalSearch /></div>
         <div className="relative shrink-0">
           <button
@@ -50,7 +50,11 @@ export default function Header({ title, subtitle, actions }: HeaderProps) {
             <NotificationPanel notifications={notifications} onDismiss={dismiss} onClose={() => setShowNotifs(false)} />
           )}
         </div>
-        {actions && <div className="shrink-0 flex items-center gap-2">{actions}</div>}
+        {actions && (
+          <div className="min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex items-center gap-2">{actions}</div>
+          </div>
+        )}
       </div>
     </header>
   );
