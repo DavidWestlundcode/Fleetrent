@@ -330,6 +330,7 @@ function fromDbTemplate(r: DbRow): PriceTemplate {
     transportArticleId: r.transport_article_id as string | undefined,
     depositArticleId: r.deposit_article_id as string | undefined,
     customerIds: (r.customer_ids as string[]) ?? [],
+    customerType: (r.customer_type as PriceTemplate['customerType']) ?? 'alla',
     createdAt: r.created_at as string,
   };
 }
@@ -375,6 +376,7 @@ function toDbTemplate(t: PriceTemplate, orgId: string): DbRow {
     transport_article_id: t.transportArticleId || null,
     deposit_article_id: t.depositArticleId || null,
     customer_ids: t.customerIds ?? [],
+    customer_type: t.customerType ?? 'alla',
     created_at: t.createdAt,
   };
 }

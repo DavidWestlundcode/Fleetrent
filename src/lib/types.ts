@@ -248,8 +248,11 @@ export interface PriceTemplate {
   transportArticleId?: string;
   depositArticleId?: string;
   customerIds: string[];
+  customerType: TemplateCustomerType;
   createdAt: string;
 }
+
+export type TemplateCustomerType = 'uthyrare' | 'slutkund' | 'alla';
 
 export interface ServiceRecord {
   id: string;

@@ -1,11 +1,17 @@
 'use client';
 import { useState, useRef } from 'react';
-import { Plus, Tag, Edit, Trash2, Shield, Truck, Clock, CalendarDays, Users, Search, X } from 'lucide-react';
+import { Plus, Tag, Edit, Trash2, Shield, Truck, Clock, CalendarDays, Users, Search, X, Building2, User } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useStore } from '@/store';
 import { formatCurrency, getMatchingTemplate } from '@/lib/utils';
-import { CATEGORY_LABELS, ARTICLE_TYPE_LABELS, type MachineCategory } from '@/lib/types';
+import { CATEGORY_LABELS, ARTICLE_TYPE_LABELS, type MachineCategory, type TemplateCustomerType } from '@/lib/types';
+
+const CUSTOMER_TYPE_LABELS: Record<TemplateCustomerType, string> = {
+  alla: 'Alla',
+  uthyrare: 'Uthyrare',
+  slutkund: 'Slutkund',
+};
 
 const inputClass = 'w-full px-3 py-2 text-[13px] bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:bg-white transition-all';
 
@@ -137,6 +143,7 @@ function CustomerPicker({ customers, selectedIds, onToggle }: {
 
 const emptyForm = {
   name: '', description: '', category: 'motviktstruck' as MachineCategory,
+  customerType: 'alla' as TemplateCustomerType,
   capacityMin: 0, capacityMax: 0,
   dailyPrice: 0, dailyPriceDiscount: 0,
   weeklyPrice: 0, weeklyPriceDiscount: 0,
@@ -161,6 +168,17 @@ export default function TemplatesPage() {
   const [form, setForm] = useState(emptyForm);
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [customerTypeFilter, setCustomerTypeFilter] = useState<TemplateCustomerType | 'all'>('all');
+
+  const filteredTemplates = templates.filter((t) =>
+    customerTypeFilter === 'all' || t.customerType === customerTypeFilter || t.customerType === 'alla'
+  );
+  const customerTypeCounts: Record<TemplateCustomerType | 'all', number> = {
+    all: templates.length,
+    uthyrare: templates.filter((t) => t.customerType === 'uthyrare' || t.customerType === 'alla').length,
+    slutkund: templates.filter((t) => t.customerType === 'slutkund' || t.customerType === 'alla').length,
+    alla: templates.filter((t) => t.customerType === 'alla').length,
+  };
 
   const editIdRef = useRef<string | null>(null);
   const formRef = useRef(emptyForm);
@@ -176,6 +194,7 @@ export default function TemplatesPage() {
     if (!t) return;
     const next = {
       name: t.name, description: t.description, category: t.category,
+      customerType: t.customerType ?? 'alla',
       capacityMin: t.capacityMin, capacityMax: t.capacityMax,
       dailyPrice: t.dailyPrice, dailyPriceDiscount: t.dailyPriceDiscount ?? 0,
       weeklyPrice: t.weeklyPrice, weeklyPriceDiscount: t.weeklyPriceDiscount ?? 0,
@@ -273,6 +292,26 @@ export default function TemplatesPage() {
                 <div className="md:col-span-2">
                   <Field label="Beskrivning">
                     <input value={form.description} onChange={(e) => set('description', e.target.value)} className={inputClass} placeholder="Valfri beskrivning" />
+                  </Field>
+                </div>
+                <div className="md:col-span-2">
+                  <Field label="Kundtyp" hint="Vilken typ av kund mallen gäller för">
+                    <div className="flex items-center gap-1.5">
+                      {(['alla', 'uthyrare', 'slutkund'] as const).map((ct) => (
+                        <button
+                          key={ct}
+                          type="button"
+                          onClick={() => set('customerType', ct)}
+                          className={`px-3.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer ${
+                            form.customerType === ct
+                              ? 'bg-slate-900 text-white'
+                              : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                          }`}
+                        >
+                          {CUSTOMER_TYPE_LABELS[ct]}
+                        </button>
+                      ))}
+                    </div>
                   </Field>
                 </div>
               </div>
@@ -487,8 +526,36 @@ export default function TemplatesPage() {
           </div>
         )}
 
+        {templates.length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {(['all', 'uthyrare', 'slutkund'] as const).map((ct) => (
+              <button
+                key={ct}
+                onClick={() => setCustomerTypeFilter(ct)}
+                className={`px-3 py-1.5 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer ${
+                  customerTypeFilter === ct
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                {ct === 'all' ? 'Alla' : CUSTOMER_TYPE_LABELS[ct]}
+                <span className={`ml-1.5 text-[11px] ${customerTypeFilter === ct ? 'text-white/60' : 'text-slate-400'}`}>
+                  {customerTypeCounts[ct]}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {templates.length > 0 && filteredTemplates.length === 0 && (
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm py-16 text-center">
+            <Tag className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+            <p className="text-[13px] text-slate-400">Inga prismallar matchar filtret</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {templates.map((template) => {
+          {filteredTemplates.map((template) => {
             const matchCount = getMatchCount(template.id);
             const hasInsurance = template.insuranceDailyPrice > 0 || template.insuranceWeeklyPrice > 0 || template.insuranceMonthlyPrice > 0;
             const hasLongTerm = (template.longTermDailyPrice ?? 0) > 0 || (template.longTermWeeklyPrice ?? 0) > 0 || (template.longTermMonthlyPrice ?? 0) > 0;
@@ -527,6 +594,16 @@ export default function TemplatesPage() {
 
                 {/* Capacity badge */}
                 <div className="flex items-center gap-1.5 mb-3.5 flex-wrap">
+                  {(template.customerType ?? 'alla') !== 'alla' && (
+                    <div className="flex items-center gap-1 px-2.5 py-1 bg-indigo-50 rounded-lg">
+                      {template.customerType === 'uthyrare' ? (
+                        <Building2 className="w-3 h-3 text-indigo-500" />
+                      ) : (
+                        <User className="w-3 h-3 text-indigo-500" />
+                      )}
+                      <span className="text-[11px] font-medium text-indigo-600">{CUSTOMER_TYPE_LABELS[template.customerType]}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 rounded-lg">
                     <Truck className="w-3 h-3 text-slate-500" />
                     <span className="text-[11px] font-medium text-slate-600">
