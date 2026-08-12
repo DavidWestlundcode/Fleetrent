@@ -193,6 +193,7 @@ export interface Order {
   depositArticleId?: string;
   openEnded?: boolean;
   chargeWeekends?: boolean;
+  isLongTerm?: boolean;
   insuranceMonthlyRate?: number;
   discountPercent?: number;
   rentalDiscount?: number;

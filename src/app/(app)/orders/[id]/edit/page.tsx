@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity, Plus, Trash2, Search, CalendarOff } from 'lucide-react';
+import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity, Plus, Trash2, Search, CalendarOff, Repeat } from 'lucide-react';
 import type { OrderArticle } from '@/lib/types';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
@@ -53,6 +53,7 @@ export default function EditOrderPage() {
   const [rentalType, setRentalType] = useState<'short' | 'long'>('short');
   const [openEnded, setOpenEnded] = useState(false);
   const [chargeWeekends, setChargeWeekends] = useState(false);
+  const [isLongTerm, setIsLongTerm] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [orderArticles, setOrderArticles] = useState<OrderArticle[]>([]);
   const [newArticleId, setNewArticleId] = useState('');
@@ -87,6 +88,7 @@ export default function EditOrderPage() {
     });
     setOpenEnded(order.openEnded === true);
     setChargeWeekends(order.chargeWeekends === true);
+    setIsLongTerm(order.isLongTerm === true);
     setIncludeInsurance(!!order.insuranceCost || !!order.insuranceMonthlyRate);
     setOrderArticles(order.orderArticles ?? []);
     setInitialized(true);
@@ -200,6 +202,7 @@ export default function EditOrderPage() {
       depositArticleId: form.depositArticleId || undefined,
       openEnded: openEnded || undefined,
       chargeWeekends: chargeWeekends || undefined,
+      isLongTerm: isLongTerm || undefined,
       insuranceMonthlyRate: (includeInsurance && openEnded && selectedTemplate)
         ? selectedTemplate.insuranceMonthlyPrice
         : undefined,
@@ -367,6 +370,23 @@ export default function EditOrderPage() {
                     Räkna med helgdagar
                   </span>
                 </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isLongTerm}
+                    onChange={(e) => setIsLongTerm(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <span className="text-[13px] text-slate-600 font-medium flex items-center gap-1.5">
+                    <Repeat className="w-3.5 h-3.5 text-slate-400" />
+                    Avtalshyra
+                  </span>
+                </label>
+                {isLongTerm && (
+                  <span className="text-[12px] text-blue-600 bg-blue-50 px-3 py-1.5 rounded-xl">
+                    Delfaktura genereras automatiskt i slutet av varje månad
+                  </span>
+                )}
                 {!openEnded && days > 0 && (
                   <span className="text-[13px] text-slate-600 bg-blue-50 px-3 py-1.5 rounded-xl">
                     {billableDays !== days

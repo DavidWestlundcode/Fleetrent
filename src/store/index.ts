@@ -214,6 +214,7 @@ function fromDbOrder(r: DbRow): Order {
     depositArticleId: r.deposit_article_id as string | undefined,
     openEnded: (r.open_ended as boolean) ?? false,
     chargeWeekends: (r.charge_weekends as boolean) ?? false,
+    isLongTerm: (r.is_long_term as boolean) ?? false,
     insuranceMonthlyRate: r.insurance_monthly_rate != null ? (r.insurance_monthly_rate as number) : undefined,
     discountPercent: (r.discount_percent as number) ?? 0,
     rentalDiscount: (r.rental_discount as number) ?? 0,
@@ -273,6 +274,7 @@ function toDbOrder(o: Order, orgId: string): DbRow {
     deposit_article_id: o.depositArticleId ?? null,
     open_ended: o.openEnded ?? false,
     charge_weekends: o.chargeWeekends ?? false,
+    is_long_term: o.isLongTerm ?? false,
     insurance_monthly_rate: o.insuranceMonthlyRate ?? null,
     discount_percent: o.discountPercent ?? 0,
     rental_discount: o.rentalDiscount ?? 0,
@@ -510,6 +512,7 @@ interface AppStore {
     depositArticleId?: string;
     openEnded?: boolean;
     chargeWeekends?: boolean;
+    isLongTerm?: boolean;
     insuranceMonthlyRate?: number;
     orderReference?: string;
     orderArticles?: OrderArticle[];

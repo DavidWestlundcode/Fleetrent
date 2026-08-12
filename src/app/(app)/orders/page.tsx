@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, Search, Trash2, ClipboardList, Download, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Search, Trash2, ClipboardList, Download, ArrowUp, ArrowDown, Send, Loader2, Receipt } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { OrderStatusBadge } from '@/components/ui/StatusBadge';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -10,7 +10,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import { exportToCsv } from '@/lib/csv';
 import { useStore } from '@/store';
 import { formatCurrency, formatDate, daysUntil } from '@/lib/utils';
-import type { Order, OrderStatus, Machine, Customer } from '@/lib/types';
+import type { Order, OrderStatus, Machine, Customer, InvoicePeriod } from '@/lib/types';
 
 const DAYS_THRESHOLD = 30;
 
@@ -47,7 +47,7 @@ function SortHeader<K extends string>({ label, column, activeKey, dir, onSort, c
   );
 }
 
-type StatusFilter = OrderStatus | 'all' | '30_dagar' | 'returning_soon';
+type StatusFilter = OrderStatus | 'all' | '30_dagar' | 'returning_soon' | 'avtalshyra';
 
 const VALID_STATUSES: OrderStatus[] = ['aktiv', 'reserverad', 'forsenad', 'klar_for_fakturering', 'avslutad', 'annullerad'];
 
@@ -71,7 +71,7 @@ function ordersToCsvRows(list: Order[], machines: Machine[], customers: Customer
 
 function OrdersPageInner() {
   const searchParams = useSearchParams();
-  const { orders, machines, customers, deleteOrder } = useStore();
+  const { orders, machines, customers, deleteOrder, markInvoicePeriodSent } = useStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(() => {
     if (searchParams.get('returningSoon') === '1') return 'returning_soon';
@@ -160,19 +160,96 @@ function OrdersPageInner() {
     setBulkDeleteConfirm(false);
   }
 
+  // Pending "delfakturor" from contract-billed (avtalshyra) orders, awaiting review + send to Fortnox
+  const pendingContractInvoices = useMemo(() => {
+    return orders
+      .filter((o) => o.isLongTerm)
+      .flatMap((o) =>
+        (o.invoicePeriods ?? [])
+          .filter((p) => !p.sentToAccounting)
+          .map((p) => ({ order: o, period: p }))
+      )
+      .sort((a, b) => a.period.startDate.localeCompare(b.period.startDate));
+  }, [orders]);
+
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { all: orders.length };
     orders.forEach((o) => { counts[o.status] = (counts[o.status] ?? 0) + 1; });
     counts['30_dagar'] = orders.filter(needsPartialInvoice).length;
+    counts['avtalshyra'] = pendingContractInvoices.length;
     return counts;
-  }, [orders]);
+  }, [orders, pendingContractInvoices]);
 
   const statusLabels: Record<string, string> = {
     all: 'Alla', aktiv: 'Aktiva', reserverad: 'Reserverade',
     forsenad: 'Försenade', '30_dagar': '30 dagar',
+    avtalshyra: 'Avtalshyra',
     klar_for_fakturering: 'Klar för fakturering',
     avslutad: 'Avslutade', annullerad: 'Annullerade',
   };
+
+  const [selectedPeriods, setSelectedPeriods] = useState<Set<string>>(new Set());
+  const [sendingContractInvoices, setSendingContractInvoices] = useState(false);
+  const [contractInvoiceErrors, setContractInvoiceErrors] = useState<string[]>([]);
+  const [sendingSinglePeriodId, setSendingSinglePeriodId] = useState<string | null>(null);
+
+  const allContractInvoicesSelected = pendingContractInvoices.length > 0 &&
+    pendingContractInvoices.every(({ period }) => selectedPeriods.has(period.id));
+
+  function toggleSelectAllContractInvoices() {
+    setSelectedPeriods((prev) => {
+      const next = new Set(prev);
+      if (allContractInvoicesSelected) pendingContractInvoices.forEach(({ period }) => next.delete(period.id));
+      else pendingContractInvoices.forEach(({ period }) => next.add(period.id));
+      return next;
+    });
+  }
+
+  function toggleSelectPeriod(id: string) {
+    setSelectedPeriods((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  async function sendPeriodToFortnox(orderId: string, periodId: string): Promise<string | null> {
+    try {
+      const res = await fetch('/api/fortnox/create-partial-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, periodId }),
+      });
+      const data = await res.json();
+      if (!res.ok) return data.error ?? 'Okänt fel';
+      markInvoicePeriodSent(orderId, periodId, data.fortnoxOrderNumber);
+      return null;
+    } catch (e) {
+      return e instanceof Error ? e.message : 'Okänt fel';
+    }
+  }
+
+  async function sendSinglePeriod(orderId: string, periodId: string, orderNumber: string) {
+    setSendingSinglePeriodId(periodId);
+    setContractInvoiceErrors([]);
+    const err = await sendPeriodToFortnox(orderId, periodId);
+    if (err) setContractInvoiceErrors([`${orderNumber}: ${err}`]);
+    setSendingSinglePeriodId(null);
+  }
+
+  async function sendSelectedContractInvoices() {
+    setSendingContractInvoices(true);
+    setContractInvoiceErrors([]);
+    const errs: string[] = [];
+    const targets = pendingContractInvoices.filter(({ period }) => selectedPeriods.has(period.id));
+    for (const { order, period } of targets) {
+      const err = await sendPeriodToFortnox(order.id, period.id);
+      if (err) errs.push(`${order.orderNumber}: ${err}`);
+    }
+    setContractInvoiceErrors(errs);
+    setSelectedPeriods(new Set());
+    setSendingContractInvoices(false);
+  }
 
   return (
     <div className="flex flex-col flex-1 overflow-auto bg-slate-50/60">
@@ -202,9 +279,10 @@ function OrdersPageInner() {
       <div className="flex-1 p-3 sm:p-6 space-y-4">
         {/* Status Tabs */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          {(['all', 'aktiv', 'reserverad', 'forsenad', '30_dagar', 'klar_for_fakturering', 'avslutad', 'annullerad'] as const).map((s) => {
+          {(['all', 'aktiv', 'reserverad', 'forsenad', '30_dagar', 'avtalshyra', 'klar_for_fakturering', 'avslutad', 'annullerad'] as const).map((s) => {
             const count = statusCounts[s] ?? 0;
             const isThirty = s === '30_dagar';
+            const isAvtalshyra = s === 'avtalshyra';
             const isActive = statusFilter === s;
             return (
               <button
@@ -212,14 +290,16 @@ function OrdersPageInner() {
                 onClick={() => setStatusFilter(s)}
                 className={`px-3 py-1.5 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer ${
                   isActive
-                    ? isThirty ? 'bg-orange-500 text-white' : 'bg-slate-900 text-white'
+                    ? isThirty ? 'bg-orange-500 text-white' : isAvtalshyra ? 'bg-blue-600 text-white' : 'bg-slate-900 text-white'
                     : isThirty && count > 0
                       ? 'bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100'
-                      : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                      : isAvtalshyra && count > 0
+                        ? 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                 }`}
               >
                 {statusLabels[s]}
-                <span className={`ml-1.5 text-[11px] ${isActive ? 'text-white/60' : isThirty && count > 0 ? 'text-orange-500 font-semibold' : 'text-slate-400'}`}>
+                <span className={`ml-1.5 text-[11px] ${isActive ? 'text-white/60' : isThirty && count > 0 ? 'text-orange-500 font-semibold' : isAvtalshyra && count > 0 ? 'text-blue-500 font-semibold' : 'text-slate-400'}`}>
                   {count}
                 </span>
               </button>
@@ -227,6 +307,96 @@ function OrdersPageInner() {
           })}
         </div>
 
+        {statusFilter === 'avtalshyra' ? (
+        <div className="space-y-4">
+          <p className="text-[13px] text-slate-500">
+            Väntande delfakturor från avtalshyra-ordrar. Nya delfakturor genereras automatiskt i slutet av varje månad — granska och skicka in dem till Fortnox här.
+          </p>
+
+          {contractInvoiceErrors.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 space-y-1">
+              {contractInvoiceErrors.map((e, i) => (
+                <p key={i} className="text-[12.5px] text-red-700">{e}</p>
+              ))}
+            </div>
+          )}
+
+          {selectedPeriods.size > 0 && (
+            <div className="flex items-center gap-3 flex-wrap bg-slate-900 text-white rounded-xl px-4 py-2.5">
+              <span className="text-[12.5px] font-medium">{selectedPeriods.size} valda</span>
+              <button onClick={() => setSelectedPeriods(new Set())} className="text-[12px] text-slate-300 hover:text-white cursor-pointer">
+                Avmarkera
+              </button>
+              <button
+                onClick={sendSelectedContractInvoices}
+                disabled={sendingContractInvoices}
+                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {sendingContractInvoices ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                Skicka valda till Fortnox
+              </button>
+            </div>
+          )}
+
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[650px]">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th className="w-10 px-3 py-3">
+                    <input type="checkbox" checked={allContractInvoicesSelected} onChange={toggleSelectAllContractInvoices} className="cursor-pointer" />
+                  </th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Order</th>
+                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Kund</th>
+                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Maskin</th>
+                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Period</th>
+                  <th className="text-left px-4 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Belopp</th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {pendingContractInvoices.length === 0 && (
+                  <tr>
+                    <td colSpan={7}>
+                      <EmptyState icon={Receipt} title="Inga väntande delfakturor" description="Delfakturor för avtalshyra-ordrar dyker upp här när de genereras i slutet av månaden." />
+                    </td>
+                  </tr>
+                )}
+                {pendingContractInvoices.map(({ order, period }: { order: Order; period: InvoicePeriod }) => {
+                  const machine = machines.find((m) => m.id === order.machineId);
+                  const customer = customers.find((c) => c.id === order.customerId);
+                  return (
+                    <tr key={period.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="px-3 py-3.5">
+                        <input type="checkbox" checked={selectedPeriods.has(period.id)} onChange={() => toggleSelectPeriod(period.id)} className="cursor-pointer" />
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <Link href={`/orders/${order.id}`} className="text-[13px] font-medium text-blue-600 hover:underline">{order.orderNumber}</Link>
+                      </td>
+                      <td className="px-4 py-3.5 text-[13px] text-slate-700">{customer?.companyName ?? '–'}</td>
+                      <td className="px-4 py-3.5 text-[13px] text-slate-500">{machine?.name ?? '–'}</td>
+                      <td className="px-4 py-3.5 text-[13px] text-slate-500">{formatDate(period.startDate)} – {formatDate(period.endDate)}</td>
+                      <td className="px-4 py-3.5 text-[13px] font-medium text-slate-700">{formatCurrency(period.amount)}</td>
+                      <td className="px-4 py-3.5">
+                        <button
+                          onClick={() => sendSinglePeriod(order.id, period.id, order.orderNumber)}
+                          disabled={sendingSinglePeriodId === period.id}
+                          className="flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          {sendingSinglePeriodId === period.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                          Skicka
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            </div>
+          </div>
+        </div>
+        ) : (
+        <>
         {/* Search */}
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
@@ -359,6 +529,8 @@ function OrdersPageInner() {
             <Pagination page={page} totalPages={totalPages} totalItems={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
           </div>
         </div>
+        </>
+        )}
       </div>
 
       <ConfirmDialog

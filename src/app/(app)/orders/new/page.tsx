@@ -2,7 +2,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity, Plus, Trash2, Search, FileSignature, CalendarOff } from 'lucide-react';
+import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity, Plus, Trash2, Search, FileSignature, CalendarOff, Repeat } from 'lucide-react';
 import type { OrderArticle } from '@/lib/types';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
@@ -92,6 +92,7 @@ function NewOrderForm() {
   const [autoMatchedTemplate, setAutoMatchedTemplate] = useState<string | null>(null);
   const [openEnded, setOpenEnded] = useState(false);
   const [chargeWeekends, setChargeWeekends] = useState(false);
+  const [isLongTerm, setIsLongTerm] = useState(false);
   const [orderArticles, setOrderArticles] = useState<OrderArticle[]>([]);
   const [newArticleId, setNewArticleId] = useState('');
   const [newArticleQty, setNewArticleQty] = useState(1);
@@ -257,6 +258,7 @@ function NewOrderForm() {
       depositArticleId: form.depositArticleId || undefined,
       openEnded: openEnded || undefined,
       chargeWeekends: chargeWeekends || undefined,
+      isLongTerm: isLongTerm || undefined,
       insuranceMonthlyRate: (includeInsurance && openEnded && selectedTemplate)
         ? selectedTemplate.insuranceMonthlyPrice
         : undefined,
@@ -555,6 +557,23 @@ function NewOrderForm() {
                     Räkna med helgdagar
                   </span>
                 </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isLongTerm}
+                    onChange={(e) => setIsLongTerm(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <span className="text-[13px] text-slate-600 font-medium flex items-center gap-1.5">
+                    <Repeat className="w-3.5 h-3.5 text-slate-400" />
+                    Avtalshyra
+                  </span>
+                </label>
+                {isLongTerm && (
+                  <span className="text-[12px] text-blue-600 bg-blue-50 px-3 py-1.5 rounded-xl">
+                    Delfaktura genereras automatiskt i slutet av varje månad
+                  </span>
+                )}
                 {!openEnded && days > 0 && (
                   <span className="text-[13px] text-slate-600 bg-blue-50 px-3 py-1.5 rounded-xl">
                     {chargeWeekends || billableDays === days
