@@ -23,7 +23,7 @@ function daysSinceLastInvoice(order: Order): number {
 }
 
 function needsPartialInvoice(order: Order): boolean {
-  if (order.status !== 'aktiv') return false;
+  if (order.status !== 'aktiv' || order.isLongTerm) return false;
   return daysSinceLastInvoice(order) >= DAYS_THRESHOLD;
 }
 import Pagination from '@/components/ui/Pagination';
