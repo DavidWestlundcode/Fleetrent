@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { calcBreakdown, countBusinessDays, daysBetween } from '@/lib/utils';
-import type { InvoicePeriod } from '@/lib/types';
+import { generateContractInvoices } from '@/lib/contract-invoicing';
 
 export const maxDuration = 120;
 
@@ -29,74 +28,12 @@ export async function GET(request: NextRequest) {
   const todayStr = now.toISOString().split('T')[0];
   const admin = createAdminClient();
 
-  const { data: orders, error } = await admin
-    .from('orders')
-    .select('id, start_date, actual_return_date, status, daily_price, weekly_price, monthly_price, charge_weekends, rental_discount, invoice_periods, order_number')
-    .eq('is_long_term', true)
-    .in('status', ['aktiv', 'klar_for_fakturering']);
-
-  if (error) {
-    console.error('[contract-invoices] Failed to fetch orders:', error.message);
+  try {
+    const { generated, skipped, errors } = await generateContractInvoices(admin, todayStr);
+    console.log(`[contract-invoices] Done — generated: ${generated}, skipped: ${skipped}, errors: ${errors.length}`);
+    return NextResponse.json({ ok: true, generated, skipped, errors });
+  } catch (e) {
+    console.error('[contract-invoices] Failed:', e instanceof Error ? e.message : e);
     return NextResponse.json({ error: 'DB error' }, { status: 500 });
   }
-
-  let generated = 0;
-  let skipped = 0;
-  const errors: string[] = [];
-
-  for (const order of orders ?? []) {
-    try {
-      const periods = (order.invoice_periods as InvoicePeriod[]) ?? [];
-      const sorted = [...periods].sort((a, b) => a.startDate.localeCompare(b.startDate));
-      const lastEnd = sorted.length > 0 ? sorted[sorted.length - 1].endDate : null;
-      const nextStart = lastEnd
-        ? new Date(new Date(lastEnd).getTime() + 86400000).toISOString().split('T')[0]
-        : (order.start_date as string);
-      const effectiveEnd = (order.actual_return_date as string | null) || todayStr;
-
-      if (nextStart > effectiveEnd) { skipped++; continue; }
-
-      const chargeWeekends = (order.charge_weekends as boolean) ?? false;
-      const days = chargeWeekends
-        ? daysBetween(nextStart, effectiveEnd)
-        : countBusinessDays(nextStart, effectiveEnd);
-
-      if (days <= 0) { skipped++; continue; }
-
-      const breakdown = calcBreakdown(
-        days,
-        order.daily_price as number,
-        order.weekly_price as number,
-        order.monthly_price as number,
-      );
-      const rentalDiscount = (order.rental_discount as number) ?? 0;
-      const amount = breakdown.total * (1 - rentalDiscount / 100);
-
-      const newPeriod: InvoicePeriod = {
-        id: crypto.randomUUID(),
-        startDate: nextStart,
-        endDate: effectiveEnd,
-        days,
-        amount,
-        sentToAccounting: false,
-        createdAt: new Date().toISOString(),
-      };
-
-      const { error: updateError } = await admin
-        .from('orders')
-        .update({ invoice_periods: [...periods, newPeriod] })
-        .eq('id', order.id);
-
-      if (updateError) {
-        errors.push(`${order.order_number}: ${updateError.message}`);
-      } else {
-        generated++;
-      }
-    } catch (e) {
-      errors.push(`${order.order_number}: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  }
-
-  console.log(`[contract-invoices] Done — generated: ${generated}, skipped: ${skipped}, errors: ${errors.length}`);
-  return NextResponse.json({ ok: true, generated, skipped, errors });
 }

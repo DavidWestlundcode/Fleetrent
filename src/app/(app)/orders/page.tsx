@@ -71,7 +71,7 @@ function ordersToCsvRows(list: Order[], machines: Machine[], customers: Customer
 
 function OrdersPageInner() {
   const searchParams = useSearchParams();
-  const { orders, machines, customers, deleteOrder, markInvoicePeriodSent } = useStore();
+  const { orders, machines, customers, deleteOrder, markInvoicePeriodSent, updateOrder } = useStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(() => {
     if (searchParams.get('returningSoon') === '1') return 'returning_soon';
@@ -213,6 +213,36 @@ function OrdersPageInner() {
     });
   }
 
+  const [generatingContractInvoices, setGeneratingContractInvoices] = useState(false);
+  const [generateResultMsg, setGenerateResultMsg] = useState<string | null>(null);
+
+  async function generateContractInvoicesNow() {
+    setGeneratingContractInvoices(true);
+    setGenerateResultMsg(null);
+    setContractInvoiceErrors([]);
+    try {
+      const res = await fetch('/api/orders/generate-contract-invoices', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        setContractInvoiceErrors([data.error ?? 'Okänt fel']);
+        return;
+      }
+      (data.updatedOrders as { id: string; invoicePeriods: InvoicePeriod[] }[]).forEach(({ id, invoicePeriods }) => {
+        updateOrder(id, { invoicePeriods });
+      });
+      setGenerateResultMsg(
+        data.generated > 0
+          ? `${data.generated} ny${data.generated !== 1 ? 'a' : ''} delfaktura${data.generated !== 1 ? 'or' : ''} genererad${data.generated !== 1 ? 'e' : ''}.`
+          : 'Inga nya delfakturor att generera just nu — allt redan fakturerat fram till idag.'
+      );
+      if (data.errors?.length > 0) setContractInvoiceErrors(data.errors);
+    } catch (e) {
+      setContractInvoiceErrors([e instanceof Error ? e.message : 'Okänt fel']);
+    } finally {
+      setGeneratingContractInvoices(false);
+    }
+  }
+
   async function sendPeriodToFortnox(orderId: string, periodId: string): Promise<string | null> {
     try {
       const res = await fetch('/api/fortnox/create-partial-invoice', {
@@ -309,9 +339,25 @@ function OrdersPageInner() {
 
         {statusFilter === 'avtalshyra' ? (
         <div className="space-y-4">
-          <p className="text-[13px] text-slate-500">
-            Väntande delfakturor från avtalshyra-ordrar. Nya delfakturor genereras automatiskt i slutet av varje månad — granska och skicka in dem till Fortnox här.
-          </p>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <p className="text-[13px] text-slate-500">
+              Väntande delfakturor från avtalshyra-ordrar. Nya delfakturor genereras automatiskt i slutet av varje månad — granska och skicka in dem till Fortnox här.
+            </p>
+            <button
+              onClick={generateContractInvoicesNow}
+              disabled={generatingContractInvoices}
+              className="flex items-center gap-1.5 px-3.5 py-[7px] bg-white text-slate-700 border border-slate-200 text-[13px] font-medium rounded-xl hover:bg-slate-50 transition-all disabled:opacity-50 shrink-0"
+            >
+              {generatingContractInvoices ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Receipt className="w-3.5 h-3.5" />}
+              Generera nu
+            </button>
+          </div>
+
+          {generateResultMsg && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+              <p className="text-[12.5px] text-blue-700">{generateResultMsg}</p>
+            </div>
+          )}
 
           {contractInvoiceErrors.length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 space-y-1">
