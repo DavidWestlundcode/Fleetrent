@@ -83,7 +83,7 @@ const faqJsonLd = {
 const BASIC_FEATURES = [
   'Hela plattformen inkluderad',
   'Obegränsat antal användare',
-  'Upp till 20 maskiner',
+  'Upp till 10 maskiner',
   'Uthyrningsorder & hyresavtal',
   'Prismallar & artikelregister',
   'Fortnox-integration',
