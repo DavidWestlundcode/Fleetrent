@@ -10,12 +10,14 @@ import {
 import { AnimateIn, CountUp } from '@/components/ui/AnimateIn';
 import { Logo } from '@/components/ui/Logo';
 import PublicMobileNav from '@/components/public/PublicMobileNav';
+import CustomersNavDropdown from '@/components/public/CustomersNavDropdown';
 
 const NAV_ITEMS = [
   { label: 'Funktioner', href: '/funktioner' },
   { label: 'Hur det fungerar', href: '#how-it-works' },
   { label: 'Integrationer', href: '#integrations' },
   { label: 'Priser', href: '/priser' },
+  { label: 'Kunder', href: '/kunder' },
 ];
 
 export const metadata: Metadata = {
@@ -577,11 +579,15 @@ export default function LandingPage() {
             </div>
           </div>
           <nav className="hidden md:flex items-center justify-center gap-1 absolute left-1/2 -translate-x-1/2">
-            {NAV_ITEMS.map(({ label, href }) => (
-              <a key={label} href={href} className="px-3 py-1.5 text-[13px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors font-medium">
-                {label}
-              </a>
-            ))}
+            {NAV_ITEMS.map(({ label, href }) =>
+              label === 'Kunder' ? (
+                <CustomersNavDropdown key={label} />
+              ) : (
+                <a key={label} href={href} className="px-3 py-1.5 text-[13px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors font-medium">
+                  {label}
+                </a>
+              )
+            )}
           </nav>
           <div className="flex items-center gap-2">
             <Link href="/login" className="text-[13px] font-medium text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">

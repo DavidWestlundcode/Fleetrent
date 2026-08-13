@@ -3,11 +3,13 @@ import Link from 'next/link';
 import { Check, ArrowRight, Zap, PenLine } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import PublicMobileNav from '@/components/public/PublicMobileNav';
+import CustomersNavDropdown from '@/components/public/CustomersNavDropdown';
 
 const NAV_ITEMS = [
   { label: 'Funktioner', href: '/funktioner' },
   { label: 'Hur det fungerar', href: '/#how-it-works' },
   { label: 'Priser', href: '/priser' },
+  { label: 'Kunder', href: '/kunder' },
 ];
 
 export const metadata: Metadata = {
@@ -115,11 +117,15 @@ export default function PriserPage() {
             </Link>
           </div>
           <nav className="hidden md:flex items-center gap-1">
-            {NAV_ITEMS.map(({ label, href }) => (
-              <Link key={label} href={href} className="px-3 py-1.5 text-[13px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors font-medium">
-                {label}
-              </Link>
-            ))}
+            {NAV_ITEMS.map(({ label, href }) =>
+              label === 'Kunder' ? (
+                <CustomersNavDropdown key={label} />
+              ) : (
+                <Link key={label} href={href} className="px-3 py-1.5 text-[13px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors font-medium">
+                  {label}
+                </Link>
+              )
+            )}
           </nav>
           <div className="flex items-center gap-2 sm:gap-3">
             <Link href="/login" className="text-[13px] font-medium text-slate-600 hover:text-slate-900 transition-colors">
