@@ -13,7 +13,7 @@ export const CUSTOMER_CASES: CustomerCase[] = [
     slug: 'wts-machinery-solutions',
     name: 'WTS Machinery Solutions',
     logo: '/wts-logo.png',
-    industry: 'Maskinuthyrning',
+    industry: 'Totalleverantör inom materialhantering',
     summary: 'Digitaliserade hela sin maskinuthyrning med FleetOS – från orderhantering till fakturering.',
     highlights: [
       'Hela maskinflottan samlad på ett ställe',
