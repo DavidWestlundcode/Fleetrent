@@ -21,9 +21,10 @@ export const CUSTOMER_CASES: CustomerCase[] = [
       'Löpande avtalsfakturering för långtidskontrakt',
     ],
     body: [
-      'WTS Machinery Solutions hyr ut maskiner till bygg- och anläggningsbranschen och använder FleetOS för att hantera hela sin verksamhet – från maskinregister och uthyrningsorder till kundhantering och fakturering.',
-      'Med FleetOS har WTS koll på var varje maskin befinner sig, vilket skick den är i och när den ska returneras – i realtid, utan att behöva slå upp information i separata Excel-filer.',
+      'WTS Machinery Solutions använder FleetOS för att hantera hela sin uthyrningsverksamhet – från maskinregister och uthyrningsorder till kundhantering, avtal och fakturering.',
+      'Med FleetOS har WTS full kontroll över var varje maskin befinner sig, vilket skick den är i och när den ska returneras – i realtid, utan att behöva leta information i separata Excel-filer.',
       'Genom Fortnox-integrationen skickas fakturaunderlag vidare till bokföringen med några klick, och för kunder med långtidskontrakt genereras delfakturor automatiskt varje månad via FleetOS avtalshyra-funktion.',
+      'FleetOS ger också WTS full insyn i verksamhetens lönsamhet. De kan se exakt hur mycket varje maskin, kund och uthyrning genererar i intäkter, vilket ger bättre beslutsunderlag och total kontroll över verksamheten.',
     ],
   },
 ];
