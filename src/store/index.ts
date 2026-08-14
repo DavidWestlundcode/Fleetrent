@@ -516,6 +516,10 @@ interface AppStore {
     insuranceMonthlyRate?: number;
     orderReference?: string;
     orderArticles?: OrderArticle[];
+    facilityName?: string;
+    ordererName?: string;
+    ordererPhone?: string;
+    ordererEmail?: string;
   }) => void;
   deleteOrder: (id: string) => void;
   returnMachine: (orderId: string, data: {

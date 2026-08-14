@@ -48,6 +48,10 @@ export default function EditOrderPage() {
     transportArticleId: '',
     depositArticleId: '',
     orderReference: '',
+    facilityName: '',
+    ordererName: '',
+    ordererPhone: '',
+    ordererEmail: '',
   });
   const [includeInsurance, setIncludeInsurance] = useState(false);
   const [rentalType, setRentalType] = useState<'short' | 'long'>('short');
@@ -85,6 +89,10 @@ export default function EditOrderPage() {
       transportArticleId: order.transportArticleId ?? '',
       depositArticleId: order.depositArticleId ?? '',
       orderReference: order.orderReference ?? '',
+      facilityName: order.facilityName ?? '',
+      ordererName: order.ordererName ?? '',
+      ordererPhone: order.ordererPhone ?? '',
+      ordererEmail: order.ordererEmail ?? '',
     });
     setOpenEnded(order.openEnded === true);
     setChargeWeekends(order.chargeWeekends === true);
@@ -208,12 +216,17 @@ export default function EditOrderPage() {
         : undefined,
       orderReference: form.orderReference,
       orderArticles,
+      facilityName: form.facilityName || undefined,
+      ordererName: form.ordererName || undefined,
+      ordererPhone: form.ordererPhone || undefined,
+      ordererEmail: form.ordererEmail || undefined,
     });
     router.push(`/orders/${order.id}`);
   };
 
   const selectedMachine = machines.find((m) => m.id === form.machineId);
   const selectedCustomer = customers.find((c) => c.id === form.customerId);
+  const selectedFacility = selectedCustomer?.facilities?.find((f) => f.name === form.facilityName);
 
   // Auto-match hint when template is selected
   const autoMatchedTemplate = !form.templateId && form.machineId
@@ -235,7 +248,18 @@ export default function EditOrderPage() {
               <h2 className="text-[14px] font-semibold text-slate-900 mb-4">Kund och maskin</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="Kund *" required>
-                  <select required value={form.customerId} onChange={(e) => set('customerId', e.target.value)} className={inputClass}>
+                  <select
+                    required
+                    value={form.customerId}
+                    onChange={(e) => {
+                      set('customerId', e.target.value);
+                      set('facilityName', '');
+                      set('ordererName', '');
+                      set('ordererPhone', '');
+                      set('ordererEmail', '');
+                    }}
+                    className={inputClass}
+                  >
                     <option value="">Välj kund...</option>
                     {customers.map((c) => (
                       <option key={c.id} value={c.id}>{c.companyName}</option>
@@ -251,6 +275,46 @@ export default function EditOrderPage() {
                     ))}
                   </select>
                 </Field>
+
+                {selectedCustomer?.facilities && selectedCustomer.facilities.length > 0 && (
+                  <Field label="Anläggning">
+                    <select
+                      value={form.facilityName}
+                      onChange={(e) => {
+                        set('facilityName', e.target.value);
+                        set('ordererName', '');
+                        set('ordererPhone', '');
+                        set('ordererEmail', '');
+                      }}
+                      className={inputClass}
+                    >
+                      <option value="">Välj anläggning (valfritt)...</option>
+                      {selectedCustomer.facilities.map((f, i) => (
+                        <option key={i} value={f.name}>{f.name}{f.city ? ` – ${f.city}` : ''}</option>
+                      ))}
+                    </select>
+                  </Field>
+                )}
+
+                {selectedFacility?.contacts && selectedFacility.contacts.length > 0 && (
+                  <Field label="Beställare">
+                    <select
+                      value={form.ordererName}
+                      onChange={(e) => {
+                        const contact = selectedFacility.contacts!.find((c) => c.name === e.target.value);
+                        set('ordererName', e.target.value);
+                        set('ordererPhone', contact?.phone ?? '');
+                        set('ordererEmail', contact?.email ?? '');
+                      }}
+                      className={inputClass}
+                    >
+                      <option value="">Välj beställare (valfritt)...</option>
+                      {selectedFacility.contacts.map((c, i) => (
+                        <option key={i} value={c.name}>{c.name}{c.title ? ` – ${c.title}` : ''}</option>
+                      ))}
+                    </select>
+                  </Field>
+                )}
 
                 <div className="md:col-span-2">
                   <Field label="Maskin *" required>
