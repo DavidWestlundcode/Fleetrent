@@ -13,7 +13,7 @@ import Header from '@/components/layout/Header';
 import StatCard from '@/components/ui/StatCard';
 import { MachineStatusBadge, OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
-import { formatCurrency, formatDate, getMonthlyRevenueData, daysUntil } from '@/lib/utils';
+import { formatCurrency, formatDate, getMonthlyRevenueData, getRealizedRevenueEvents, daysUntil } from '@/lib/utils';
 
 const MACHINE_STATUS_COLORS: Record<string, string> = {
   'I lager': '#10B981',
@@ -41,17 +41,15 @@ export default function DashboardPage() {
       const days = daysUntil(o.plannedReturnDate);
       return o.status === 'aktiv' && days >= 0 && days <= 7;
     });
-    const totalRevenue = orders
-      .filter((o) => o.status === 'avslutad' || o.status === 'aktiv')
-      .reduce((sum, o) => sum + o.totalPrice, 0);
-    const thisMonthRevenue = orders
-      .filter((o) => {
-        const d = new Date(o.startDate);
-        const now = new Date();
-        return (o.status === 'avslutad' || o.status === 'aktiv') &&
-          d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    const revenueEvents = getRealizedRevenueEvents(orders);
+    const totalRevenue = revenueEvents.reduce((sum, e) => sum + e.amount, 0);
+    const now = new Date();
+    const thisMonthRevenue = revenueEvents
+      .filter((e) => {
+        const d = new Date(e.date);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       })
-      .reduce((sum, o) => sum + o.totalPrice, 0);
+      .reduce((sum, e) => sum + e.amount, 0);
     const occupancyRate = machines.length > 0
       ? Math.round(((rented + reserved) / machines.length) * 100) : 0;
     return {

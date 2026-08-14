@@ -15,7 +15,7 @@ import { OrderStatusBadge } from '@/components/ui/StatusBadge';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useStore } from '@/store';
 import {
-  formatCurrency, formatDate, calculateRecoveryPercent, calculateROI,
+  formatCurrency, formatDate, calculateRecoveryPercent, calculateROI, getRealizedRevenueEvents,
 } from '@/lib/utils';
 import { CATEGORY_LABELS, FUEL_LABELS } from '@/lib/types';
 
@@ -43,17 +43,18 @@ export default function MachineDetailPage() {
 
   // Must be before the early return so hook count is stable even when machine is undefined
   const revenueChartData = useMemo(() => {
+    const events = getRealizedRevenueEvents(machineOrders);
     const months = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
       d.setMonth(d.getMonth() - i);
-      const monthOrders = machineOrders.filter((o) => {
-        const od = new Date(o.startDate);
-        return od.getMonth() === d.getMonth() && od.getFullYear() === d.getFullYear();
+      const monthEvents = events.filter((e) => {
+        const ed = new Date(e.date);
+        return ed.getMonth() === d.getMonth() && ed.getFullYear() === d.getFullYear();
       });
       months.push({
         month: d.toLocaleDateString('sv-SE', { month: 'short' }),
-        intäkt: monthOrders.reduce((s, o) => s + o.totalPrice, 0),
+        intäkt: monthEvents.reduce((s, e) => s + e.amount, 0),
       });
     }
     return months;

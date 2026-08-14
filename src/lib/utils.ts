@@ -167,7 +167,40 @@ export function getMatchingTemplate<T extends { category: string; capacityMin: n
   });
 }
 
-export function getMonthlyRevenueData(orders: { startDate: string; totalPrice: number; status: string }[]) {
+type RevenueOrder = {
+  status: string;
+  totalPrice: number;
+  startDate: string;
+  actualReturnDate?: string;
+  invoicePeriods?: { amount: number; endDate: string }[];
+};
+
+// Reconstructs *realized* (booked) revenue as dated events — mirrors exactly how the store books
+// machine.totalRevenue: each delfaktura books its amount on its period end date, and the remaining
+// balance books on the order's actual return date once the machine is returned. Active orders with
+// no invoicing yet, and cancelled orders, contribute nothing — matching accounting-accurate revenue
+// rather than pipeline/projected revenue.
+export function getRealizedRevenueEvents(orders: RevenueOrder[]): { date: string; amount: number }[] {
+  const events: { date: string; amount: number }[] = [];
+  orders.forEach((order) => {
+    if (order.status === 'annullerad') return;
+    const periods = order.invoicePeriods ?? [];
+    let invoiced = 0;
+    periods.forEach((p) => {
+      events.push({ date: p.endDate, amount: p.amount });
+      invoiced += p.amount;
+    });
+    if (order.status === 'avslutad' || order.status === 'klar_for_fakturering') {
+      const remaining = Math.max(0, order.totalPrice - invoiced);
+      if (remaining > 0 && order.actualReturnDate) {
+        events.push({ date: order.actualReturnDate, amount: remaining });
+      }
+    }
+  });
+  return events;
+}
+
+export function getMonthlyRevenueData(orders: RevenueOrder[]) {
   const months: Record<string, number> = {};
   const now = new Date();
   for (let i = 11; i >= 0; i--) {
@@ -175,14 +208,10 @@ export function getMonthlyRevenueData(orders: { startDate: string; totalPrice: n
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     months[key] = 0;
   }
-  orders.forEach((order) => {
-    if (order.status === 'avslutad' || order.status === 'aktiv') {
-      const d = new Date(order.startDate);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      if (key in months) {
-        months[key] += order.totalPrice;
-      }
-    }
+  getRealizedRevenueEvents(orders).forEach(({ date, amount }) => {
+    const d = new Date(date);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (key in months) months[key] += amount;
   });
   return Object.entries(months).map(([month, revenue]) => ({
     month: month.substring(5) + '/' + month.substring(2, 4),
@@ -192,22 +221,18 @@ export function getMonthlyRevenueData(orders: { startDate: string; totalPrice: n
 
 const MONTH_NAMES_SV = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
 
-// Month-by-month revenue for a given calendar year, alongside the same months the year before —
-// lets you compare e.g. August this year directly against August last year.
-export function getYearlyRevenueComparison(
-  orders: { startDate: string; totalPrice: number; status: string }[],
-  year: number,
-) {
+// Month-by-month realized revenue for a given calendar year, alongside the same months the year
+// before — lets you compare e.g. August this year directly against August last year.
+export function getYearlyRevenueComparison(orders: RevenueOrder[], year: number) {
   const current = new Array(12).fill(0);
   const previous = new Array(12).fill(0);
 
-  orders.forEach((order) => {
-    if (order.status !== 'avslutad' && order.status !== 'aktiv') return;
-    const d = new Date(order.startDate);
+  getRealizedRevenueEvents(orders).forEach(({ date, amount }) => {
+    const d = new Date(date);
     const y = d.getFullYear();
     const m = d.getMonth();
-    if (y === year) current[m] += order.totalPrice;
-    else if (y === year - 1) previous[m] += order.totalPrice;
+    if (y === year) current[m] += amount;
+    else if (y === year - 1) previous[m] += amount;
   });
 
   return MONTH_NAMES_SV.map((month, i) => ({ month, current: current[i], previous: previous[i] }));
@@ -219,4 +244,14 @@ export function getOrderYearRange(orders: { startDate: string }[]): { min: numbe
   if (orders.length === 0) return { min: currentYear, max: currentYear };
   const years = orders.map((o) => new Date(o.startDate).getFullYear());
   return { min: Math.min(...years, currentYear), max: Math.max(...years, currentYear) };
+}
+
+// Total realized revenue split by calendar year — e.g. { 2025: 120000, 2026: 45000 }.
+export function getRealizedRevenueByYear(orders: RevenueOrder[]): Record<number, number> {
+  const byYear: Record<number, number> = {};
+  getRealizedRevenueEvents(orders).forEach(({ date, amount }) => {
+    const y = new Date(date).getFullYear();
+    byYear[y] = (byYear[y] ?? 0) + amount;
+  });
+  return byYear;
 }

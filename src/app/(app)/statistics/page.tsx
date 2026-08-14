@@ -8,7 +8,7 @@ import {
 import { TrendingUp, TrendingDown, Truck, DollarSign, BarChart2, Activity, ArrowRight } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
-import { formatCurrency, calculateROI, calculateRecoveryPercent, getMonthlyRevenueData } from '@/lib/utils';
+import { formatCurrency, calculateROI, calculateRecoveryPercent, getMonthlyRevenueData, getRealizedRevenueByYear } from '@/lib/utils';
 import { CATEGORY_LABELS } from '@/lib/types';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#F97316', '#06B6D4', '#84CC16'];
@@ -17,23 +17,20 @@ export default function StatisticsPage() {
   const { machines, orders, customers } = useStore();
 
   const stats = useMemo(() => {
-    const totalRevenue = orders.filter((o) => o.status === 'avslutad' || o.status === 'aktiv').reduce((s, o) => s + o.totalPrice, 0);
+    // Realized (fakturerat/avslutat) revenue only — same source machine.totalRevenue is built from,
+    // so this always matches "Intäkt per kategori" and "Maskinlönsamhet" below.
+    const totalRevenue = machines.reduce((s, m) => s + m.totalRevenue, 0);
     const totalMachineCosts = machines.reduce((s, m) => s + m.purchasePrice + m.totalServiceCost + (m.financingCost + m.insuranceCost + m.otherCosts) * 12, 0);
     const netResult = totalRevenue - totalMachineCosts;
     const avgOccupancy = machines.length > 0
       ? Math.round((machines.filter((m) => m.status === 'uthyrd' || m.status === 'reserverad').length / machines.length) * 100) : 0;
-    const totalRentals = orders.filter((o) => o.status === 'avslutad').length;
+    const totalRentals = orders.filter((o) => o.status === 'avslutad' || o.status === 'klar_for_fakturering').length;
 
-    // Year-over-year revenue comparison (exclude cancelled orders)
+    // Year-over-year realized revenue comparison
     const currentYear = new Date().getFullYear();
-    const prevYear = currentYear - 1;
-    const activeOrders = orders.filter((o) => o.status !== 'annullerad');
-    const thisYearRevenue = activeOrders
-      .filter((o) => new Date(o.startDate).getFullYear() === currentYear)
-      .reduce((s, o) => s + o.totalPrice, 0);
-    const prevYearRevenue = activeOrders
-      .filter((o) => new Date(o.startDate).getFullYear() === prevYear)
-      .reduce((s, o) => s + o.totalPrice, 0);
+    const revenueByYear = getRealizedRevenueByYear(orders);
+    const thisYearRevenue = revenueByYear[currentYear] ?? 0;
+    const prevYearRevenue = revenueByYear[currentYear - 1] ?? 0;
     const revenueTrendPct = prevYearRevenue > 0
       ? Math.round(((thisYearRevenue - prevYearRevenue) / prevYearRevenue) * 100)
       : null;
