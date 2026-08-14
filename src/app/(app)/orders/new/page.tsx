@@ -277,6 +277,9 @@ function NewOrderForm() {
   const selectedMachine = machines.find((m) => m.id === form.machineId);
   const selectedCustomer = customers.find((c) => c.id === form.customerId);
   const selectedFacility = selectedCustomer?.facilities?.find((f) => f.name === form.facilityName);
+  const availableContacts = form.facilityName
+    ? (selectedFacility?.contacts ?? [])
+    : (selectedCustomer?.contacts ?? []);
 
   return (
     <div className="flex flex-col flex-1 overflow-auto bg-slate-50/60">
@@ -380,12 +383,12 @@ function NewOrderForm() {
                   </Field>
                 )}
 
-                {selectedFacility?.contacts && selectedFacility.contacts.length > 0 && (
+                {availableContacts.length > 0 && (
                   <Field label="Beställare">
                     <select
                       value={form.ordererName}
                       onChange={(e) => {
-                        const contact = selectedFacility.contacts!.find((c) => c.name === e.target.value);
+                        const contact = availableContacts.find((c) => c.name === e.target.value);
                         set('ordererName', e.target.value);
                         set('ordererPhone', contact?.phone ?? '');
                         set('ordererEmail', contact?.email ?? '');
@@ -393,7 +396,7 @@ function NewOrderForm() {
                       className={inputClass}
                     >
                       <option value="">Välj beställare (valfritt)...</option>
-                      {selectedFacility.contacts.map((c, i) => (
+                      {availableContacts.map((c, i) => (
                         <option key={i} value={c.name}>{c.name}{c.title ? ` – ${c.title}` : ''}</option>
                       ))}
                     </select>

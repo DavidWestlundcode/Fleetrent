@@ -227,6 +227,9 @@ export default function EditOrderPage() {
   const selectedMachine = machines.find((m) => m.id === form.machineId);
   const selectedCustomer = customers.find((c) => c.id === form.customerId);
   const selectedFacility = selectedCustomer?.facilities?.find((f) => f.name === form.facilityName);
+  const availableContacts = form.facilityName
+    ? (selectedFacility?.contacts ?? [])
+    : (selectedCustomer?.contacts ?? []);
 
   // Auto-match hint when template is selected
   const autoMatchedTemplate = !form.templateId && form.machineId
@@ -296,12 +299,12 @@ export default function EditOrderPage() {
                   </Field>
                 )}
 
-                {selectedFacility?.contacts && selectedFacility.contacts.length > 0 && (
+                {availableContacts.length > 0 && (
                   <Field label="Beställare">
                     <select
                       value={form.ordererName}
                       onChange={(e) => {
-                        const contact = selectedFacility.contacts!.find((c) => c.name === e.target.value);
+                        const contact = availableContacts.find((c) => c.name === e.target.value);
                         set('ordererName', e.target.value);
                         set('ordererPhone', contact?.phone ?? '');
                         set('ordererEmail', contact?.email ?? '');
@@ -309,7 +312,7 @@ export default function EditOrderPage() {
                       className={inputClass}
                     >
                       <option value="">Välj beställare (valfritt)...</option>
-                      {selectedFacility.contacts.map((c, i) => (
+                      {availableContacts.map((c, i) => (
                         <option key={i} value={c.name}>{c.name}{c.title ? ` – ${c.title}` : ''}</option>
                       ))}
                     </select>
