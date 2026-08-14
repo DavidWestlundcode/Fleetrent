@@ -26,7 +26,7 @@ export default function OrderDetailPage() {
   const [savingInvoice, setSavingInvoice] = useState(false);
   const [sendingPeriodId, setSendingPeriodId] = useState<string | null>(null);
   const [periodFortnoxError, setPeriodFortnoxError] = useState<string | null>(null);
-  const [dialog, setDialog] = useState<'cancel' | 'delete' | 'markSent' | null>(null);
+  const [dialog, setDialog] = useState<'cancel' | 'delete' | 'markSent' | 'sendForSigning' | null>(null);
 
   const order = orders.find((o) => o.id === id);
   if (!order) {
@@ -116,6 +116,7 @@ export default function OrderDetailPage() {
   };
 
   const handleSendToZigned = async () => {
+    setDialog(null);
     setSendingToZigned(true);
     setZignedError(null);
     try {
@@ -204,7 +205,7 @@ export default function OrderDetailPage() {
             )}
             {(order.status === 'aktiv' || order.status === 'reserverad') && !order.signingStatus && (
               <button
-                onClick={handleSendToZigned}
+                onClick={() => setDialog('sendForSigning')}
                 disabled={sendingToZigned}
                 className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-60"
               >
@@ -1093,6 +1094,15 @@ export default function OrderDetailPage() {
         message="Markera order som skickad till bokföringsprogrammet manuellt?"
         confirmLabel="Markera"
         onConfirm={confirmMarkSentManually}
+        onCancel={() => setDialog(null)}
+      />
+      <ConfirmDialog
+        open={dialog === 'sendForSigning'}
+        danger={false}
+        title="Skicka för signering"
+        message={`Vill du skicka hyresavtalet för order ${order.orderNumber} till ${customer?.companyName ?? 'kunden'} för signering?`}
+        confirmLabel="Skicka"
+        onConfirm={handleSendToZigned}
         onCancel={() => setDialog(null)}
       />
     </div>
