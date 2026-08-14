@@ -42,8 +42,11 @@ export default function DashboardPage() {
       return o.status === 'aktiv' && days >= 0 && days <= 7;
     });
     const revenueEvents = getRealizedRevenueEvents(orders);
-    const totalRevenue = revenueEvents.reduce((sum, e) => sum + e.amount, 0);
     const now = new Date();
+    const currentYear = now.getFullYear();
+    const thisYearRevenue = revenueEvents
+      .filter((e) => new Date(e.date).getFullYear() === currentYear)
+      .reduce((sum, e) => sum + e.amount, 0);
     const thisMonthRevenue = revenueEvents
       .filter((e) => {
         const d = new Date(e.date);
@@ -57,7 +60,7 @@ export default function DashboardPage() {
       activeOrders: activeOrders.length,
       overdueOrders: overdueOrders.length,
       returningIn7Days: returningIn7Days.length,
-      totalRevenue, thisMonthRevenue, occupancyRate,
+      thisYearRevenue, currentYear, thisMonthRevenue, occupancyRate,
       totalMachines: machines.length,
       totalCustomers: customers.length,
     };
@@ -158,7 +161,7 @@ export default function DashboardPage() {
         {/* KPI Cards row 2 */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard title="Månadsintäkt" value={formatCurrency(stats.thisMonthRevenue)} subtitle="Innevarande månad" icon={TrendingUp} color="green" />
-          <StatCard title="Total intäkt" value={formatCurrency(stats.totalRevenue)} subtitle="Alla order" icon={TrendingUp} color="blue" />
+          <StatCard title="Total intäkt" value={formatCurrency(stats.thisYearRevenue)} subtitle={`Hittills ${stats.currentYear}`} icon={TrendingUp} color="blue" />
           <StatCard title="Beläggningsgrad" value={`${stats.occupancyRate}%`} subtitle="Uthyrda + reserverade" icon={BarChart3} color="purple" />
           <StatCard title="Returer inom 7 dagar" value={stats.returningIn7Days} icon={CheckCircle2} color={stats.returningIn7Days > 0 ? 'amber' : 'green'} />
         </div>
