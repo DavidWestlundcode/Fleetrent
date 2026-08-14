@@ -189,3 +189,34 @@ export function getMonthlyRevenueData(orders: { startDate: string; totalPrice: n
     revenue,
   }));
 }
+
+const MONTH_NAMES_SV = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
+
+// Month-by-month revenue for a given calendar year, alongside the same months the year before —
+// lets you compare e.g. August this year directly against August last year.
+export function getYearlyRevenueComparison(
+  orders: { startDate: string; totalPrice: number; status: string }[],
+  year: number,
+) {
+  const current = new Array(12).fill(0);
+  const previous = new Array(12).fill(0);
+
+  orders.forEach((order) => {
+    if (order.status !== 'avslutad' && order.status !== 'aktiv') return;
+    const d = new Date(order.startDate);
+    const y = d.getFullYear();
+    const m = d.getMonth();
+    if (y === year) current[m] += order.totalPrice;
+    else if (y === year - 1) previous[m] += order.totalPrice;
+  });
+
+  return MONTH_NAMES_SV.map((month, i) => ({ month, current: current[i], previous: previous[i] }));
+}
+
+// Earliest and latest year with any order activity, plus the current year — used to bound year navigation.
+export function getOrderYearRange(orders: { startDate: string }[]): { min: number; max: number } {
+  const currentYear = new Date().getFullYear();
+  if (orders.length === 0) return { min: currentYear, max: currentYear };
+  const years = orders.map((o) => new Date(o.startDate).getFullYear());
+  return { min: Math.min(...years, currentYear), max: Math.max(...years, currentYear) };
+}

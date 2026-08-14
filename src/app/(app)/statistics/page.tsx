@@ -1,10 +1,11 @@
 'use client';
 import { useMemo } from 'react';
+import Link from 'next/link';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, AreaChart, Area,
 } from 'recharts';
-import { TrendingUp, TrendingDown, Truck, DollarSign, BarChart2, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, Truck, DollarSign, BarChart2, Activity, ArrowRight } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
 import { formatCurrency, calculateROI, calculateRecoveryPercent, getMonthlyRevenueData } from '@/lib/utils';
@@ -125,10 +126,18 @@ export default function StatisticsPage() {
 
         {/* Monthly Revenue + Category */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
-            <div className="mb-5">
-              <h2 className="text-[14px] font-semibold text-slate-900">Intäkter per månad</h2>
-              <p className="text-[11px] text-slate-400 mt-0.5">Trendlinje för 12 månader</p>
+          <Link
+            href="/statistics/intakter"
+            className="group lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+          >
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-[14px] font-semibold text-slate-900">Intäkter per månad</h2>
+                <p className="text-[11px] text-slate-400 mt-0.5">Trendlinje för 12 månader</p>
+              </div>
+              <span className="flex items-center gap-1 text-[12px] font-medium text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                Historik & jämförelse <ArrowRight className="w-3.5 h-3.5" />
+              </span>
             </div>
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={revenueByMonth} margin={{ top: 0, right: 0, left: -15, bottom: 0 }}>
@@ -145,7 +154,7 @@ export default function StatisticsPage() {
                 <Area type="monotone" dataKey="revenue" stroke="#3B82F6" fill="url(#grad)" strokeWidth={2} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
-          </div>
+          </Link>
 
           <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
             <div className="mb-4">
