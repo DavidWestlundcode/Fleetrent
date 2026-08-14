@@ -383,49 +383,23 @@ function NewOrderForm() {
                   </Field>
                 )}
 
-                <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <Field label="Beställare">
-                    <input
-                      type="text"
-                      list="orderer-suggestions-new"
-                      value={form.ordererName}
-                      onChange={(e) => {
-                        const name = e.target.value;
-                        const contact = availableContacts.find((c) => c.name === name);
-                        set('ordererName', name);
-                        if (contact) {
-                          set('ordererPhone', contact.phone ?? '');
-                          set('ordererEmail', contact.email ?? '');
-                        }
-                      }}
-                      placeholder="Namn (valfritt)"
-                      className={inputClass}
-                    />
-                    {availableContacts.length > 0 && (
-                      <datalist id="orderer-suggestions-new">
-                        {availableContacts.map((c, i) => <option key={i} value={c.name} />)}
-                      </datalist>
-                    )}
-                  </Field>
-                  <Field label="Telefon">
-                    <input
-                      type="tel"
-                      value={form.ordererPhone}
-                      onChange={(e) => set('ordererPhone', e.target.value)}
-                      placeholder="Telefonnummer"
-                      className={inputClass}
-                    />
-                  </Field>
-                  <Field label="E-post">
-                    <input
-                      type="email"
-                      value={form.ordererEmail}
-                      onChange={(e) => set('ordererEmail', e.target.value)}
-                      placeholder="E-postadress"
-                      className={inputClass}
-                    />
-                  </Field>
-                </div>
+                <Field label="Beställare">
+                  <select
+                    value={form.ordererName}
+                    onChange={(e) => {
+                      const contact = availableContacts.find((c) => c.name === e.target.value);
+                      set('ordererName', e.target.value);
+                      set('ordererPhone', contact?.phone ?? '');
+                      set('ordererEmail', contact?.email ?? '');
+                    }}
+                    className={inputClass}
+                  >
+                    <option value="">Välj beställare (valfritt)...</option>
+                    {availableContacts.map((c, i) => (
+                      <option key={i} value={c.name}>{c.name}{c.title ? ` – ${c.title}` : ''}</option>
+                    ))}
+                  </select>
+                </Field>
 
                 <div className="md:col-span-2">
                   <Field label="Maskin *" required>
