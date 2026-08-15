@@ -36,6 +36,39 @@ export default function MachineDetailPage() {
     () => orders.filter((o) => o.machineId === id).sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()),
     [orders, id]
   );
+  // Orders where this machine was swapped OUT (it's no longer order.machineId) — kept in this
+  // machine's own history so "historiken stannar" holds even after a swap.
+  const swappedAwayEntries = useMemo(
+    () =>
+      orders.flatMap((o) =>
+        (o.machineSwaps ?? [])
+          .filter((s) => s.fromMachineId === id)
+          .map((s) => ({ order: o, swap: s }))
+      ),
+    [orders, id]
+  );
+  const machineHistoryRows = useMemo(() => {
+    const direct = machineOrders.map((order) => ({
+      key: order.id,
+      order,
+      periodStart: order.startDate,
+      periodEnd: order.plannedReturnDate,
+      amount: order.totalPrice,
+      swapped: false as const,
+    }));
+    const swapped = swappedAwayEntries.map(({ order, swap }) => {
+      const period = order.invoicePeriods?.find((p) => p.id === swap.invoicePeriodId);
+      return {
+        key: `${order.id}-swap-${swap.id}`,
+        order,
+        periodStart: period?.startDate ?? order.startDate,
+        periodEnd: swap.date,
+        amount: period?.amount ?? 0,
+        swapped: true as const,
+      };
+    });
+    return [...direct, ...swapped].sort((a, b) => new Date(b.periodStart).getTime() - new Date(a.periodStart).getTime());
+  }, [machineOrders, swappedAwayEntries]);
   const machineService = useMemo(
     () => serviceRecords.filter((s) => s.machineId === id).sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()),
     [serviceRecords, id]
@@ -44,6 +77,10 @@ export default function MachineDetailPage() {
   // Must be before the early return so hook count is stable even when machine is undefined
   const revenueChartData = useMemo(() => {
     const events = getRealizedRevenueEvents(machineOrders);
+    swappedAwayEntries.forEach(({ order, swap }) => {
+      const period = order.invoicePeriods?.find((p) => p.id === swap.invoicePeriodId);
+      if (period) events.push({ date: period.endDate, amount: period.amount });
+    });
     const months = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
@@ -58,7 +95,7 @@ export default function MachineDetailPage() {
       });
     }
     return months;
-  }, [machineOrders]);
+  }, [machineOrders, swappedAwayEntries]);
 
   if (!machine) {
     return (
@@ -254,7 +291,7 @@ export default function MachineDetailPage() {
               <div className="px-5 py-4 border-b border-slate-100">
                 <h2 className="font-semibold text-slate-900">Uthyrningshistorik</h2>
               </div>
-              {machineOrders.length === 0 ? (
+              {machineHistoryRows.length === 0 ? (
                 <p className="px-5 py-8 text-center text-slate-400 text-sm">Inga uthyrningar registrerade</p>
               ) : (
                 <div className="overflow-x-auto">
@@ -269,12 +306,12 @@ export default function MachineDetailPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {machineOrders.map((order) => {
-                      const customer = customers.find((c) => c.id === order.customerId);
+                    {machineHistoryRows.map((row) => {
+                      const customer = customers.find((c) => c.id === row.order.customerId);
                       return (
-                        <tr key={order.id} className="hover:bg-slate-50">
+                        <tr key={row.key} className="hover:bg-slate-50">
                           <td className="px-4 py-3">
-                            <Link href={`/orders/${order.id}`} className="text-blue-600 hover:underline font-medium">{order.orderNumber}</Link>
+                            <Link href={`/orders/${row.order.id}`} className="text-blue-600 hover:underline font-medium">{row.order.orderNumber}</Link>
                           </td>
                           <td className="px-4 py-3">
                             {customer ? (
@@ -285,10 +322,16 @@ export default function MachineDetailPage() {
                             ) : '–'}
                           </td>
                           <td className="px-4 py-3 text-slate-600 text-xs">
-                            {formatDate(order.startDate)} – {formatDate(order.plannedReturnDate)}
+                            {formatDate(row.periodStart)} – {formatDate(row.periodEnd)}
                           </td>
-                          <td className="px-4 py-3 font-medium">{formatCurrency(order.totalPrice)}</td>
-                          <td className="px-4 py-3"><OrderStatusBadge status={order.status} /></td>
+                          <td className="px-4 py-3 font-medium">{formatCurrency(row.amount)}</td>
+                          <td className="px-4 py-3">
+                            {row.swapped ? (
+                              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700">Utbytt</span>
+                            ) : (
+                              <OrderStatusBadge status={row.order.status} />
+                            )}
+                          </td>
                         </tr>
                       );
                     })}

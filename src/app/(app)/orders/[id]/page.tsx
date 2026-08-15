@@ -2,7 +2,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Clock, Truck, Building2, Calendar, CheckCircle2, Trash2, Pencil, Send, Loader2, ExternalLink, Receipt, Plus, ChevronDown, ChevronUp, FileSignature, Camera } from 'lucide-react';
+import { ArrowLeft, Clock, Truck, Building2, Calendar, CheckCircle2, Trash2, Pencil, Send, Loader2, ExternalLink, Receipt, Plus, ChevronDown, ChevronUp, FileSignature, Camera, Repeat, Wrench } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { MachineStatusBadge, OrderStatusBadge } from '@/components/ui/StatusBadge';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -13,7 +13,7 @@ import { ARTICLE_UNIT_LABELS } from '@/lib/types';
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { orders, machines, customers, articles, members, updateOrder, deleteOrder, addInvoicePeriod, markInvoicePeriodSent } = useStore();
+  const { orders, machines, customers, articles, members, updateOrder, deleteOrder, addInvoicePeriod, markInvoicePeriodSent, swapOrderMachine } = useStore();
   const getMemberName = (userId: string) => members.find((m) => m.id === userId)?.fullName ?? 'Okänd användare';
   const [sendingToFortnox, setSendingToFortnox] = useState(false);
   const [fortnoxError, setFortnoxError] = useState<string | null>(null);
@@ -27,6 +27,10 @@ export default function OrderDetailPage() {
   const [sendingPeriodId, setSendingPeriodId] = useState<string | null>(null);
   const [periodFortnoxError, setPeriodFortnoxError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<'cancel' | 'delete' | 'markSent' | 'sendForSigning' | null>(null);
+  const [showSwapForm, setShowSwapForm] = useState(false);
+  const [swapMachineId, setSwapMachineId] = useState('');
+  const [swapReason, setSwapReason] = useState('');
+  const [swapSendToService, setSwapSendToService] = useState(true);
 
   const order = orders.find((o) => o.id === id);
   if (!order) {
@@ -79,6 +83,21 @@ export default function OrderDetailPage() {
   const confirmDeleteOrder = () => {
     deleteOrder(order.id);
     router.push('/orders');
+  };
+
+  const availableMachinesForSwap = machines.filter((m) => m.status === 'i_lager');
+
+  const handleSwapMachine = () => {
+    if (!swapMachineId) return;
+    swapOrderMachine(order.id, {
+      newMachineId: swapMachineId,
+      reason: swapReason.trim() || undefined,
+      sendOldToService: swapSendToService,
+    });
+    setShowSwapForm(false);
+    setSwapMachineId('');
+    setSwapReason('');
+    setSwapSendToService(true);
   };
 
   const handleCheckZignedStatus = async () => {
@@ -1062,6 +1081,78 @@ export default function OrderDetailPage() {
                 <Link href={`/machines/${machine.id}`} className="mt-3 block text-center text-xs text-blue-600 hover:underline">
                   Visa maskinsida →
                 </Link>
+
+                {order.status === 'aktiv' && !showSwapForm && (
+                  <button
+                    onClick={() => setShowSwapForm(true)}
+                    className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    <Repeat className="w-3.5 h-3.5" />
+                    Byt maskin
+                  </button>
+                )}
+
+                {showSwapForm && (
+                  <div className="mt-3 border border-blue-200 bg-blue-50/40 rounded-xl p-4 space-y-3">
+                    <p className="text-[12px] font-semibold text-slate-600">Byt maskin</p>
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-500 mb-1">Ny maskin</label>
+                      <select
+                        value={swapMachineId}
+                        onChange={(e) => setSwapMachineId(e.target.value)}
+                        className="w-full px-3 py-2 text-[13px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                      >
+                        <option value="">Välj maskin...</option>
+                        {availableMachinesForSwap.map((m) => (
+                          <option key={m.id} value={m.id}>{m.name} ({m.internalCode})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-500 mb-1">Anledning (valfritt)</label>
+                      <textarea
+                        value={swapReason}
+                        onChange={(e) => setSwapReason(e.target.value)}
+                        placeholder="T.ex. maskinen gick sönder"
+                        rows={2}
+                        className="w-full px-3 py-2 text-[13px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 resize-none"
+                      />
+                    </div>
+                    <label className="flex items-center gap-2 text-[12px] text-slate-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={swapSendToService}
+                        onChange={(e) => setSwapSendToService(e.target.checked)}
+                        className="rounded border-slate-300"
+                      />
+                      Skicka gamla maskinen till service
+                    </label>
+                    <p className="text-[11px] text-slate-500">
+                      Den gamla maskinen faktureras för dagarna den använts och frigörs. Ordern fortsätter oförändrad med ny maskin.
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        disabled={!swapMachineId}
+                        onClick={handleSwapMachine}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-[13px] font-medium rounded-lg hover:bg-blue-700 disabled:opacity-40 transition-colors cursor-pointer"
+                      >
+                        <Wrench className="w-3.5 h-3.5" />
+                        Byt maskin
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowSwapForm(false);
+                          setSwapMachineId('');
+                          setSwapReason('');
+                          setSwapSendToService(true);
+                        }}
+                        className="px-4 py-2 text-[13px] text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                      >
+                        Avbryt
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

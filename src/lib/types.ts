@@ -152,6 +152,16 @@ export interface InvoicePeriod {
   createdAt: string;
 }
 
+export interface MachineSwap {
+  id: string;
+  fromMachineId: string;
+  toMachineId: string;
+  date: string;
+  reason?: string;
+  invoicePeriodId?: string;
+  createdAt: string;
+}
+
 export interface Order {
   id: string;
   orderNumber: string;
@@ -203,6 +213,7 @@ export interface Order {
   fortnoxOrderNumber?: string;
   orderArticles: OrderArticle[];
   invoicePeriods?: InvoicePeriod[];
+  machineSwaps?: MachineSwap[];
   zignedAgreementId?: string;
   signingStatus?: 'not_sent' | 'pending' | 'signed' | 'cancelled';
   signingUrl?: string;

@@ -5,9 +5,9 @@ import type {
   Machine, Customer, Order, PriceTemplate, ServiceRecord, Article,
   MachineCategory, MachineStatus, FuelType, OrderStatus, ReturnCondition,
   ServiceType, ServiceStatus, ArticleType, ArticleUnit, OrderArticle, ContactPerson, CustomerFacility, SpMachine,
-  InvoicePeriod,
+  InvoicePeriod, MachineSwap,
 } from '@/lib/types';
-import { generateOrderNumber } from '@/lib/utils';
+import { generateOrderNumber, calcBreakdown, countBusinessDays, daysBetween } from '@/lib/utils';
 
 type DbRow = Record<string, unknown>;
 
@@ -224,6 +224,7 @@ function fromDbOrder(r: DbRow): Order {
     fortnoxOrderNumber: (r.fortnox_order_number as string) || undefined,
     orderArticles: (r.order_articles as OrderArticle[]) ?? [],
     invoicePeriods: (r.invoice_periods as InvoicePeriod[]) ?? [],
+    machineSwaps: (r.machine_swaps as MachineSwap[]) ?? [],
     zignedAgreementId: (r.zigned_agreement_id as string) || undefined,
     signingStatus: (r.signing_status as Order['signingStatus']) || undefined,
     signingUrl: (r.signing_url as string) || undefined,
@@ -284,6 +285,7 @@ function toDbOrder(o: Order, orgId: string): DbRow {
     fortnox_order_number: o.fortnoxOrderNumber ?? null,
     order_articles: o.orderArticles ?? [],
     invoice_periods: o.invoicePeriods ?? [],
+    machine_swaps: o.machineSwaps ?? [],
     zigned_agreement_id: o.zignedAgreementId ?? null,
     signing_status: o.signingStatus ?? null,
     signing_url: o.signingUrl ?? null,
@@ -552,6 +554,7 @@ interface AppStore {
 
   addInvoicePeriod: (orderId: string, period: Omit<InvoicePeriod, 'id' | 'createdAt'>) => void;
   markInvoicePeriodSent: (orderId: string, periodId: string, fortnoxOrderNumber: string) => void;
+  swapOrderMachine: (orderId: string, data: { newMachineId: string; reason?: string; sendOldToService?: boolean }) => void;
 }
 
 const EMPTY_STATE = {
@@ -717,6 +720,123 @@ export const useStore = create<AppStore>()((set, get) => ({
           'sync markInvoicePeriodSent:'
         );
       }
+    }
+  },
+
+  swapOrderMachine: (orderId, data) => {
+    const now = new Date().toISOString();
+    const today = now.split('T')[0];
+    const { organizationId, userId, userName } = get();
+    const order = get().orders.find((o) => o.id === orderId);
+    if (!order) return;
+    const oldMachine = get().machines.find((m) => m.id === order.machineId);
+    const newMachine = get().machines.find((m) => m.id === data.newMachineId);
+    if (!oldMachine || !newMachine) return;
+
+    const byName = userName ? ` av ${userName}` : '';
+    const swapId = crypto.randomUUID();
+    const eventId = crypto.randomUUID();
+
+    // Bill the old machine for its share of usage since the last invoice period — same logic as
+    // the manual "Ny delfaktura" flow and the avtalshyra cron, so its revenue/rental stats stay correct.
+    const sortedPeriods = [...(order.invoicePeriods ?? [])].sort((a, b) => a.startDate.localeCompare(b.startDate));
+    const lastInvoiceEnd = sortedPeriods.length > 0 ? sortedPeriods[sortedPeriods.length - 1].endDate : null;
+    const periodStart = lastInvoiceEnd
+      ? new Date(new Date(lastInvoiceEnd).getTime() + 86400000).toISOString().split('T')[0]
+      : order.startDate;
+
+    let newPeriod: InvoicePeriod | null = null;
+    if (periodStart <= today) {
+      const days = order.chargeWeekends ? daysBetween(periodStart, today) : countBusinessDays(periodStart, today);
+      if (days > 0) {
+        const breakdown = calcBreakdown(days, order.dailyPrice, order.weeklyPrice, order.monthlyPrice);
+        const amount = breakdown.total * (1 - (order.rentalDiscount ?? 0) / 100);
+        newPeriod = { id: crypto.randomUUID(), startDate: periodStart, endDate: today, days, amount, sentToAccounting: false, createdAt: now };
+      }
+    }
+
+    const swap: MachineSwap = {
+      id: swapId,
+      fromMachineId: oldMachine.id,
+      toMachineId: newMachine.id,
+      date: today,
+      reason: data.reason,
+      invoicePeriodId: newPeriod?.id,
+      createdAt: now,
+    };
+
+    const oldMachineStatus = data.sendOldToService ? 'service' : 'i_lager';
+    const eventDescription = `Maskin utbytt${byName}: ${oldMachine.name} → ${newMachine.name}${data.reason ? `. Anledning: ${data.reason}` : ''}`;
+
+    set((s) => ({
+      orders: s.orders.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              machineId: newMachine.id,
+              invoicePeriods: newPeriod ? [...(o.invoicePeriods ?? []), newPeriod] : (o.invoicePeriods ?? []),
+              machineSwaps: [...(o.machineSwaps ?? []), swap],
+              events: [
+                ...o.events,
+                { id: eventId, type: 'maskinbyte', description: eventDescription, timestamp: now, userId: userId ?? '' },
+              ],
+            }
+          : o
+      ),
+      machines: s.machines.map((m) => {
+        if (m.id === oldMachine.id) {
+          return {
+            ...m,
+            status: oldMachineStatus as Machine['status'],
+            totalRevenue: m.totalRevenue + (newPeriod?.amount ?? 0),
+            totalRentalDays: m.totalRentalDays + (newPeriod?.days ?? 0),
+            totalRentals: m.totalRentals + 1,
+            updatedAt: now,
+          };
+        }
+        if (m.id === newMachine.id) {
+          return { ...m, status: 'uthyrd' as const, updatedAt: now };
+        }
+        return m;
+      }),
+      customers: newPeriod
+        ? s.customers.map((c) => (c.id === order.customerId ? { ...c, totalSpent: c.totalSpent + newPeriod!.amount } : c))
+        : s.customers,
+    }));
+
+    if (organizationId) {
+      const updatedOrder = get().orders.find((o) => o.id === orderId);
+      const updatedOldMachine = get().machines.find((m) => m.id === oldMachine.id);
+      const updatedNewMachine = get().machines.find((m) => m.id === newMachine.id);
+      const client = sb();
+      const ops: Promise<{ error: unknown }>[] = [
+        client.from('orders').update({
+          machine_id: updatedOrder?.machineId,
+          invoice_periods: updatedOrder?.invoicePeriods ?? [],
+          machine_swaps: updatedOrder?.machineSwaps ?? [],
+        }).eq('id', orderId) as unknown as Promise<{ error: unknown }>,
+        client.from('order_events').insert({
+          id: eventId, order_id: orderId, organization_id: organizationId,
+          type: 'maskinbyte', description: eventDescription, timestamp: now, user_id: userId ?? null,
+        }) as unknown as Promise<{ error: unknown }>,
+        client.from('machines').update({
+          status: updatedOldMachine?.status,
+          total_revenue: updatedOldMachine?.totalRevenue,
+          total_rental_days: updatedOldMachine?.totalRentalDays,
+          total_rentals: updatedOldMachine?.totalRentals,
+          updated_at: now,
+        }).eq('id', oldMachine.id) as unknown as Promise<{ error: unknown }>,
+        client.from('machines').update({
+          status: updatedNewMachine?.status, updated_at: now,
+        }).eq('id', newMachine.id) as unknown as Promise<{ error: unknown }>,
+      ];
+      if (newPeriod) {
+        const updatedCustomer = get().customers.find((c) => c.id === order.customerId);
+        ops.push(client.from('customers').update({ total_spent: updatedCustomer?.totalSpent }).eq('id', order.customerId) as unknown as Promise<{ error: unknown }>);
+      }
+      Promise.all(ops).then((results) => {
+        results.forEach((r, i) => { if (r.error) console.error(`sync swapOrderMachine[${i}]:`, r.error); });
+      });
     }
   },
 
