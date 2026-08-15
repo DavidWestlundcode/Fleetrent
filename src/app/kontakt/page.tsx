@@ -10,15 +10,15 @@ export default function KontaktPage() {
       </p>
       <div className="not-prose grid grid-cols-1 md:grid-cols-2 gap-5">
         {[
-          { title: 'Support', desc: 'Frågor om plattformen eller ditt konto.', email: 'info@dseenterprise.se' },
-          { title: 'Försäljning', desc: 'Frågor om priser eller att komma igång.', email: 'info@dseenterprise.se' },
-          { title: 'Press', desc: 'Medieförfrågningar och intervjuer.', email: 'info@dseenterprise.se' },
-          { title: 'Övrigt', desc: 'Allt annat — vi hjälper gärna.', email: 'info@dseenterprise.se' },
+          { title: 'Support', desc: 'Frågor om plattformen eller ditt konto.', email: 'david@fleetos.se,elias@fleetos.se' },
+          { title: 'Försäljning', desc: 'Frågor om priser eller att komma igång.', email: 'david@fleetos.se,elias@fleetos.se' },
+          { title: 'Press', desc: 'Medieförfrågningar och intervjuer.', email: 'david@fleetos.se,elias@fleetos.se' },
+          { title: 'Övrigt', desc: 'Allt annat — vi hjälper gärna.', email: 'david@fleetos.se,elias@fleetos.se' },
         ].map(({ title, desc, email }) => (
           <div key={title} className="p-5 bg-slate-50 rounded-xl border border-slate-200">
             <p className="font-semibold text-slate-900 text-sm mb-1">{title}</p>
             <p className="text-sm text-slate-500 mb-3">{desc}</p>
-            <a href={`mailto:${email}`} className="text-sm text-blue-600 hover:underline">{email}</a>
+            <a href={`mailto:${email}`} className="text-sm text-blue-600 hover:underline">{email.replace(',', ' & ')}</a>
           </div>
         ))}
       </div>

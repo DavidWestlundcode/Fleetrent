@@ -1255,7 +1255,7 @@ export default function LandingPage() {
               Kom igång med FleetOS
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <a href="mailto:info@dseenterprise.se" className="flex items-center gap-2 px-7 py-4 bg-white/[0.06] hover:bg-white/[0.1] text-white font-medium rounded-xl border border-white/10 transition-all text-[15px]">
+            <a href="mailto:david@fleetos.se,elias@fleetos.se" className="flex items-center gap-2 px-7 py-4 bg-white/[0.06] hover:bg-white/[0.1] text-white font-medium rounded-xl border border-white/10 transition-all text-[15px]">
               Kontakta oss
             </a>
           </div>

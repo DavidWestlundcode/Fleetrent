@@ -20,10 +20,10 @@ export default function IntegritetspolicyPage() {
       <p className="mb-4">Behandlingen sker med stöd av avtalsuppfyllelse (när du är kund), berättigat intresse (förbättring av tjänsten) och rättslig förpliktelse (bokföring m.m.).</p>
 
       <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">5. Dina rättigheter</h2>
-      <p className="mb-4">Du har rätt att begära tillgång till, rättelse av och radering av dina personuppgifter. Du har även rätt att invända mot behandlingen och att begära dataportabilitet. Kontakta oss på <a href="mailto:info@dseenterprise.se" className="text-blue-600 hover:underline">info@dseenterprise.se</a> för att utöva dina rättigheter.</p>
+      <p className="mb-4">Du har rätt att begära tillgång till, rättelse av och radering av dina personuppgifter. Du har även rätt att invända mot behandlingen och att begära dataportabilitet. Kontakta oss på <a href="mailto:david@fleetos.se,elias@fleetos.se" className="text-blue-600 hover:underline">david@fleetos.se & elias@fleetos.se</a> för att utöva dina rättigheter.</p>
 
       <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">6. Kontakt</h2>
-      <p className="mb-4">Frågor om vår behandling av personuppgifter skickas till <a href="mailto:info@dseenterprise.se" className="text-blue-600 hover:underline">info@dseenterprise.se</a>. Du har även rätt att lämna klagomål till Integritetsskyddsmyndigheten (IMY).</p>
+      <p className="mb-4">Frågor om vår behandling av personuppgifter skickas till <a href="mailto:david@fleetos.se,elias@fleetos.se" className="text-blue-600 hover:underline">david@fleetos.se & elias@fleetos.se</a>. Du har även rätt att lämna klagomål till Integritetsskyddsmyndigheten (IMY).</p>
     </PublicLayout>
   );
 }

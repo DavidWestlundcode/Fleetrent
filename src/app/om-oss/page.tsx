@@ -62,7 +62,7 @@ export default function OmOssPage() {
         <p className="text-sm text-slate-500">Org.nr: 559510-0248</p>
         <p className="text-sm text-slate-500 mt-3">
           Frågor?{' '}
-          <a href="mailto:info@dseenterprise.se" className="text-blue-600 hover:underline">info@dseenterprise.se</a>
+          <a href="mailto:david@fleetos.se,elias@fleetos.se" className="text-blue-600 hover:underline">david@fleetos.se & elias@fleetos.se</a>
         </p>
       </div>
     </PublicLayout>

@@ -29,7 +29,7 @@ export default function VillkorPage() {
       <p className="mb-4">Dessa villkor regleras av svensk lag. Tvister ska i första hand lösas genom förhandling och i andra hand via allmän domstol med Stockholm som forum.</p>
 
       <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">8. Kontakt</h2>
-      <p className="mb-4">Frågor om dessa villkor skickas till <a href="mailto:info@dseenterprise.se" className="text-blue-600 hover:underline">info@dseenterprise.se</a>.</p>
+      <p className="mb-4">Frågor om dessa villkor skickas till <a href="mailto:david@fleetos.se,elias@fleetos.se" className="text-blue-600 hover:underline">david@fleetos.se & elias@fleetos.se</a>.</p>
 
       <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">12. Ansvarsbegränsning</h2>
       <p className="mb-4">12.1 FleetOS är en molnbaserad programvarutjänst som tillhandahålls av DSE ENTERPRISE AB ("Leverantören") för administration och hantering av kundens verksamhet. FleetOS utgör endast ett tekniskt hjälpmedel och Leverantören ansvarar inte för kundens affärsverksamhet, affärsbeslut, uthyrningsprocesser eller operativa verksamhet.</p>
