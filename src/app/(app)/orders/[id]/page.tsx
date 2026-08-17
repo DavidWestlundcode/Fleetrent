@@ -1,6 +1,6 @@
 'use client';
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, Truck, Building2, Calendar, CheckCircle2, Trash2, Pencil, Send, Loader2, ExternalLink, Receipt, Plus, ChevronDown, ChevronUp, FileSignature, Camera, Repeat, Wrench, Search } from 'lucide-react';
 import Header from '@/components/layout/Header';
@@ -13,7 +13,7 @@ import { ARTICLE_UNIT_LABELS } from '@/lib/types';
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { orders, machines, customers, articles, members, updateOrder, deleteOrder, addInvoicePeriod, markInvoicePeriodSent, swapOrderMachine } = useStore();
+  const { orders, machines, customers, articles, members, updateOrder, deleteOrder, addInvoicePeriod, editInvoicePeriod, markInvoicePeriodSent, swapOrderMachine } = useStore();
   const getMemberName = (userId: string) => members.find((m) => m.id === userId)?.fullName ?? 'Okänd användare';
   const [sendingToFortnox, setSendingToFortnox] = useState(false);
   const [fortnoxError, setFortnoxError] = useState<string | null>(null);
@@ -26,6 +26,8 @@ export default function OrderDetailPage() {
   const [savingInvoice, setSavingInvoice] = useState(false);
   const [sendingPeriodId, setSendingPeriodId] = useState<string | null>(null);
   const [periodFortnoxError, setPeriodFortnoxError] = useState<string | null>(null);
+  const [editingPeriodId, setEditingPeriodId] = useState<string | null>(null);
+  const [editPeriodDays, setEditPeriodDays] = useState(0);
   const [dialog, setDialog] = useState<'cancel' | 'delete' | 'markSent' | 'sendForSigning' | null>(null);
   const [showSwapForm, setShowSwapForm] = useState(false);
   const [swapMachineId, setSwapMachineId] = useState('');
@@ -564,7 +566,8 @@ export default function OrderDetailPage() {
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {sortedInvoices.map((period) => (
-                          <tr key={period.id} className="hover:bg-slate-50/60">
+                          <Fragment key={period.id}>
+                          <tr className="hover:bg-slate-50/60">
                             <td className="px-3 py-2.5 text-[13px] text-slate-700">
                               {formatDate(period.startDate)} – {formatDate(period.endDate)}
                             </td>
@@ -582,30 +585,88 @@ export default function OrderDetailPage() {
                             </td>
                             <td className="px-3 py-2.5 text-right">
                               {!period.sentToAccounting && (
-                                <button
-                                  onClick={async () => {
-                                    setSendingPeriodId(period.id);
-                                    setPeriodFortnoxError(null);
-                                    try {
-                                      const res = await fetch('/api/fortnox/create-partial-invoice', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ orderId: order.id, periodId: period.id }),
-                                      });
-                                      const data = await res.json();
-                                      if (!res.ok) { setPeriodFortnoxError(data.error ?? 'Fel'); return; }
-                                      markInvoicePeriodSent(order.id, period.id, data.fortnoxOrderNumber);
-                                    } finally { setSendingPeriodId(null); }
-                                  }}
-                                  disabled={sendingPeriodId === period.id}
-                                  className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-colors cursor-pointer disabled:opacity-50"
-                                >
-                                  {sendingPeriodId === period.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
-                                  Fortnox
-                                </button>
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() => {
+                                      if (editingPeriodId === period.id) {
+                                        setEditingPeriodId(null);
+                                      } else {
+                                        setEditingPeriodId(period.id);
+                                        setEditPeriodDays(period.days);
+                                      }
+                                    }}
+                                    className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-500 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      setSendingPeriodId(period.id);
+                                      setPeriodFortnoxError(null);
+                                      try {
+                                        const res = await fetch('/api/fortnox/create-partial-invoice', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ orderId: order.id, periodId: period.id }),
+                                        });
+                                        const data = await res.json();
+                                        if (!res.ok) { setPeriodFortnoxError(data.error ?? 'Fel'); return; }
+                                        markInvoicePeriodSent(order.id, period.id, data.fortnoxOrderNumber);
+                                      } finally { setSendingPeriodId(null); }
+                                    }}
+                                    disabled={sendingPeriodId === period.id}
+                                    className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-colors cursor-pointer disabled:opacity-50"
+                                  >
+                                    {sendingPeriodId === period.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                                    Fortnox
+                                  </button>
+                                </div>
                               )}
                             </td>
                           </tr>
+                          {editingPeriodId === period.id && (() => {
+                            const editBreakdown = calcBreakdown(editPeriodDays, order.dailyPrice, order.weeklyPrice, order.monthlyPrice);
+                            const editAmount = editBreakdown.total * (1 - (order.rentalDiscount ?? 0) / 100);
+                            return (
+                              <tr className="bg-blue-50/40">
+                                <td colSpan={5} className="px-3 py-3">
+                                  <div className="flex items-end gap-3 flex-wrap">
+                                    <div>
+                                      <label className="block text-[11px] font-medium text-slate-500 mb-1">Antal dagar</label>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        value={editPeriodDays}
+                                        onChange={(e) => setEditPeriodDays(Math.max(0, Number(e.target.value)))}
+                                        className="w-24 px-3 py-1.5 text-[13px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                                      />
+                                    </div>
+                                    <p className="text-[12px] text-slate-500 pb-2">
+                                      Nytt belopp: <span className="font-semibold text-slate-800">{formatCurrency(editAmount)}</span>
+                                    </p>
+                                    <div className="flex gap-2 pb-0.5 ml-auto">
+                                      <button
+                                        onClick={() => {
+                                          editInvoicePeriod(order.id, period.id, { days: editPeriodDays, amount: editAmount });
+                                          setEditingPeriodId(null);
+                                        }}
+                                        className="px-3 py-1.5 text-[12px] font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
+                                      >
+                                        Spara
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingPeriodId(null)}
+                                        className="px-3 py-1.5 text-[12px] text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                                      >
+                                        Avbryt
+                                      </button>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })()}
+                          </Fragment>
                         ))}
                       </tbody>
                     </table>
