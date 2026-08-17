@@ -618,8 +618,8 @@ export default function EditOrderPage() {
               {/* Add row */}
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                 <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Lägg till artikel</p>
-                <div className="flex gap-2 items-end">
-                  <div className="flex-1 relative">
+                <div className="flex gap-2 items-end flex-wrap">
+                  <div className="flex-1 min-w-[160px] relative">
                     <label className="block text-xs font-medium text-slate-600 mb-1.5">Sök artikel</label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
