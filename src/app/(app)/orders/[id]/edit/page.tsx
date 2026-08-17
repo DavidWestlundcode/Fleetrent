@@ -22,6 +22,39 @@ function Field({ label, children, required }: { label: string; children: React.R
   );
 }
 
+function PriceWithDiscount({ label, price, discount, onPriceChange, onDiscountChange }: {
+  label: string;
+  price: number;
+  discount: number;
+  onPriceChange: (v: number) => void;
+  onDiscountChange: (v: number) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-slate-600 mb-1.5">{label}</label>
+      <div className="flex gap-1.5">
+        <div className="flex-1 relative">
+          <input
+            type="number" min={0} value={price}
+            onChange={(e) => onPriceChange(Number(e.target.value))}
+            className={`${inputClass} pr-7`} placeholder="0"
+          />
+          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none">kr</span>
+        </div>
+        <div className="w-[68px] relative">
+          <input
+            type="number" min={0} max={100} step={0.1}
+            value={discount || ''}
+            onChange={(e) => onDiscountChange(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+            className={`${inputClass} pr-6`} placeholder="0"
+          />
+          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none">%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function EditOrderPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -63,9 +96,13 @@ export default function EditOrderPage() {
   const [newArticleId, setNewArticleId] = useState('');
   const [newArticleQty, setNewArticleQty] = useState(1);
   const [newArticlePrice, setNewArticlePrice] = useState(0);
+  const [newArticleDiscount, setNewArticleDiscount] = useState(0);
   const [newArticleDescription, setNewArticleDescription] = useState('');
   const [articleSearch, setArticleSearch] = useState('');
   const [showArticleDropdown, setShowArticleDropdown] = useState(false);
+  const [dailyDiscount, setDailyDiscount] = useState(0);
+  const [weeklyDiscount, setWeeklyDiscount] = useState(0);
+  const [monthlyDiscount, setMonthlyDiscount] = useState(0);
 
   // Pre-populate from existing order
   useEffect(() => {
@@ -99,6 +136,7 @@ export default function EditOrderPage() {
     setIsLongTerm(order.isLongTerm === true);
     setIncludeInsurance(!!order.insuranceCost || !!order.insuranceMonthlyRate);
     setOrderArticles(order.orderArticles ?? []);
+    setDailyDiscount(order.rentalDiscount ?? 0);
     setInitialized(true);
   }, [order, initialized]);
 
@@ -175,15 +213,22 @@ export default function EditOrderPage() {
     ? (chargeWeekends ? days : countBusinessDays(form.startDate, form.plannedReturnDate))
     : days;
   const priceBreakdown = calcBreakdown(billableDays, form.dailyPrice, form.weeklyPrice, form.monthlyPrice);
-  const calculatedPrice = priceBreakdown.total;
+  const rentalTotal = (
+    priceBreakdown.months * form.monthlyPrice * (1 - monthlyDiscount / 100) +
+    priceBreakdown.weeks * form.weeklyPrice * (1 - weeklyDiscount / 100) +
+    priceBreakdown.days * form.dailyPrice * (1 - dailyDiscount / 100)
+  );
   const insuranceMonths = billableDays > 0 ? Math.ceil(billableDays / 30) : 0;
   const insuranceCost = !openEnded && includeInsurance && selectedTemplate
     ? insuranceMonths * selectedTemplate.insuranceMonthlyPrice
     : 0;
-  const extraArticlesTotal = orderArticles.reduce((sum, r) => sum + r.quantity * r.unitPrice, 0);
+  const extraArticlesTotal = orderArticles.reduce((sum, r) => {
+    const d = r.discountPercent ?? 0;
+    return sum + r.quantity * r.unitPrice * (1 - d / 100);
+  }, 0);
   const totalPrice = openEnded
     ? extraArticlesTotal
-    : calculatedPrice + insuranceCost + extraArticlesTotal;
+    : rentalTotal + insuranceCost + extraArticlesTotal;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,6 +246,7 @@ export default function EditOrderPage() {
       deposit: form.deposit,
       insuranceCost: (!openEnded && includeInsurance && insuranceCost) ? insuranceCost : undefined,
       totalPrice,
+      rentalDiscount: dailyDiscount || undefined,
       internalNotes: form.internalNotes,
       customerNotes: form.customerNotes,
       accessories: form.accessories ? form.accessories.split(',').map((s) => s.trim()).filter(Boolean) : [],
@@ -470,17 +516,24 @@ export default function EditOrderPage() {
 
             {/* Pricing */}
             <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
-              <h2 className="text-[14px] font-semibold text-slate-900 mb-4">Prissättning</h2>
+              <h2 className="text-[14px] font-semibold text-slate-900 mb-1">Prissättning</h2>
+              <p className="text-[11px] text-slate-400 mb-4">Pris (kr) + Rabatt (%)</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Field label="Dagspris (kr)">
-                  <input type="number" value={form.dailyPrice} onChange={(e) => set('dailyPrice', Number(e.target.value))} className={inputClass} min={0} />
-                </Field>
-                <Field label="Veckopris (kr)">
-                  <input type="number" value={form.weeklyPrice} onChange={(e) => set('weeklyPrice', Number(e.target.value))} className={inputClass} min={0} />
-                </Field>
-                <Field label="Månadspris (kr)">
-                  <input type="number" value={form.monthlyPrice} onChange={(e) => set('monthlyPrice', Number(e.target.value))} className={inputClass} min={0} />
-                </Field>
+                <PriceWithDiscount
+                  label="Dagspris"
+                  price={form.dailyPrice} discount={dailyDiscount}
+                  onPriceChange={(v) => set('dailyPrice', v)} onDiscountChange={setDailyDiscount}
+                />
+                <PriceWithDiscount
+                  label="Veckopris"
+                  price={form.weeklyPrice} discount={weeklyDiscount}
+                  onPriceChange={(v) => set('weeklyPrice', v)} onDiscountChange={setWeeklyDiscount}
+                />
+                <PriceWithDiscount
+                  label="Månadspris"
+                  price={form.monthlyPrice} discount={monthlyDiscount}
+                  onPriceChange={(v) => set('monthlyPrice', v)} onDiscountChange={setMonthlyDiscount}
+                />
               </div>
 
               {hasInsuranceOption && (
@@ -517,19 +570,22 @@ export default function EditOrderPage() {
               {orderArticles.length > 0 && (
                 <div className="mb-4 border border-slate-200 rounded-xl overflow-hidden">
                   <div className="overflow-x-auto">
-                  <table className="w-full min-w-[460px]">
+                  <table className="w-full min-w-[520px]">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-100">
                         <th className="text-left px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Artikel</th>
-                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-16">Antal</th>
-                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-24">À-pris</th>
-                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-24">Totalt</th>
+                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-14">Antal</th>
+                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-20">À-pris</th>
+                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-16">Rabatt</th>
+                        <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-20">Totalt</th>
                         <th className="w-8" />
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {orderArticles.map((row, i) => {
                         const art = articles.find((a) => a.id === row.articleId);
+                        const d = row.discountPercent ?? 0;
+                        const lineTotal = row.quantity * row.unitPrice * (1 - d / 100);
                         return (
                           <tr key={i} className="hover:bg-slate-50/60">
                             <td className="px-3 py-2.5 text-[13px] text-slate-700">
@@ -538,7 +594,13 @@ export default function EditOrderPage() {
                             </td>
                             <td className="px-3 py-2.5 text-[13px] text-right text-slate-700">{row.quantity} {art?.unit}</td>
                             <td className="px-3 py-2.5 text-[13px] text-right text-slate-700">{formatCurrency(row.unitPrice)}</td>
-                            <td className="px-3 py-2.5 text-[13px] text-right font-medium text-slate-800">{formatCurrency(row.quantity * row.unitPrice)}</td>
+                            <td className="px-3 py-2.5 text-right">
+                              {d > 0
+                                ? <span className="text-[12px] font-medium text-emerald-600">{d}%</span>
+                                : <span className="text-[12px] text-slate-300">–</span>
+                              }
+                            </td>
+                            <td className="px-3 py-2.5 text-[13px] text-right font-medium text-slate-800">{formatCurrency(lineTotal)}</td>
                             <td className="px-3 py-2.5 text-right">
                               <button type="button" onClick={() => setOrderArticles((p) => p.filter((_, idx) => idx !== i))} className="text-slate-300 hover:text-red-500 transition-colors cursor-pointer">
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -589,6 +651,7 @@ export default function EditOrderPage() {
                               onMouseDown={() => {
                                 setNewArticleId(a.id);
                                 setNewArticlePrice(a.defaultPrice);
+                                setNewArticleDiscount(0);
                                 setNewArticleDescription(a.name);
                                 setArticleSearch(`${a.articleNumber} – ${a.name}`);
                                 setShowArticleDropdown(false);
@@ -625,9 +688,22 @@ export default function EditOrderPage() {
                     <label className="block text-xs font-medium text-slate-600 mb-1.5">Antal</label>
                     <input type="number" min={1} value={newArticleQty} onChange={(e) => setNewArticleQty(Number(e.target.value))} className={inputClass} />
                   </div>
-                  <div className="w-28">
+                  <div className="w-24">
                     <label className="block text-xs font-medium text-slate-600 mb-1.5">À-pris (kr)</label>
                     <input type="number" min={0} value={newArticlePrice} onChange={(e) => setNewArticlePrice(Number(e.target.value))} className={inputClass} />
+                  </div>
+                  <div className="w-20">
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Rabatt (%)</label>
+                    <div className="relative">
+                      <input
+                        type="number" min={0} max={100} step={0.1}
+                        value={newArticleDiscount || ''}
+                        onChange={(e) => setNewArticleDiscount(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+                        className={`${inputClass} pr-7`}
+                        placeholder="0"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none">%</span>
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -640,11 +716,13 @@ export default function EditOrderPage() {
                         articleId: newArticleId,
                         quantity: newArticleQty,
                         unitPrice: newArticlePrice,
+                        ...(newArticleDiscount > 0 ? { discountPercent: newArticleDiscount } : {}),
                         ...(finalDesc && finalDesc !== art?.name ? { description: finalDesc } : {}),
                       }]);
                       setNewArticleId('');
                       setNewArticleQty(1);
                       setNewArticlePrice(0);
+                      setNewArticleDiscount(0);
                       setNewArticleDescription('');
                       setArticleSearch('');
                     }}
@@ -724,7 +802,7 @@ export default function EditOrderPage() {
                         <div className="flex justify-between text-[13px]">
                           <span className="text-slate-500">Hyra {openEnded ? '(löpande)' : days > 0 ? `(${billableDays} dagar)` : ''}</span>
                           <span className={`font-medium ${openEnded ? 'text-slate-400 text-[12px]' : ''}`}>
-                            {openEnded ? 'Beräknas vid retur' : formatCurrency(calculatedPrice)}
+                            {openEnded ? 'Beräknas vid retur' : formatCurrency(rentalTotal)}
                           </span>
                         </div>
                         {rentalArt && <p className="text-[11px] text-blue-500 mt-0.5">#{rentalArt.articleNumber} {rentalArt.name}</p>}

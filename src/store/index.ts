@@ -508,6 +508,7 @@ interface AppStore {
     internalNotes: string;
     customerNotes: string;
     accessories: string[];
+    rentalDiscount?: number;
     rentalArticleId?: string;
     insuranceArticleId?: string;
     transportArticleId?: string;
