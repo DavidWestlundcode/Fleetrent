@@ -2,7 +2,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Clock, Truck, Building2, Calendar, CheckCircle2, Trash2, Pencil, Send, Loader2, ExternalLink, Receipt, Plus, ChevronDown, ChevronUp, FileSignature, Camera, Repeat, Wrench } from 'lucide-react';
+import { ArrowLeft, Clock, Truck, Building2, Calendar, CheckCircle2, Trash2, Pencil, Send, Loader2, ExternalLink, Receipt, Plus, ChevronDown, ChevronUp, FileSignature, Camera, Repeat, Wrench, Search } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { MachineStatusBadge, OrderStatusBadge, LongTermBadge } from '@/components/ui/StatusBadge';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -29,6 +29,8 @@ export default function OrderDetailPage() {
   const [dialog, setDialog] = useState<'cancel' | 'delete' | 'markSent' | 'sendForSigning' | null>(null);
   const [showSwapForm, setShowSwapForm] = useState(false);
   const [swapMachineId, setSwapMachineId] = useState('');
+  const [swapMachineSearch, setSwapMachineSearch] = useState('');
+  const [showSwapMachineDropdown, setShowSwapMachineDropdown] = useState(false);
   const [swapReason, setSwapReason] = useState('');
   const [swapSendToService, setSwapSendToService] = useState(true);
 
@@ -96,6 +98,7 @@ export default function OrderDetailPage() {
     });
     setShowSwapForm(false);
     setSwapMachineId('');
+    setSwapMachineSearch('');
     setSwapReason('');
     setSwapSendToService(true);
   };
@@ -1098,18 +1101,55 @@ export default function OrderDetailPage() {
                 {showSwapForm && (
                   <div className="mt-3 border border-blue-200 bg-blue-50/40 rounded-xl p-4 space-y-3">
                     <p className="text-[12px] font-semibold text-slate-600">Byt maskin</p>
-                    <div>
+                    <div className="relative">
                       <label className="block text-[11px] font-medium text-slate-500 mb-1">Ny maskin</label>
-                      <select
-                        value={swapMachineId}
-                        onChange={(e) => setSwapMachineId(e.target.value)}
-                        className="w-full px-3 py-2 text-[13px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
-                      >
-                        <option value="">Välj maskin...</option>
-                        {availableMachinesForSwap.map((m) => (
-                          <option key={m.id} value={m.id}>{m.name} ({m.internalCode})</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={swapMachineSearch}
+                          onChange={(e) => {
+                            setSwapMachineSearch(e.target.value);
+                            setShowSwapMachineDropdown(true);
+                            if (!e.target.value) setSwapMachineId('');
+                          }}
+                          onFocus={() => setShowSwapMachineDropdown(true)}
+                          onBlur={() => setTimeout(() => setShowSwapMachineDropdown(false), 150)}
+                          placeholder="Sök på namn, kod eller serienr..."
+                          className="w-full pl-8 pr-3 py-2 text-[13px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                        />
+                      </div>
+                      {showSwapMachineDropdown && (() => {
+                        const q = swapMachineSearch.toLowerCase();
+                        const matches = availableMachinesForSwap.filter((m) =>
+                          !q ||
+                          m.name.toLowerCase().includes(q) ||
+                          m.internalCode.toLowerCase().includes(q) ||
+                          m.serialNumber.toLowerCase().includes(q)
+                        );
+                        return (
+                          <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg max-h-52 overflow-y-auto">
+                            {matches.map((m) => (
+                              <button
+                                key={m.id}
+                                type="button"
+                                onMouseDown={() => {
+                                  setSwapMachineId(m.id);
+                                  setSwapMachineSearch(`${m.name} (${m.internalCode})`);
+                                  setShowSwapMachineDropdown(false);
+                                }}
+                                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 text-left border-b border-slate-100 last:border-0 cursor-pointer"
+                              >
+                                <span className="text-[12px] font-medium text-slate-800">{m.name}</span>
+                                <span className="text-[11px] text-slate-400 font-mono shrink-0 ml-3">{m.internalCode}</span>
+                              </button>
+                            ))}
+                            {matches.length === 0 && (
+                              <p className="px-3 py-3 text-[12px] text-slate-400">Inga lediga maskiner hittades</p>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div>
                       <label className="block text-[11px] font-medium text-slate-500 mb-1">Anledning (valfritt)</label>
@@ -1146,6 +1186,7 @@ export default function OrderDetailPage() {
                         onClick={() => {
                           setShowSwapForm(false);
                           setSwapMachineId('');
+                          setSwapMachineSearch('');
                           setSwapReason('');
                           setSwapSendToService(true);
                         }}
