@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, Truck, Building2, Calendar, CheckCircle2, Trash2, Pencil, Send, Loader2, ExternalLink, Receipt, Plus, ChevronDown, ChevronUp, FileSignature, Camera, Repeat, Wrench } from 'lucide-react';
 import Header from '@/components/layout/Header';
-import { MachineStatusBadge, OrderStatusBadge } from '@/components/ui/StatusBadge';
+import { MachineStatusBadge, OrderStatusBadge, LongTermBadge } from '@/components/ui/StatusBadge';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useStore } from '@/store';
 import { formatCurrency, formatDate, formatDateTime, daysBetween, daysUntil, calcBreakdown, countBusinessDays } from '@/lib/utils';
@@ -385,7 +385,10 @@ export default function OrderDetailPage() {
             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-semibold text-slate-900">Orderdetaljer</h2>
-                <OrderStatusBadge status={order.status} />
+                <div className="flex items-center gap-2">
+                  {order.isLongTerm && <LongTermBadge />}
+                  <OrderStatusBadge status={order.status} />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
