@@ -64,7 +64,9 @@ export default function OrderDetailPage() {
     ? new Date(new Date(lastInvoiceEnd).getTime() + 86400000).toISOString().split('T')[0]
     : order.startDate;
   const effectiveEnd = order.actualReturnDate || todayStr;
-  const totalRentedDays = Math.max(0, daysBetween(order.startDate, effectiveEnd));
+  const totalRentedDays = order.startDate >= effectiveEnd ? 0 : Math.max(0, order.chargeWeekends
+    ? daysBetween(order.startDate, effectiveEnd)
+    : countBusinessDays(order.startDate, effectiveEnd));
   const invoicedDays = sortedInvoices.reduce((s, p) => s + p.days, 0);
   const uninvoicedDays = Math.max(0, totalRentedDays - invoicedDays);
   const canInvoice = (order.status === 'aktiv' || order.status === 'klar_for_fakturering') && nextInvoiceStart <= effectiveEnd;
