@@ -69,4 +69,6 @@ export const LIMITS = {
   mutation: (userId: string) => rateLimit(`mutation:${userId}`, 60, 60_000),
   // Webhook endpoints — 100 per minute per IP
   webhook: (ip: string) => rateLimit(`webhook:${ip}`, 100, 60_000),
+  // Bug reports — 5 per 10 min per user
+  bugReport: (userId: string) => rateLimit(`bugreport:${userId}`, 5, 600_000),
 };

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Bell, Menu } from 'lucide-react';
 import { useMobileNav } from '@/components/layout/MobileNav';
 import NotificationPanel, { useNotifications } from '@/components/layout/NotificationPanel';
+import ReportBug from '@/components/layout/ReportBug';
 import GlobalSearch from '@/components/layout/GlobalSearch';
 
 interface HeaderProps {
@@ -50,6 +51,7 @@ export default function Header({ title, subtitle, actions }: HeaderProps) {
             <NotificationPanel notifications={notifications} onDismiss={dismiss} onClose={() => setShowNotifs(false)} />
           )}
         </div>
+        <div className="shrink-0"><ReportBug /></div>
         {actions && (
           <div className="min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex items-center gap-2">{actions}</div>
