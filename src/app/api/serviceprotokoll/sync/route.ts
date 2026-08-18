@@ -628,7 +628,7 @@ export async function GET(request: NextRequest) {
 
     try {
       // machines
-      const serviceObjects = await fetchAllPages(`${SP_API}/ServiceObject/Get`, token);
+      const serviceObjects = await fetchAllPages(`${SP_API}/ServiceObject/Get`, token, 200, undefined, '&request.includeCustomInfo=true');
       console.log(`[SP-sync] ${orgName}: fetched ${serviceObjects.length} service objects from SP`);
 
       const rentable = serviceObjects.filter((obj) => {
@@ -642,15 +642,25 @@ export async function GET(request: NextRequest) {
         .select('id, sp_id')
         .eq('organization_id', org.id)
         .not('sp_id', 'is', null);
-      const rentableExistingSet = new Set((rentableExistingRows ?? []).map((r) => String(r.sp_id)));
+      const rentableExistingSet = new Map((rentableExistingRows ?? []).map((r) => [String(r.sp_id), r.id]));
 
       let newMachines = 0;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rentableToInsert: any[] = [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rentableToUpdateSpecs: { id: string; specs: Record<string, any> }[] = [];
       for (const obj of rentable) {
         const spId = String(obj.Id ?? obj.id ?? obj.SerialNo ?? '');
-        if (!spId || rentableExistingSet.has(spId)) continue;
+        if (!spId) continue;
         const rentableSpecs = parseSpSpecs(obj);
+        if (rentableExistingSet.has(spId)) {
+          // Update tech specs (incl. purchase price) on already-imported machines
+          const definedSpecs = Object.fromEntries(Object.entries(rentableSpecs).filter(([, v]) => v !== undefined));
+          if (Object.keys(definedSpecs).length > 0) {
+            rentableToUpdateSpecs.push({ id: rentableExistingSet.get(spId)!, specs: definedSpecs });
+          }
+          continue;
+        }
         rentableToInsert.push({
           organization_id: org.id,
           name: obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
@@ -670,7 +680,13 @@ export async function GET(request: NextRequest) {
         if (!error) { newMachines += rentableToInsert.slice(i, i + 100).length; total.machines += rentableToInsert.slice(i, i + 100).length; }
         else console.error(`[SP-sync] ${orgName}: rentable insert batch ${i}: ${error.message}`);
       }
-      console.log(`[SP-sync] ${orgName}: ${newMachines} new machines inserted`);
+      let updatedRentable = 0;
+      for (let i = 0; i < rentableToUpdateSpecs.length; i += 100) {
+        const batch = rentableToUpdateSpecs.slice(i, i + 100);
+        await Promise.all(batch.map(({ id, specs }) => admin.from('machines').update(specs).eq('id', id)));
+        updatedRentable += batch.length;
+      }
+      console.log(`[SP-sync] ${orgName}: ${newMachines} new machines inserted, ${updatedRentable} existing machines' specs updated`);
 
       // customers — use lastSync for incremental fetch, bulk insert/update to avoid N+1 timeout
       const { data: orgLastSyncRow } = await admin.from('organizations').select('sp_last_sync').eq('id', org.id).single();
@@ -772,6 +788,13 @@ export async function GET(request: NextRequest) {
           undefined,
           `&request.customerNo=${encodeURIComponent(orgSpCustomerNo)}&request.includeCustomInfo=true`,
         );
+        // One-line diagnostic so a mismatched CustomInfo field name (e.g. "Inköpspris") shows up
+        // in the logs instead of silently never syncing.
+        const diagObj = customerObjects[0] as { CustomInfo?: { Name?: string }[] } | undefined;
+        if (diagObj) {
+          const fieldNames = (diagObj.CustomInfo ?? []).map((f) => f.Name).filter(Boolean);
+          console.log(`[SP-sync] ${orgName}: sample CustomInfo field names:`, fieldNames);
+        }
         // Bulk-fetch existing sp_ids for this org
         const { data: existingMachineRows } = await admin.from('machines')
           .select('id, sp_id')
