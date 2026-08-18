@@ -113,13 +113,18 @@ function parseSpSpecs(obj: any): {
   cabin?: string;
   category?: string;
 } {
-  // CustomInfo is an array of { Name, Value } when SP flag includeCustomInfo=true is used
+  // CustomInfo is an array of { Name, Value } when SP flag includeCustomInfo=true is used.
+  // Track whether SP actually sent this structure at all — as opposed to it being genuinely
+  // empty for this object — so we can tell "no value" from "we don't know" below.
+  const rawCustomInfo = obj?.CustomInfo ?? obj?.CustomFields ?? obj?.Properties;
+  const hasCustomInfoSource = rawCustomInfo !== undefined;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const customFields: { Name?: string; Value?: string }[] = Array.isArray(obj?.CustomInfo) ? obj.CustomInfo
-    : Array.isArray(obj?.CustomFields) ? obj.CustomFields
-    : Array.isArray(obj?.Properties) ? obj.Properties
-    : [];
+  const customFields: { Name?: string; Value?: string }[] = Array.isArray(rawCustomInfo) ? rawCustomInfo : [];
 
+  // When SP did send CustomInfo but this field is missing/blank, that means the value was
+  // cleared on the SP side — report 0 (not undefined) so the sync can clear a stale value
+  // instead of leaving it stuck forever. If SP didn't send CustomInfo at all, stay undefined
+  // so a transient fetch issue can't wipe out real data.
   const getField = (...names: string[]): number | undefined => {
     for (const name of names) {
       const entry = customFields.find((f) => f.Name?.toLowerCase() === name.toLowerCase());
@@ -128,7 +133,7 @@ function parseSpSpecs(obj: any): {
         if (v !== undefined) return v;
       }
     }
-    return undefined;
+    return hasCustomInfoSource ? 0 : undefined;
   };
 
   const getTextField = (...names: string[]): string | undefined => {
@@ -136,7 +141,7 @@ function parseSpSpecs(obj: any): {
       const entry = customFields.find((f) => f.Name?.toLowerCase() === name.toLowerCase());
       if (entry?.Value && entry.Value.trim() && entry.Value.trim() !== '.') return entry.Value.trim();
     }
-    return undefined;
+    return hasCustomInfoSource ? '' : undefined;
   };
 
   // Year: try CustomInfo first, then top-level SP fields, then Installation date
@@ -164,7 +169,7 @@ function parseSpSpecs(obj: any): {
     lift_height: getField('Lyfthöjd', 'lyfthöjd', 'lift_height'),
     build_height: getField('Bygghöjd', 'bygghöjd', 'build_height'),
     fork_length: getField('Gafflar', 'gafflar', 'fork_length', 'Gaffelhängd'),
-    purchase_price: getField('Inköpspris', 'inköpspris', 'purchase_price'),
+    purchase_price: getField('Inköpspris', 'inköpspris', 'purchase_price', 'Försäljningspris', 'försäljningspris'),
     working_weight: getField('Vikt', 'vikt', 'working_weight'),
     mast_type: getTextField('Stativ', 'stativ', 'mast_type'),
     power_unit: getTextField('Aggregat', 'aggregat', 'power_unit'),
@@ -483,8 +488,19 @@ export async function POST(request: NextRequest) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const definedSpecs = Object.fromEntries(Object.entries(specs).filter(([, v]) => v !== undefined)) as Record<string, any>;
           if (existingSpIdMap.has(spId)) {
-            // Update tech specs on already-imported machines
-            toUpdateSpecs.push({ id: existingSpIdMap.get(spId)!, specs: definedSpecs });
+            // Update tech specs AND identity fields (name/brand/model/serial/internal code) —
+            // SP is the source of truth for these, so a rename/correction there should propagate.
+            toUpdateSpecs.push({
+              id: existingSpIdMap.get(spId)!,
+              specs: {
+                ...definedSpecs,
+                name: obj.Description ?? obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
+                brand: obj.Brand ?? obj.Manufacturer ?? '',
+                model: obj.Model ?? obj.Type ?? '',
+                serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
+                internal_code: obj.MachineNo ?? obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
+              },
+            });
             skippedExists++;
             continue;
           }
@@ -809,10 +825,16 @@ export async function GET(request: NextRequest) {
           const specs = parseSpSpecs(obj);
           const definedSpecs = Object.fromEntries(Object.entries(specs).filter(([, v]) => v !== undefined));
           if (existingMachineMap.has(spId)) {
-            // Update tech specs for existing machines
-            if (Object.keys(definedSpecs).length > 0) {
-              await admin.from('machines').update(definedSpecs).eq('id', existingMachineMap.get(spId)!);
-            }
+            // Update tech specs AND identity fields for existing machines — SP is the source of
+            // truth, so a rename/correction there (or a cleared value) should propagate here too.
+            await admin.from('machines').update({
+              ...definedSpecs,
+              name: obj.Description ?? obj.Name ?? obj.Designation ?? obj.Model ?? 'Okänd maskin',
+              brand: obj.Brand ?? obj.Manufacturer ?? '',
+              model: obj.Model ?? obj.Type ?? '',
+              serial_number: obj.SerialNo ?? obj.SerialNumber ?? '',
+              internal_code: obj.MachineNo ?? obj.ObjectNo ?? obj.CustomerObjectNo ?? '',
+            }).eq('id', existingMachineMap.get(spId)!);
           } else {
             await admin.from('machines').insert({
               organization_id: org.id,
