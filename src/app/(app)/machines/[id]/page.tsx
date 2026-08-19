@@ -241,7 +241,7 @@ export default function MachineDetailPage() {
               {machine.notes && (
                 <div className="mt-4 pt-4 border-t border-slate-100">
                   <p className="text-[11px] text-slate-400 mb-1">Anteckningar</p>
-                  <p className="text-sm text-slate-700">{machine.notes}</p>
+                  <p className="text-sm text-slate-700 whitespace-pre-line">{machine.notes}</p>
                 </div>
               )}
             </div>

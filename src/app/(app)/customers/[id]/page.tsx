@@ -175,7 +175,7 @@ export default function CustomerDetailPage() {
             {customer.notes && (
               <div className="mt-4 pt-4 border-t border-slate-100">
                 <p className="text-[11px] text-slate-400 mb-1">Anteckningar</p>
-                <p className="text-sm text-slate-700">{customer.notes}</p>
+                <p className="text-sm text-slate-700 whitespace-pre-line">{customer.notes}</p>
               </div>
             )}
           </div>

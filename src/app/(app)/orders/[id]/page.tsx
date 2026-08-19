@@ -35,6 +35,8 @@ export default function OrderDetailPage() {
   const [showSwapMachineDropdown, setShowSwapMachineDropdown] = useState(false);
   const [swapReason, setSwapReason] = useState('');
   const [swapSendToService, setSwapSendToService] = useState(true);
+  const [showQuickNote, setShowQuickNote] = useState(false);
+  const [quickNoteText, setQuickNoteText] = useState('');
 
   const order = orders.find((o) => o.id === id);
   if (!order) {
@@ -89,6 +91,16 @@ export default function OrderDetailPage() {
   const confirmDeleteOrder = () => {
     deleteOrder(order.id);
     router.push('/orders');
+  };
+
+  const openQuickNote = () => {
+    setQuickNoteText(order.internalNotes ?? '');
+    setShowQuickNote(true);
+  };
+
+  const saveQuickNote = () => {
+    updateOrder(order.id, { internalNotes: quickNoteText });
+    setShowQuickNote(false);
   };
 
   const availableMachinesForSwap = machines.filter((m) => m.status === 'i_lager');
@@ -472,22 +484,58 @@ export default function OrderDetailPage() {
                 </div>
               )}
 
-              {(order.customerNotes || order.internalNotes) && (
-                <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {order.customerNotes && (
-                    <div>
-                      <p className="text-[11px] text-slate-400 mb-1">Kundanteckning</p>
-                      <p className="text-sm text-slate-700">{order.customerNotes}</p>
+              <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {order.customerNotes && (
+                  <div>
+                    <p className="text-[11px] text-slate-400 mb-1">Kundanteckning</p>
+                    <p className="text-sm text-slate-700 whitespace-pre-line">{order.customerNotes}</p>
+                  </div>
+                )}
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <p className="text-[11px] text-slate-400">Intern anteckning</p>
+                    {!showQuickNote && (
+                      <button
+                        onClick={openQuickNote}
+                        className="flex items-center gap-1 text-[11px] font-medium text-blue-600 hover:text-blue-700 cursor-pointer"
+                      >
+                        <Pencil className="w-3 h-3" />
+                        {order.internalNotes ? 'Ändra' : 'Lägg till'}
+                      </button>
+                    )}
+                  </div>
+                  {showQuickNote ? (
+                    <div className="space-y-2">
+                      <textarea
+                        autoFocus
+                        value={quickNoteText}
+                        onChange={(e) => setQuickNoteText(e.target.value)}
+                        rows={3}
+                        placeholder="Skriv en intern kommentar..."
+                        className="w-full px-3 py-2 text-[13px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 resize-none"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={saveQuickNote}
+                          className="px-3 py-1.5 text-[12px] font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
+                        >
+                          Spara
+                        </button>
+                        <button
+                          onClick={() => setShowQuickNote(false)}
+                          className="px-3 py-1.5 text-[12px] text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                        >
+                          Avbryt
+                        </button>
+                      </div>
                     </div>
-                  )}
-                  {order.internalNotes && (
-                    <div>
-                      <p className="text-[11px] text-slate-400 mb-1">Intern anteckning</p>
-                      <p className="text-sm text-slate-700">{order.internalNotes}</p>
-                    </div>
+                  ) : order.internalNotes ? (
+                    <p className="text-sm text-slate-700 whitespace-pre-line">{order.internalNotes}</p>
+                  ) : (
+                    <p className="text-sm text-slate-400 italic">Ingen anteckning</p>
                   )}
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Return Info */}
@@ -512,7 +560,7 @@ export default function OrderDetailPage() {
                   {order.returnNotes && (
                     <div>
                       <p className="text-[11px] text-slate-400 mb-1">Returkommentar</p>
-                      <p className="text-sm text-slate-700">{order.returnNotes}</p>
+                      <p className="text-sm text-slate-700 whitespace-pre-line">{order.returnNotes}</p>
                     </div>
                   )}
                 </div>
