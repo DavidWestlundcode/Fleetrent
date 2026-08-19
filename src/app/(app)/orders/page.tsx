@@ -95,7 +95,9 @@ function OrdersPageInner() {
           !search ||
           o.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
           customer?.companyName.toLowerCase().includes(search.toLowerCase()) ||
-          machine?.name.toLowerCase().includes(search.toLowerCase());
+          machine?.name.toLowerCase().includes(search.toLowerCase()) ||
+          machine?.internalCode.toLowerCase().includes(search.toLowerCase()) ||
+          machine?.serialNumber.toLowerCase().includes(search.toLowerCase());
         const matchesStatus =
           statusFilter === 'all' ? true :
           statusFilter === '30_dagar' ? needsPartialInvoice(o) :
