@@ -998,7 +998,7 @@ export default function OrderDetailPage() {
                     {/* Rental */}
                     <div>
                       <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Hyra</p>
-                      {order.openEnded ? (
+                      {order.openEnded && !order.actualReturnDate ? (
                         <div className="space-y-1.5">
                           {order.dailyPrice > 0 && (
                             <div className="flex justify-between text-sm">

@@ -22,7 +22,7 @@ function ReturnPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromOrder = searchParams.get('from') === 'order';
-  const { orders, machines, customers, organizationId, returnMachine, initialized } = useStore();
+  const { orders, machines, customers, articles, organizationId, returnMachine, initialized } = useStore();
 
   const order = orders.find((o) => o.id === id);
   const machine = order ? machines.find((m) => m.id === order.machineId) : null;
@@ -79,8 +79,15 @@ function ReturnPageInner() {
   );
   const insuranceCostAtReturn = order.insuranceMonthlyRate
     ? Math.ceil(rentalDays / 30) * order.insuranceMonthlyRate
-    : 0;
-  const finalTotalPrice = rentalCost + (order.transportCost ?? 0) + insuranceCostAtReturn + (order.deposit ?? 0);
+    : (order.insuranceCost ?? 0);
+  // Extra articles (transport, insurance, or anything else added as a line item) are part of
+  // the order's real value and must count toward machine revenue stats too — deposit is
+  // excluded since it's refundable, not revenue, matching how totalPrice is built at creation.
+  const extraArticlesTotal = (order.orderArticles ?? []).reduce((sum, r) => {
+    const d = r.discountPercent ?? 0;
+    return sum + r.quantity * r.unitPrice * (1 - d / 100);
+  }, 0);
+  const finalTotalPrice = rentalCost + insuranceCostAtReturn + extraArticlesTotal;
 
   const handleSubmit = () => {
     if (!condition) return;
@@ -308,19 +315,29 @@ function ReturnPageInner() {
                       )}
                       {insuranceCostAtReturn > 0 && (
                         <div className="flex justify-between text-xs">
-                          <span className="text-slate-500">Försäkring ({Math.ceil(rentalDays / 30)} mån)</span>
+                          <span className="text-slate-500">
+                            Försäkring{order.insuranceMonthlyRate ? ` (${Math.ceil(rentalDays / 30)} mån)` : ''}
+                          </span>
                           <span className="font-medium">{formatCurrency(insuranceCostAtReturn)}</span>
                         </div>
                       )}
-                      {order.transportCost > 0 && (
-                        <div className="flex justify-between text-xs">
-                          <span className="text-slate-500">Transport</span>
-                          <span className="font-medium">{formatCurrency(order.transportCost)}</span>
-                        </div>
-                      )}
+                      {(order.orderArticles ?? []).map((row, i) => {
+                        const art = articles.find((a) => a.id === row.articleId);
+                        const d = row.discountPercent ?? 0;
+                        const lineTotal = row.quantity * row.unitPrice * (1 - d / 100);
+                        return (
+                          <div key={i} className="flex justify-between text-xs">
+                            <span className="text-slate-500">
+                              {row.description ?? art?.name ?? 'Artikel'} {row.quantity} × {formatCurrency(row.unitPrice)}
+                              {d > 0 && <span className="ml-1 text-emerald-600 font-medium">-{d}%</span>}
+                            </span>
+                            <span className="font-medium">{formatCurrency(lineTotal)}</span>
+                          </div>
+                        );
+                      })}
                       {order.deposit > 0 && (
                         <div className="flex justify-between text-xs">
-                          <span className="text-slate-500">Deposition</span>
+                          <span className="text-slate-500">Deposition (ej ingår i totalt, återbetalas)</span>
                           <span className="font-medium">{formatCurrency(order.deposit)}</span>
                         </div>
                       )}
