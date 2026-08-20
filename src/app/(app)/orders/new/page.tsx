@@ -612,6 +612,26 @@ function NewOrderForm() {
                   onPriceChange={(v) => set('monthlyPrice', v)} onDiscountChange={setMonthlyDiscount}
                 />
               </div>
+
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <Field label="Hyresartikel (för fakturering)">
+                  <select
+                    value={form.rentalArticleId}
+                    onChange={(e) => set('rentalArticleId', e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">Ingen vald...</option>
+                    {articles.filter((a) => a.isActive && a.type === 'hyra').map((a) => (
+                      <option key={a.id} value={a.id}>{a.articleNumber} – {a.name}</option>
+                    ))}
+                  </select>
+                </Field>
+                {!form.rentalArticleId && (
+                  <p className="mt-1.5 text-[11px] text-amber-600">
+                    Utan hyresartikel får fakturaraden inget artikelnummer och matchas inte rätt i Fortnox.
+                  </p>
+                )}
+              </div>
               {/* Insurance toggle */}
               {hasInsuranceOption && (
                 <div className="mt-4 pt-4 border-t border-slate-100">
