@@ -4,7 +4,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, Truck, ArrowLeft, AlertTriangle, Wrench } from 'lucide-react';
 import { useStore } from '@/store';
-import { formatDate, daysBetween, countBusinessDays, calcBreakdown, formatCurrency } from '@/lib/utils';
+import { formatDate, daysBetween, countBusinessDays, calcBreakdown, calcDiscountedTotal, formatCurrency } from '@/lib/utils';
 import { MachineStatusBadge } from '@/components/ui/StatusBadge';
 import PhotoCapture from '@/components/ui/PhotoCapture';
 
@@ -68,20 +68,19 @@ function ReturnPageInner() {
 
   const today = new Date().toISOString();
   const isOpenEnded = order.openEnded === true || !order.plannedReturnDate;
-  const rentalDays = isOpenEnded
-    ? (order.chargeWeekends ? daysBetween(order.startDate, today) : countBusinessDays(order.startDate, today))
-    : daysBetween(order.startDate, today);
+  // Always settle on the actual return date, not the originally planned one — an early or late
+  // return should bill for the days the machine was actually out.
+  const rentalDays = order.chargeWeekends ? daysBetween(order.startDate, today) : countBusinessDays(order.startDate, today);
 
-  const priceBreakdown = isOpenEnded
-    ? calcBreakdown(rentalDays, order.dailyPrice, order.weeklyPrice, order.monthlyPrice)
-    : null;
-  const rentalCost = priceBreakdown ? priceBreakdown.total : 0;
-  const insuranceCostAtReturn = isOpenEnded && order.insuranceMonthlyRate
+  const priceBreakdown = calcBreakdown(rentalDays, order.dailyPrice, order.weeklyPrice, order.monthlyPrice);
+  const rentalCost = calcDiscountedTotal(
+    priceBreakdown, order.dailyPrice, order.weeklyPrice, order.monthlyPrice,
+    order.rentalDiscount, order.weeklyDiscount, order.monthlyDiscount
+  );
+  const insuranceCostAtReturn = order.insuranceMonthlyRate
     ? Math.ceil(rentalDays / 30) * order.insuranceMonthlyRate
     : 0;
-  const finalTotalPrice = isOpenEnded
-    ? rentalCost + (order.transportCost ?? 0) + insuranceCostAtReturn + (order.deposit ?? 0)
-    : undefined;
+  const finalTotalPrice = rentalCost + (order.transportCost ?? 0) + insuranceCostAtReturn + (order.deposit ?? 0);
 
   const handleSubmit = () => {
     if (!condition) return;
@@ -274,26 +273,37 @@ function ReturnPageInner() {
                     <p className="text-xs text-orange-700 font-medium">Maskinen skickas automatiskt till service</p>
                   </div>
                 )}
-                {isOpenEnded && priceBreakdown && (
+                {priceBreakdown && (
                   <div className="mt-3 pt-3 border-t border-slate-200">
-                    <p className="text-xs font-semibold text-slate-500 mb-2">Beräknad hyreskostnad</p>
+                    <p className="text-xs font-semibold text-slate-500 mb-2">
+                      Beräknad hyreskostnad {!isOpenEnded && <span className="text-slate-400 font-normal">(faktiska dagar, ej planerat slutdatum)</span>}
+                    </p>
                     <div className="space-y-1">
                       {priceBreakdown.months > 0 && (
                         <div className="flex justify-between text-xs">
-                          <span className="text-slate-500">{priceBreakdown.months} mån à {formatCurrency(order.monthlyPrice)}</span>
-                          <span className="font-medium">{formatCurrency(priceBreakdown.months * order.monthlyPrice)}</span>
+                          <span className="text-slate-500 inline-flex items-center">
+                            {priceBreakdown.months} mån à {formatCurrency(order.monthlyPrice)}
+                            {(order.monthlyDiscount ?? 0) > 0 && <span className="ml-1.5 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-700 bg-emerald-50 rounded">-{order.monthlyDiscount}%</span>}
+                          </span>
+                          <span className="font-medium">{formatCurrency(priceBreakdown.months * order.monthlyPrice * (1 - (order.monthlyDiscount ?? 0) / 100))}</span>
                         </div>
                       )}
                       {priceBreakdown.weeks > 0 && (
                         <div className="flex justify-between text-xs">
-                          <span className="text-slate-500">{priceBreakdown.weeks} veckor à {formatCurrency(order.weeklyPrice)}</span>
-                          <span className="font-medium">{formatCurrency(priceBreakdown.weeks * order.weeklyPrice)}</span>
+                          <span className="text-slate-500 inline-flex items-center">
+                            {priceBreakdown.weeks} veckor à {formatCurrency(order.weeklyPrice)}
+                            {(order.weeklyDiscount ?? 0) > 0 && <span className="ml-1.5 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-700 bg-emerald-50 rounded">-{order.weeklyDiscount}%</span>}
+                          </span>
+                          <span className="font-medium">{formatCurrency(priceBreakdown.weeks * order.weeklyPrice * (1 - (order.weeklyDiscount ?? 0) / 100))}</span>
                         </div>
                       )}
                       {priceBreakdown.days > 0 && (
                         <div className="flex justify-between text-xs">
-                          <span className="text-slate-500">{priceBreakdown.days} dagar à {formatCurrency(order.dailyPrice)}</span>
-                          <span className="font-medium">{formatCurrency(priceBreakdown.days * order.dailyPrice)}</span>
+                          <span className="text-slate-500 inline-flex items-center">
+                            {priceBreakdown.days} dagar à {formatCurrency(order.dailyPrice)}
+                            {(order.rentalDiscount ?? 0) > 0 && <span className="ml-1.5 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-700 bg-emerald-50 rounded">-{order.rentalDiscount}%</span>}
+                          </span>
+                          <span className="font-medium">{formatCurrency(priceBreakdown.days * order.dailyPrice * (1 - (order.rentalDiscount ?? 0) / 100))}</span>
                         </div>
                       )}
                       {insuranceCostAtReturn > 0 && (

@@ -151,12 +151,12 @@ export async function POST(request: NextRequest) {
 
     // Build order rows
     const startDate = orderRow.start_date as string;
-    // For fixed-term orders use planned_return_date (matches agreed billing period).
-    // For open-ended orders (no planned date) fall back to actual_return_date.
-    const isOpenEnded = !orderRow.planned_return_date;
-    const endDate = isOpenEnded
-      ? ((orderRow.actual_return_date as string) || startDate)
-      : (orderRow.planned_return_date as string);
+    // This route only runs once an order is klar_for_fakturering, i.e. already returned — always
+    // bill the actual period the machine was out, whether the return happened early or late
+    // relative to any planned date, not the originally planned/agreed period.
+    const endDate = (orderRow.actual_return_date as string)
+      || (orderRow.planned_return_date as string)
+      || startDate;
     const calendarDays = Math.max(1, Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000));
     const chargeWeekends = (orderRow.charge_weekends as boolean) ?? false;
     // Whether to count weekends is purely the order's own setting — independent of whether it's
