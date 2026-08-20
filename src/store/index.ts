@@ -538,6 +538,7 @@ interface AppStore {
     returnImages: string[];
     sendToService: boolean;
     finalTotalPrice?: number;
+    rentalRevenue?: number;
   }) => void;
   pickupMachine: (orderId: string, data: {
     pickupCondition: string;
@@ -1186,6 +1187,22 @@ export const useStore = create<AppStore>()((set, get) => ({
         ))
       : 0;
 
+    // Machine/customer stats only ever received the rental-only portion (see returnMachine) —
+    // reverse that same amount, not the order's full totalPrice which also includes articles.
+    let rentalRevenueToReverse = 0;
+    if (hasRevenue) {
+      const rentalDaysBillable = order.chargeWeekends
+        ? daysBetween(order.startDate, order.actualReturnDate!)
+        : countBusinessDays(order.startDate, order.actualReturnDate!);
+      const breakdown = calcBreakdown(rentalDaysBillable, order.dailyPrice, order.weeklyPrice, order.monthlyPrice);
+      const rentalOnly = calcDiscountedTotal(
+        breakdown, order.dailyPrice, order.weeklyPrice, order.monthlyPrice,
+        order.rentalDiscount, order.weeklyDiscount, order.monthlyDiscount
+      );
+      const alreadyInvoicedAmount = (order.invoicePeriods ?? []).reduce((s, p) => s + p.amount, 0);
+      rentalRevenueToReverse = Math.max(0, rentalOnly - alreadyInvoicedAmount);
+    }
+
     set((s) => ({
       orders: s.orders.filter((o) => o.id !== id),
       machines: s.machines.map((m) => {
@@ -1194,7 +1211,7 @@ export const useStore = create<AppStore>()((set, get) => ({
           ...m,
           ...(releasesMachine ? { status: 'i_lager' as const } : {}),
           updatedAt: now,
-          totalRevenue: hasRevenue ? Math.max(0, m.totalRevenue - order.totalPrice) : m.totalRevenue,
+          totalRevenue: hasRevenue ? Math.max(0, m.totalRevenue - rentalRevenueToReverse) : m.totalRevenue,
           totalRentals: hasRevenue ? Math.max(0, m.totalRentals - 1) : m.totalRentals,
           totalRentalDays: hasRevenue ? Math.max(0, m.totalRentalDays - rentalDaysToReverse) : m.totalRentalDays,
         };
@@ -1204,7 +1221,7 @@ export const useStore = create<AppStore>()((set, get) => ({
         return {
           ...c,
           activeOrders: releasesMachine ? Math.max(0, c.activeOrders - 1) : c.activeOrders,
-          totalSpent: hasRevenue ? Math.max(0, c.totalSpent - order.totalPrice) : c.totalSpent,
+          totalSpent: hasRevenue ? Math.max(0, c.totalSpent - rentalRevenueToReverse) : c.totalSpent,
         };
       }),
     }));
@@ -1246,12 +1263,16 @@ export const useStore = create<AppStore>()((set, get) => ({
     const newMachineStatus = data.sendToService ? 'service' : 'i_lager';
     const eventId = crypto.randomUUID();
     const finalPrice = data.finalTotalPrice !== undefined ? data.finalTotalPrice : order.totalPrice;
+    // Machine/customer stats track rental revenue only (not insurance, transport, or other
+    // extra articles) — falls back to the full price when the caller doesn't distinguish.
+    const rentalPrice = data.rentalRevenue !== undefined ? data.rentalRevenue : finalPrice;
     const byName = userName ? ` av ${userName}` : '';
 
     // Subtract already-invoiced amounts to avoid double-counting with addInvoicePeriod
+    // (invoice periods are always pure rental amounts, so they net against rentalPrice here).
     const alreadyInvoicedAmount = (order.invoicePeriods ?? []).reduce((s, p) => s + p.amount, 0);
     const alreadyInvoicedDays = (order.invoicePeriods ?? []).reduce((s, p) => s + p.days, 0);
-    const remainingPrice = Math.max(0, finalPrice - alreadyInvoicedAmount);
+    const remainingPrice = Math.max(0, rentalPrice - alreadyInvoicedAmount);
 
     const startDate = new Date(order.startDate);
     const rentalDays = Math.max(1, Math.round((Date.now() - startDate.getTime()) / 86400000));

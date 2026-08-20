@@ -98,6 +98,7 @@ function ReturnPageInner() {
       returnImages: images,
       sendToService: condition === 'kraver_service' || condition === 'skadat',
       finalTotalPrice,
+      rentalRevenue: rentalCost,
     });
     if (fromOrder) {
       router.push(`/orders/${order.id}`);
