@@ -1002,20 +1002,44 @@ export default function OrderDetailPage() {
                         <div className="space-y-1.5">
                           {order.dailyPrice > 0 && (
                             <div className="flex justify-between text-sm">
-                              <span className="text-slate-500">Dagspris</span>
-                              <span className="font-medium">{formatCurrency(order.dailyPrice)}/dag</span>
+                              <span className="text-slate-500 inline-flex items-center">
+                                Dagspris
+                                {(order.rentalDiscount ?? 0) > 0 && <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 rounded">-{order.rentalDiscount}%</span>}
+                              </span>
+                              <span className="font-medium">
+                                {(order.rentalDiscount ?? 0) > 0 && (
+                                  <span className="text-slate-400 line-through mr-1.5 font-normal">{formatCurrency(order.dailyPrice)}</span>
+                                )}
+                                {formatCurrency(order.dailyPrice * (1 - (order.rentalDiscount ?? 0) / 100))}/dag
+                              </span>
                             </div>
                           )}
                           {order.weeklyPrice > 0 && (
                             <div className="flex justify-between text-sm">
-                              <span className="text-slate-500">Veckopris</span>
-                              <span className="font-medium">{formatCurrency(order.weeklyPrice)}/vecka</span>
+                              <span className="text-slate-500 inline-flex items-center">
+                                Veckopris
+                                {(order.weeklyDiscount ?? 0) > 0 && <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 rounded">-{order.weeklyDiscount}%</span>}
+                              </span>
+                              <span className="font-medium">
+                                {(order.weeklyDiscount ?? 0) > 0 && (
+                                  <span className="text-slate-400 line-through mr-1.5 font-normal">{formatCurrency(order.weeklyPrice)}</span>
+                                )}
+                                {formatCurrency(order.weeklyPrice * (1 - (order.weeklyDiscount ?? 0) / 100))}/vecka
+                              </span>
                             </div>
                           )}
                           {order.monthlyPrice > 0 && (
                             <div className="flex justify-between text-sm">
-                              <span className="text-slate-500">Månadspris</span>
-                              <span className="font-medium">{formatCurrency(order.monthlyPrice)}/mån</span>
+                              <span className="text-slate-500 inline-flex items-center">
+                                Månadspris
+                                {(order.monthlyDiscount ?? 0) > 0 && <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 rounded">-{order.monthlyDiscount}%</span>}
+                              </span>
+                              <span className="font-medium">
+                                {(order.monthlyDiscount ?? 0) > 0 && (
+                                  <span className="text-slate-400 line-through mr-1.5 font-normal">{formatCurrency(order.monthlyPrice)}</span>
+                                )}
+                                {formatCurrency(order.monthlyPrice * (1 - (order.monthlyDiscount ?? 0) / 100))}/mån
+                              </span>
                             </div>
                           )}
                           <div className="flex justify-between text-sm pt-1 border-t border-slate-100">
@@ -1026,29 +1050,44 @@ export default function OrderDetailPage() {
                         <div className="space-y-1.5">
                           {breakdown.months > 0 && (
                             <div className="flex justify-between text-sm">
-                              <span className="text-slate-500">
+                              <span className="text-slate-500 inline-flex items-center">
                                 {breakdown.months} mån à {formatCurrency(order.monthlyPrice)}
-                                {(order.monthlyDiscount ?? 0) > 0 && <span className="ml-1 text-emerald-600">(-{order.monthlyDiscount}%)</span>}
+                                {(order.monthlyDiscount ?? 0) > 0 && <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 rounded">-{order.monthlyDiscount}%</span>}
                               </span>
-                              <span className="font-medium">{formatCurrency(breakdown.months * order.monthlyPrice * (1 - (order.monthlyDiscount ?? 0) / 100))}</span>
+                              <span className="font-medium">
+                                {(order.monthlyDiscount ?? 0) > 0 && (
+                                  <span className="text-slate-400 line-through mr-1.5 font-normal">{formatCurrency(breakdown.months * order.monthlyPrice)}</span>
+                                )}
+                                {formatCurrency(breakdown.months * order.monthlyPrice * (1 - (order.monthlyDiscount ?? 0) / 100))}
+                              </span>
                             </div>
                           )}
                           {breakdown.weeks > 0 && (
                             <div className="flex justify-between text-sm">
-                              <span className="text-slate-500">
+                              <span className="text-slate-500 inline-flex items-center">
                                 {breakdown.weeks} v à {formatCurrency(order.weeklyPrice)}
-                                {(order.weeklyDiscount ?? 0) > 0 && <span className="ml-1 text-emerald-600">(-{order.weeklyDiscount}%)</span>}
+                                {(order.weeklyDiscount ?? 0) > 0 && <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 rounded">-{order.weeklyDiscount}%</span>}
                               </span>
-                              <span className="font-medium">{formatCurrency(breakdown.weeks * order.weeklyPrice * (1 - (order.weeklyDiscount ?? 0) / 100))}</span>
+                              <span className="font-medium">
+                                {(order.weeklyDiscount ?? 0) > 0 && (
+                                  <span className="text-slate-400 line-through mr-1.5 font-normal">{formatCurrency(breakdown.weeks * order.weeklyPrice)}</span>
+                                )}
+                                {formatCurrency(breakdown.weeks * order.weeklyPrice * (1 - (order.weeklyDiscount ?? 0) / 100))}
+                              </span>
                             </div>
                           )}
                           {breakdown.days > 0 && (
                             <div className="flex justify-between text-sm">
-                              <span className="text-slate-500">
+                              <span className="text-slate-500 inline-flex items-center">
                                 {breakdown.days} dagar à {formatCurrency(order.dailyPrice)}
-                                {(order.rentalDiscount ?? 0) > 0 && <span className="ml-1 text-emerald-600">(-{order.rentalDiscount}%)</span>}
+                                {(order.rentalDiscount ?? 0) > 0 && <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 rounded">-{order.rentalDiscount}%</span>}
                               </span>
-                              <span className="font-medium">{formatCurrency(breakdown.days * order.dailyPrice * (1 - (order.rentalDiscount ?? 0) / 100))}</span>
+                              <span className="font-medium">
+                                {(order.rentalDiscount ?? 0) > 0 && (
+                                  <span className="text-slate-400 line-through mr-1.5 font-normal">{formatCurrency(breakdown.days * order.dailyPrice)}</span>
+                                )}
+                                {formatCurrency(breakdown.days * order.dailyPrice * (1 - (order.rentalDiscount ?? 0) / 100))}
+                              </span>
                             </div>
                           )}
                           <div className="flex justify-between text-sm font-semibold pt-1 border-t border-slate-100">
