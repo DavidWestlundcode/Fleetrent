@@ -1,4 +1,4 @@
-import { calcBreakdown, countBusinessDays, daysBetween } from '@/lib/utils';
+import { calcBreakdown, calcDiscountedTotal, countBusinessDays, daysBetween } from '@/lib/utils';
 import type { InvoicePeriod } from '@/lib/types';
 import type { createAdminClient } from '@/lib/supabase/admin';
 
@@ -18,7 +18,7 @@ export async function generateContractInvoices(
 ): Promise<ContractInvoiceResult> {
   let query = admin
     .from('orders')
-    .select('id, start_date, actual_return_date, status, daily_price, weekly_price, monthly_price, charge_weekends, rental_discount, invoice_periods, order_number')
+    .select('id, start_date, actual_return_date, status, daily_price, weekly_price, monthly_price, charge_weekends, rental_discount, weekly_discount, monthly_discount, invoice_periods, order_number')
     .eq('is_long_term', true)
     .in('status', ['aktiv', 'klar_for_fakturering']);
 
@@ -57,8 +57,11 @@ export async function generateContractInvoices(
         order.weekly_price as number,
         order.monthly_price as number,
       );
-      const rentalDiscount = (order.rental_discount as number) ?? 0;
-      const amount = breakdown.total * (1 - rentalDiscount / 100);
+      const amount = calcDiscountedTotal(
+        breakdown,
+        order.daily_price as number, order.weekly_price as number, order.monthly_price as number,
+        (order.rental_discount as number) ?? 0, (order.weekly_discount as number) ?? 0, (order.monthly_discount as number) ?? 0
+      );
 
       const newPeriod: InvoicePeriod = {
         id: crypto.randomUUID(),

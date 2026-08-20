@@ -206,7 +206,9 @@ export interface Order {
   isLongTerm?: boolean;
   insuranceMonthlyRate?: number;
   discountPercent?: number;
-  rentalDiscount?: number;
+  rentalDiscount?: number; // daily-price discount %; monthly/weekly have their own fields below
+  weeklyDiscount?: number;
+  monthlyDiscount?: number;
   transportDiscount?: number;
   insuranceDiscount?: number;
   sentToAccounting?: boolean;

@@ -7,7 +7,7 @@ import type {
   ServiceType, ServiceStatus, ArticleType, ArticleUnit, OrderArticle, ContactPerson, CustomerFacility, SpMachine,
   InvoicePeriod, MachineSwap,
 } from '@/lib/types';
-import { generateOrderNumber, calcBreakdown, countBusinessDays, daysBetween } from '@/lib/utils';
+import { generateOrderNumber, calcBreakdown, calcDiscountedTotal, countBusinessDays, daysBetween } from '@/lib/utils';
 
 type DbRow = Record<string, unknown>;
 
@@ -218,6 +218,8 @@ function fromDbOrder(r: DbRow): Order {
     insuranceMonthlyRate: r.insurance_monthly_rate != null ? (r.insurance_monthly_rate as number) : undefined,
     discountPercent: (r.discount_percent as number) ?? 0,
     rentalDiscount: (r.rental_discount as number) ?? 0,
+    weeklyDiscount: (r.weekly_discount as number) ?? 0,
+    monthlyDiscount: (r.monthly_discount as number) ?? 0,
     transportDiscount: (r.transport_discount as number) ?? 0,
     insuranceDiscount: (r.insurance_discount as number) ?? 0,
     sentToAccounting: (r.sent_to_accounting as boolean) ?? false,
@@ -279,6 +281,8 @@ function toDbOrder(o: Order, orgId: string): DbRow {
     insurance_monthly_rate: o.insuranceMonthlyRate ?? null,
     discount_percent: o.discountPercent ?? 0,
     rental_discount: o.rentalDiscount ?? 0,
+    weekly_discount: o.weeklyDiscount ?? 0,
+    monthly_discount: o.monthlyDiscount ?? 0,
     transport_discount: o.transportDiscount ?? 0,
     insurance_discount: o.insuranceDiscount ?? 0,
     sent_to_accounting: o.sentToAccounting ?? false,
@@ -509,6 +513,8 @@ interface AppStore {
     customerNotes: string;
     accessories: string[];
     rentalDiscount?: number;
+    weeklyDiscount?: number;
+    monthlyDiscount?: number;
     rentalArticleId?: string;
     insuranceArticleId?: string;
     transportArticleId?: string;
@@ -804,7 +810,10 @@ export const useStore = create<AppStore>()((set, get) => ({
       const days = order.chargeWeekends ? daysBetween(periodStart, today) : countBusinessDays(periodStart, today);
       if (days > 0) {
         const breakdown = calcBreakdown(days, order.dailyPrice, order.weeklyPrice, order.monthlyPrice);
-        const amount = breakdown.total * (1 - (order.rentalDiscount ?? 0) / 100);
+        const amount = calcDiscountedTotal(
+          breakdown, order.dailyPrice, order.weeklyPrice, order.monthlyPrice,
+          order.rentalDiscount, order.weeklyDiscount, order.monthlyDiscount
+        );
         newPeriod = { id: crypto.randomUUID(), startDate: periodStart, endDate: today, days, amount, sentToAccounting: false, createdAt: now };
       }
     }

@@ -7,7 +7,7 @@ import Header from '@/components/layout/Header';
 import { MachineStatusBadge, OrderStatusBadge, LongTermBadge } from '@/components/ui/StatusBadge';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useStore } from '@/store';
-import { formatCurrency, formatDate, formatDateTime, daysBetween, daysUntil, calcBreakdown, countBusinessDays } from '@/lib/utils';
+import { formatCurrency, formatDate, formatDateTime, daysBetween, daysUntil, calcBreakdown, calcDiscountedTotal, countBusinessDays } from '@/lib/utils';
 import { ARTICLE_UNIT_LABELS } from '@/lib/types';
 
 export default function OrderDetailPage() {
@@ -77,8 +77,10 @@ export default function OrderDetailPage() {
     ? (order.chargeWeekends ? daysBetween(nextInvoiceStart, invoiceEndDate) : countBusinessDays(nextInvoiceStart, invoiceEndDate))
     : 0;
   const newInvoiceBreakdown = calcBreakdown(newInvoiceDays, order.dailyPrice, order.weeklyPrice, order.monthlyPrice);
-  const rentalDisc = order.rentalDiscount ?? 0;
-  const newInvoiceAmount = newInvoiceBreakdown.total * (1 - rentalDisc / 100);
+  const newInvoiceAmount = calcDiscountedTotal(
+    newInvoiceBreakdown, order.dailyPrice, order.weeklyPrice, order.monthlyPrice,
+    order.rentalDiscount, order.weeklyDiscount, order.monthlyDiscount
+  );
 
   const handleCancelOrder = () => setDialog('cancel');
   const handleDeleteOrder = () => setDialog('delete');
@@ -676,7 +678,10 @@ export default function OrderDetailPage() {
                           </tr>
                           {editingPeriodId === period.id && (() => {
                             const editBreakdown = calcBreakdown(editPeriodDays, order.dailyPrice, order.weeklyPrice, order.monthlyPrice);
-                            const editAmount = editBreakdown.total * (1 - (order.rentalDiscount ?? 0) / 100);
+                            const editAmount = calcDiscountedTotal(
+                              editBreakdown, order.dailyPrice, order.weeklyPrice, order.monthlyPrice,
+                              order.rentalDiscount, order.weeklyDiscount, order.monthlyDiscount
+                            );
                             return (
                               <tr className="bg-blue-50/40">
                                 <td colSpan={5} className="px-3 py-3">
@@ -754,26 +759,29 @@ export default function OrderDetailPage() {
                       <div className="bg-white rounded-lg border border-slate-200 p-3 space-y-1 text-[12px]">
                         {newInvoiceBreakdown.months > 0 && (
                           <div className="flex justify-between text-slate-600">
-                            <span>{newInvoiceBreakdown.months} mån à {formatCurrency(order.monthlyPrice)}</span>
-                            <span>{formatCurrency(newInvoiceBreakdown.months * order.monthlyPrice)}</span>
+                            <span>
+                              {newInvoiceBreakdown.months} mån à {formatCurrency(order.monthlyPrice)}
+                              {(order.monthlyDiscount ?? 0) > 0 && <span className="ml-1 text-emerald-600">(-{order.monthlyDiscount}%)</span>}
+                            </span>
+                            <span>{formatCurrency(newInvoiceBreakdown.months * order.monthlyPrice * (1 - (order.monthlyDiscount ?? 0) / 100))}</span>
                           </div>
                         )}
                         {newInvoiceBreakdown.weeks > 0 && (
                           <div className="flex justify-between text-slate-600">
-                            <span>{newInvoiceBreakdown.weeks} v à {formatCurrency(order.weeklyPrice)}</span>
-                            <span>{formatCurrency(newInvoiceBreakdown.weeks * order.weeklyPrice)}</span>
+                            <span>
+                              {newInvoiceBreakdown.weeks} v à {formatCurrency(order.weeklyPrice)}
+                              {(order.weeklyDiscount ?? 0) > 0 && <span className="ml-1 text-emerald-600">(-{order.weeklyDiscount}%)</span>}
+                            </span>
+                            <span>{formatCurrency(newInvoiceBreakdown.weeks * order.weeklyPrice * (1 - (order.weeklyDiscount ?? 0) / 100))}</span>
                           </div>
                         )}
                         {newInvoiceBreakdown.days > 0 && (
                           <div className="flex justify-between text-slate-600">
-                            <span>{newInvoiceBreakdown.days} dagar à {formatCurrency(order.dailyPrice)}</span>
-                            <span>{formatCurrency(newInvoiceBreakdown.days * order.dailyPrice)}</span>
-                          </div>
-                        )}
-                        {rentalDisc > 0 && (
-                          <div className="flex justify-between text-emerald-600">
-                            <span>Rabatt -{rentalDisc}%</span>
-                            <span>-{formatCurrency(newInvoiceBreakdown.total * rentalDisc / 100)}</span>
+                            <span>
+                              {newInvoiceBreakdown.days} dagar à {formatCurrency(order.dailyPrice)}
+                              {(order.rentalDiscount ?? 0) > 0 && <span className="ml-1 text-emerald-600">(-{order.rentalDiscount}%)</span>}
+                            </span>
+                            <span>{formatCurrency(newInvoiceBreakdown.days * order.dailyPrice * (1 - (order.rentalDiscount ?? 0) / 100))}</span>
                           </div>
                         )}
                         <div className="flex justify-between font-semibold text-slate-800 pt-1 border-t border-slate-100">
@@ -974,10 +982,13 @@ export default function OrderDetailPage() {
                 ? calcBreakdown(billableDays, order.dailyPrice, order.weeklyPrice, order.monthlyPrice)
                 : null;
               const insuranceMonths = billableDays ? Math.ceil(billableDays / 30) : 0;
-              const rentalDisc = order.rentalDiscount ?? 0;
               const insDisc = order.insuranceDiscount ?? 0;
-              const rentalGross = breakdown ? breakdown.total : 0;
-              const rentalNet = rentalGross * (1 - rentalDisc / 100);
+              const rentalNet = breakdown
+                ? calcDiscountedTotal(
+                    breakdown, order.dailyPrice, order.weeklyPrice, order.monthlyPrice,
+                    order.rentalDiscount, order.weeklyDiscount, order.monthlyDiscount
+                  )
+                : 0;
 
               return (
                 <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
@@ -1015,26 +1026,29 @@ export default function OrderDetailPage() {
                         <div className="space-y-1.5">
                           {breakdown.months > 0 && (
                             <div className="flex justify-between text-sm">
-                              <span className="text-slate-500">{breakdown.months} mån à {formatCurrency(order.monthlyPrice)}</span>
-                              <span className="font-medium">{formatCurrency(breakdown.months * order.monthlyPrice)}</span>
+                              <span className="text-slate-500">
+                                {breakdown.months} mån à {formatCurrency(order.monthlyPrice)}
+                                {(order.monthlyDiscount ?? 0) > 0 && <span className="ml-1 text-emerald-600">(-{order.monthlyDiscount}%)</span>}
+                              </span>
+                              <span className="font-medium">{formatCurrency(breakdown.months * order.monthlyPrice * (1 - (order.monthlyDiscount ?? 0) / 100))}</span>
                             </div>
                           )}
                           {breakdown.weeks > 0 && (
                             <div className="flex justify-between text-sm">
-                              <span className="text-slate-500">{breakdown.weeks} v à {formatCurrency(order.weeklyPrice)}</span>
-                              <span className="font-medium">{formatCurrency(breakdown.weeks * order.weeklyPrice)}</span>
+                              <span className="text-slate-500">
+                                {breakdown.weeks} v à {formatCurrency(order.weeklyPrice)}
+                                {(order.weeklyDiscount ?? 0) > 0 && <span className="ml-1 text-emerald-600">(-{order.weeklyDiscount}%)</span>}
+                              </span>
+                              <span className="font-medium">{formatCurrency(breakdown.weeks * order.weeklyPrice * (1 - (order.weeklyDiscount ?? 0) / 100))}</span>
                             </div>
                           )}
                           {breakdown.days > 0 && (
                             <div className="flex justify-between text-sm">
-                              <span className="text-slate-500">{breakdown.days} dagar à {formatCurrency(order.dailyPrice)}</span>
-                              <span className="font-medium">{formatCurrency(breakdown.days * order.dailyPrice)}</span>
-                            </div>
-                          )}
-                          {rentalDisc > 0 && (
-                            <div className="flex justify-between text-sm">
-                              <span className="text-emerald-600">Rabatt -{rentalDisc}%</span>
-                              <span className="text-emerald-600 font-medium">-{formatCurrency(rentalGross - rentalNet)}</span>
+                              <span className="text-slate-500">
+                                {breakdown.days} dagar à {formatCurrency(order.dailyPrice)}
+                                {(order.rentalDiscount ?? 0) > 0 && <span className="ml-1 text-emerald-600">(-{order.rentalDiscount}%)</span>}
+                              </span>
+                              <span className="font-medium">{formatCurrency(breakdown.days * order.dailyPrice * (1 - (order.rentalDiscount ?? 0) / 100))}</span>
                             </div>
                           )}
                           <div className="flex justify-between text-sm font-semibold pt-1 border-t border-slate-100">

@@ -137,6 +137,8 @@ export default function EditOrderPage() {
     setIncludeInsurance(!!order.insuranceCost || !!order.insuranceMonthlyRate);
     setOrderArticles(order.orderArticles ?? []);
     setDailyDiscount(order.rentalDiscount ?? 0);
+    setWeeklyDiscount(order.weeklyDiscount ?? 0);
+    setMonthlyDiscount(order.monthlyDiscount ?? 0);
     setInitialized(true);
   }, [order, initialized]);
 
@@ -247,6 +249,8 @@ export default function EditOrderPage() {
       insuranceCost: (!openEnded && includeInsurance && insuranceCost) ? insuranceCost : undefined,
       totalPrice,
       rentalDiscount: dailyDiscount || undefined,
+      weeklyDiscount: weeklyDiscount || undefined,
+      monthlyDiscount: monthlyDiscount || undefined,
       internalNotes: form.internalNotes,
       customerNotes: form.customerNotes,
       accessories: form.accessories ? form.accessories.split(',').map((s) => s.trim()).filter(Boolean) : [],

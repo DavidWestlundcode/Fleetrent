@@ -62,6 +62,21 @@ export function calcBreakdown(days: number, daily: number, weekly: number, month
   };
 }
 
+// Applies each price tier's own discount % to its own portion of a breakdown, rather than one
+// blended discount to the total — a rental billed mostly by month with a 40% monthly discount
+// but 0% daily discount needs the 40% applied only to the monthly portion.
+export function calcDiscountedTotal(
+  breakdown: { months: number; weeks: number; days: number },
+  daily: number, weekly: number, monthly: number,
+  dailyDiscount = 0, weeklyDiscount = 0, monthlyDiscount = 0
+): number {
+  return (
+    breakdown.months * monthly * (1 - monthlyDiscount / 100) +
+    breakdown.weeks * weekly * (1 - weeklyDiscount / 100) +
+    breakdown.days * daily * (1 - dailyDiscount / 100)
+  );
+}
+
 function getEasterSunday(year: number): Date {
   const a = year % 19, b = Math.floor(year / 100), c = year % 100;
   const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);

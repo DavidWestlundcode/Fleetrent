@@ -264,6 +264,8 @@ function NewOrderForm() {
         : undefined,
       orderArticles,
       rentalDiscount: dailyDiscount || undefined,
+      weeklyDiscount: weeklyDiscount || undefined,
+      monthlyDiscount: monthlyDiscount || undefined,
       transportDiscount: transportDiscount || undefined,
       insuranceDiscount: insuranceDiscount || undefined,
       facilityName: form.facilityName || undefined,

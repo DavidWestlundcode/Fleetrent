@@ -133,7 +133,9 @@ export async function POST(request: NextRequest) {
       ? period.days
       : countBusinessDays(period.startDate, period.endDate);
     const breakdown = calcBreakdown(billableDays, orderRow.daily_price as number, orderRow.weekly_price as number, orderRow.monthly_price as number);
-    const rentalDiscount = (orderRow.rental_discount as number) ?? 0;
+    const monthlyDiscount = (orderRow.monthly_discount as number) ?? 0;
+    const weeklyDiscount = (orderRow.weekly_discount as number) ?? 0;
+    const dailyDiscount = (orderRow.rental_discount as number) ?? 0;
 
     type FortnoxRow = { ArticleNumber?: string; Description: string; DeliveredQuantity: number; Price: number; Unit: string; Discount?: number };
     const orderRows: FortnoxRow[] = [];
@@ -144,7 +146,7 @@ export async function POST(request: NextRequest) {
         DeliveredQuantity: breakdown.months,
         Price: orderRow.monthly_price as number,
         Unit: 'mån',
-        ...(rentalDiscount > 0 ? { Discount: rentalDiscount } : {}),
+        ...(monthlyDiscount > 0 ? { Discount: monthlyDiscount } : {}),
       });
     }
     if (breakdown.weeks > 0) {
@@ -153,7 +155,7 @@ export async function POST(request: NextRequest) {
         DeliveredQuantity: breakdown.weeks,
         Price: orderRow.weekly_price as number,
         Unit: 'vecka',
-        ...(rentalDiscount > 0 ? { Discount: rentalDiscount } : {}),
+        ...(weeklyDiscount > 0 ? { Discount: weeklyDiscount } : {}),
       });
     }
     if (breakdown.days > 0 || orderRows.length === 0) {
@@ -164,7 +166,7 @@ export async function POST(request: NextRequest) {
         DeliveredQuantity: breakdown.days > 0 ? breakdown.days : billableDays,
         Price: orderRow.daily_price as number,
         Unit: 'dag',
-        ...(rentalDiscount > 0 ? { Discount: rentalDiscount } : {}),
+        ...(dailyDiscount > 0 ? { Discount: dailyDiscount } : {}),
       });
     }
 

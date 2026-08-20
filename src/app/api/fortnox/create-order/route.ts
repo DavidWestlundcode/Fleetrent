@@ -1,6 +1,6 @@
 ﻿import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { countBusinessDays } from '@/lib/utils';
+import { calcBreakdown, countBusinessDays } from '@/lib/utils';
 import { NextResponse, type NextRequest } from 'next/server';
 import { LIMITS } from '@/lib/rate-limit';
 
@@ -172,11 +172,10 @@ export async function POST(request: NextRequest) {
       machineRow.serial_number ? `S/N: ${machineRow.serial_number}` : null,
     ].filter(Boolean).join(' ') : null;
 
-    const rentalDescription = machineParts
-      ? `Hyra – ${machineParts} – ${days} dagar`
-      : `Hyra – ${days} dagar`;
-
-    const rentalDiscount = (orderRow.rental_discount as number) ?? 0;
+    const breakdown = calcBreakdown(days, orderRow.daily_price as number, orderRow.weekly_price as number, orderRow.monthly_price as number);
+    const monthlyDiscount = (orderRow.monthly_discount as number) ?? 0;
+    const weeklyDiscount = (orderRow.weekly_discount as number) ?? 0;
+    const dailyDiscount = (orderRow.rental_discount as number) ?? 0;
     const insuranceDiscount = (orderRow.insurance_discount as number) ?? 0;
 
     // Fetch article numbers for all referenced articles in one query
@@ -202,16 +201,39 @@ export async function POST(request: NextRequest) {
     const insArt = orderRow.insurance_article_id ? articleLookup[orderRow.insurance_article_id as string] : null;
 
     type FortnoxRow = { ArticleNumber?: string; Description: string; DeliveredQuantity: number; Price: number; Unit: string; Discount?: number };
-    const orderRows: FortnoxRow[] = [
-      {
+    const orderRows: FortnoxRow[] = [];
+
+    if (breakdown.months > 0) {
+      orderRows.push({
         ...(rentalArt?.article_number ? { ArticleNumber: rentalArt.article_number } : {}),
-        Description: rentalDescription,
-        DeliveredQuantity: days,
+        Description: machineParts ? `Hyra – ${machineParts} – ${breakdown.months} mån` : `Hyra – ${breakdown.months} mån`,
+        DeliveredQuantity: breakdown.months,
+        Price: (orderRow.monthly_price as number) ?? 0,
+        Unit: 'mån',
+        ...(monthlyDiscount > 0 ? { Discount: monthlyDiscount } : {}),
+      });
+    }
+    if (breakdown.weeks > 0) {
+      orderRows.push({
+        ...(rentalArt?.article_number ? { ArticleNumber: rentalArt.article_number } : {}),
+        Description: machineParts ? `Hyra – ${machineParts} – ${breakdown.weeks} v` : `Hyra – ${breakdown.weeks} v`,
+        DeliveredQuantity: breakdown.weeks,
+        Price: (orderRow.weekly_price as number) ?? 0,
+        Unit: 'vecka',
+        ...(weeklyDiscount > 0 ? { Discount: weeklyDiscount } : {}),
+      });
+    }
+    if (breakdown.days > 0 || orderRows.length === 0) {
+      const dayQty = breakdown.days > 0 ? breakdown.days : days;
+      orderRows.push({
+        ...(rentalArt?.article_number ? { ArticleNumber: rentalArt.article_number } : {}),
+        Description: machineParts ? `Hyra – ${machineParts} – ${dayQty} dagar` : `Hyra – ${dayQty} dagar`,
+        DeliveredQuantity: dayQty,
         Price: (orderRow.daily_price as number) ?? 0,
         Unit: 'dag',
-        ...(rentalDiscount > 0 ? { Discount: rentalDiscount } : {}),
-      },
-    ];
+        ...(dailyDiscount > 0 ? { Discount: dailyDiscount } : {}),
+      });
+    }
 
     if ((orderRow.insurance_cost as number) > 0) {
       orderRows.push({
