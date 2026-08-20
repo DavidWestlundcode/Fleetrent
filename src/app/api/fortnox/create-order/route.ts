@@ -159,9 +159,11 @@ export async function POST(request: NextRequest) {
       : (orderRow.planned_return_date as string);
     const calendarDays = Math.max(1, Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000));
     const chargeWeekends = (orderRow.charge_weekends as boolean) ?? false;
-    const days = (!isOpenEnded && !chargeWeekends)
-      ? countBusinessDays(startDate, endDate)
-      : calendarDays;
+    // Whether to count weekends is purely the order's own setting — independent of whether it's
+    // open-ended or fixed-term (that only decides which end date to measure from, above).
+    const days = chargeWeekends
+      ? calendarDays
+      : countBusinessDays(startDate, endDate);
 
     const machineRow = orderRow.machines as Record<string, unknown> | null;
     const machineParts = machineRow ? [
