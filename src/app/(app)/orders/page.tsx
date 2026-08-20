@@ -47,7 +47,7 @@ function SortHeader<K extends string>({ label, column, activeKey, dir, onSort, c
   );
 }
 
-type StatusFilter = OrderStatus | 'all' | '30_dagar' | 'returning_soon' | 'avtalshyra';
+type StatusFilter = OrderStatus | 'all' | '30_dagar' | 'returning_soon';
 
 const VALID_STATUSES: OrderStatus[] = ['aktiv', 'reserverad', 'forsenad', 'klar_for_fakturering', 'avslutad', 'annullerad'];
 
@@ -82,6 +82,7 @@ function OrdersPageInner() {
   const [page, setPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; orderNumber: string; hasHistory: boolean } | null>(null);
   const [rentalTypeFilter, setRentalTypeFilter] = useState<'all' | 'avtalshyra' | 'vanlig'>('all');
+  const [invoiceSubFilter, setInvoiceSubFilter] = useState<'all' | 'fakturor' | 'avtalsfakturor'>('all');
 
   const hasActiveFilters = statusFilter !== 'all' || !!search;
   const clearAllFilters = () => { setStatusFilter('all'); setSearch(''); };
@@ -114,6 +115,7 @@ function OrdersPageInner() {
 
   useEffect(() => { setPage(1); }, [search, statusFilter, rentalTypeFilter]);
   useEffect(() => { if (statusFilter !== 'aktiv') setRentalTypeFilter('all'); }, [statusFilter]);
+  useEffect(() => { if (statusFilter !== 'klar_for_fakturering') setInvoiceSubFilter('all'); }, [statusFilter]);
 
   type SortKey = 'orderNumber' | 'startDate' | 'plannedReturnDate' | 'totalPrice';
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
@@ -184,14 +186,13 @@ function OrdersPageInner() {
     const counts: Record<string, number> = { all: orders.length };
     orders.forEach((o) => { counts[o.status] = (counts[o.status] ?? 0) + 1; });
     counts['30_dagar'] = orders.filter(needsPartialInvoice).length;
-    counts['avtalshyra'] = pendingContractInvoices.length;
+    counts['klar_for_fakturering'] = (counts['klar_for_fakturering'] ?? 0) + pendingContractInvoices.length;
     return counts;
   }, [orders, pendingContractInvoices]);
 
   const statusLabels: Record<string, string> = {
     all: 'Alla', aktiv: 'Aktiva', reserverad: 'Reserverade',
     forsenad: 'Försenade', '30_dagar': '30 dagar',
-    avtalshyra: 'Avtalshyra',
     klar_for_fakturering: 'Klar för fakturering',
     avslutad: 'Avslutade', annullerad: 'Annullerade',
   };
@@ -317,10 +318,9 @@ function OrdersPageInner() {
       <div className="flex-1 p-3 sm:p-6 space-y-4">
         {/* Status Tabs */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          {(['all', 'aktiv', 'reserverad', 'forsenad', '30_dagar', 'avtalshyra', 'klar_for_fakturering', 'avslutad', 'annullerad'] as const).map((s) => {
+          {(['all', 'aktiv', 'reserverad', 'forsenad', '30_dagar', 'klar_for_fakturering', 'avslutad', 'annullerad'] as const).map((s) => {
             const count = statusCounts[s] ?? 0;
             const isThirty = s === '30_dagar';
-            const isAvtalshyra = s === 'avtalshyra';
             const isActive = statusFilter === s;
             return (
               <button
@@ -328,16 +328,14 @@ function OrdersPageInner() {
                 onClick={() => setStatusFilter(s)}
                 className={`px-3 py-1.5 rounded-lg text-[12.5px] font-medium transition-colors cursor-pointer ${
                   isActive
-                    ? isThirty ? 'bg-orange-500 text-white' : isAvtalshyra ? 'bg-blue-600 text-white' : 'bg-slate-900 text-white'
+                    ? isThirty ? 'bg-orange-500 text-white' : 'bg-slate-900 text-white'
                     : isThirty && count > 0
                       ? 'bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100'
-                      : isAvtalshyra && count > 0
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100'
-                        : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                      : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                 }`}
               >
                 {statusLabels[s]}
-                <span className={`ml-1.5 text-[11px] ${isActive ? 'text-white/60' : isThirty && count > 0 ? 'text-orange-500 font-semibold' : isAvtalshyra && count > 0 ? 'text-blue-500 font-semibold' : 'text-slate-400'}`}>
+                <span className={`ml-1.5 text-[11px] ${isActive ? 'text-white/60' : isThirty && count > 0 ? 'text-orange-500 font-semibold' : 'text-slate-400'}`}>
                   {count}
                 </span>
               </button>
@@ -345,8 +343,57 @@ function OrdersPageInner() {
           })}
         </div>
 
-        {statusFilter === 'avtalshyra' ? (
+        {/* Search + sub-filters */}
+        <div className="flex items-center gap-3 flex-wrap">
+          {(statusFilter !== 'klar_for_fakturering' || invoiceSubFilter !== 'avtalsfakturor') && (
+            <div className="relative max-w-sm flex-1 min-w-[220px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Sök ordernr, kund, maskin..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 text-[13px] bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all placeholder:text-slate-400"
+              />
+            </div>
+          )}
+          {statusFilter === 'aktiv' && (
+            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1">
+              {(['all', 'avtalshyra', 'vanlig'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setRentalTypeFilter(t)}
+                  className={`px-2.5 py-1 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
+                    rentalTypeFilter === t ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  {t === 'all' ? 'Alla' : t === 'avtalshyra' ? 'Avtalshyra' : 'Vanlig hyra'}
+                </button>
+              ))}
+            </div>
+          )}
+          {statusFilter === 'klar_for_fakturering' && (
+            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1">
+              {(['all', 'fakturor', 'avtalsfakturor'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setInvoiceSubFilter(t)}
+                  className={`px-2.5 py-1 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
+                    invoiceSubFilter === t ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  {t === 'all' ? 'Alla' : t === 'fakturor' ? 'Fakturor' : 'Avtalsfakturor'}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {statusFilter === 'klar_for_fakturering' && (invoiceSubFilter === 'all' || invoiceSubFilter === 'avtalsfakturor') && (
         <div className="space-y-4">
+          {invoiceSubFilter === 'all' && (
+            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Avtalsfakturor</p>
+          )}
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <p className="text-[13px] text-slate-500">
               Väntande delfakturor från avtalshyra-ordrar. Nya delfakturor genereras automatiskt i slutet av varje månad — granska och skicka in dem till Fortnox här.
@@ -449,36 +496,13 @@ function OrdersPageInner() {
             </div>
           </div>
         </div>
-        ) : (
-        <>
-        {/* Search + rental type filter */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative max-w-sm flex-1 min-w-[220px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Sök ordernr, kund, maskin..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-[13px] bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all placeholder:text-slate-400"
-            />
-          </div>
-          {statusFilter === 'aktiv' && (
-            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1">
-              {(['all', 'avtalshyra', 'vanlig'] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setRentalTypeFilter(t)}
-                  className={`px-2.5 py-1 rounded-lg text-[12px] font-medium transition-colors cursor-pointer ${
-                    rentalTypeFilter === t ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  {t === 'all' ? 'Alla' : t === 'avtalshyra' ? 'Avtalshyra' : 'Vanlig hyra'}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        )}
+
+        {(statusFilter !== 'klar_for_fakturering' || invoiceSubFilter === 'all' || invoiceSubFilter === 'fakturor') && (
+        <div className="space-y-4">
+        {statusFilter === 'klar_for_fakturering' && invoiceSubFilter === 'all' && (
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide pt-2">Fakturor</p>
+        )}
 
         {/* Bulk actions toolbar */}
         {selected.size > 0 && (
@@ -603,7 +627,7 @@ function OrdersPageInner() {
             <Pagination page={page} totalPages={totalPages} totalItems={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
           </div>
         </div>
-        </>
+        </div>
         )}
       </div>
 
