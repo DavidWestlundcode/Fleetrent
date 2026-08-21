@@ -255,7 +255,7 @@ export default function EditOrderPage() {
       customerNotes: form.customerNotes,
       accessories: form.accessories ? form.accessories.split(',').map((s) => s.trim()).filter(Boolean) : [],
       rentalArticleId: form.rentalArticleId || undefined,
-      insuranceArticleId: form.insuranceArticleId || undefined,
+      insuranceArticleId: includeInsurance ? (form.insuranceArticleId || undefined) : undefined,
       transportArticleId: form.transportArticleId || undefined,
       depositArticleId: form.depositArticleId || undefined,
       openEnded: openEnded || undefined,
