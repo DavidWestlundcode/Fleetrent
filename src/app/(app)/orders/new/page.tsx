@@ -635,7 +635,7 @@ function NewOrderForm() {
                 )}
               </div>
               {/* Insurance toggle */}
-              {hasInsuranceOption && (
+              {(hasInsuranceOption || includeInsurance) && (
                 <div className="mt-4 pt-4 border-t border-slate-100">
                   <label className="flex items-center gap-3 cursor-pointer group">
                     <div
@@ -649,11 +649,16 @@ function NewOrderForm() {
                         <Shield className="w-3.5 h-3.5 text-blue-500" />
                         <span className="text-[13px] font-medium text-slate-700">Inkludera försäkring</span>
                       </div>
-                      {includeInsurance && selectedTemplate && (
+                      {includeInsurance && hasInsuranceOption && selectedTemplate && (
                         <p className="text-[11px] text-slate-400 mt-0.5">
                           {openEnded
                             ? `Beräknas vid retur (${formatCurrency(selectedTemplate.insuranceMonthlyPrice)}/mån)`
                             : `${formatCurrency(insuranceCost)} (${insuranceMonths} påbörjad${insuranceMonths !== 1 ? 'e' : ''} mån à ${formatCurrency(selectedTemplate.insuranceMonthlyPrice)})`}
+                        </p>
+                      )}
+                      {includeInsurance && !hasInsuranceOption && (
+                        <p className="text-[11px] text-amber-600 mt-0.5">
+                          Vald prismall erbjuder inte försäkring.
                         </p>
                       )}
                     </div>
