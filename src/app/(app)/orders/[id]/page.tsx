@@ -566,6 +566,28 @@ export default function OrderDetailPage() {
                     </div>
                   )}
                 </div>
+                {(order.returnArticleChecks?.length ?? 0) > 0 && (
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                    <p className="text-[11px] text-slate-400 mb-2">Hyresartiklar vid retur</p>
+                    <div className="flex flex-wrap gap-2">
+                      {order.returnArticleChecks!.map((check) => {
+                        const art = articles.find((a) => a.id === check.articleId);
+                        const row = order.orderArticles?.find((r) => r.articleId === check.articleId);
+                        const missing = check.status === 'missing';
+                        return (
+                          <span
+                            key={check.articleId}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium rounded-full border ${
+                              missing ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            }`}
+                          >
+                            {missing ? '✕' : '✓'} {row?.description ?? art?.name ?? 'Artikel'}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

@@ -5,7 +5,7 @@ import type {
   Machine, Customer, Order, PriceTemplate, ServiceRecord, Article,
   MachineCategory, MachineStatus, FuelType, OrderStatus, ReturnCondition,
   ServiceType, ServiceStatus, ArticleType, ArticleUnit, OrderArticle, ContactPerson, CustomerFacility, SpMachine,
-  InvoicePeriod, MachineSwap,
+  InvoicePeriod, MachineSwap, ReturnArticleCheck,
 } from '@/lib/types';
 import { generateOrderNumber, calcBreakdown, calcDiscountedTotal, countBusinessDays, daysBetween } from '@/lib/utils';
 
@@ -202,6 +202,7 @@ function fromDbOrder(r: DbRow): Order {
     returnNotes: r.return_notes as string | undefined,
     returnImages: (r.return_images as string[]) ?? [],
     returnOperatingHours: r.return_operating_hours != null ? (r.return_operating_hours as number) : undefined,
+    returnArticleChecks: (r.return_article_checks as ReturnArticleCheck[]) ?? [],
     pickupCondition: r.pickup_condition as ReturnCondition | undefined,
     pickupNotes: r.pickup_notes as string | undefined,
     pickupImages: (r.pickup_images as string[]) ?? [],
@@ -266,6 +267,7 @@ function toDbOrder(o: Order, orgId: string): DbRow {
     return_notes: o.returnNotes ?? null,
     return_images: o.returnImages,
     return_operating_hours: o.returnOperatingHours ?? null,
+    return_article_checks: o.returnArticleChecks ?? [],
     pickup_condition: o.pickupCondition ?? null,
     pickup_notes: o.pickupNotes ?? null,
     pickup_images: o.pickupImages,
@@ -539,6 +541,7 @@ interface AppStore {
     sendToService: boolean;
     finalTotalPrice?: number;
     rentalRevenue?: number;
+    returnArticleChecks?: ReturnArticleCheck[];
   }) => void;
   pickupMachine: (orderId: string, data: {
     pickupCondition: string;
@@ -1289,6 +1292,7 @@ export const useStore = create<AppStore>()((set, get) => ({
               returnNotes: data.returnNotes,
               returnOperatingHours: data.returnOperatingHours,
               returnImages: data.returnImages,
+              returnArticleChecks: data.returnArticleChecks ?? [],
               ...(data.finalTotalPrice !== undefined ? { totalPrice: data.finalTotalPrice } : {}),
               events: [
                 ...o.events,
@@ -1346,6 +1350,7 @@ export const useStore = create<AppStore>()((set, get) => ({
           return_notes: data.returnNotes,
           return_operating_hours: data.returnOperatingHours,
           return_images: data.returnImages,
+          return_article_checks: data.returnArticleChecks ?? [],
           ...(data.finalTotalPrice !== undefined ? { total_price: data.finalTotalPrice } : {}),
         }).eq('id', orderId) as unknown as Promise<{ error: unknown }>,
       ];

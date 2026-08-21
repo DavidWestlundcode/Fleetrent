@@ -25,6 +25,11 @@ export interface OrderArticle {
   description?: string;
 }
 
+export interface ReturnArticleCheck {
+  articleId: string;
+  status: 'returned' | 'missing';
+}
+
 export interface ContactPerson {
   name: string;
   phone: string;
@@ -191,6 +196,7 @@ export interface Order {
   returnNotes?: string;
   returnImages: string[];
   returnOperatingHours?: number;
+  returnArticleChecks?: ReturnArticleCheck[];
   pickupCondition?: ReturnCondition;
   pickupNotes?: string;
   pickupImages: string[];

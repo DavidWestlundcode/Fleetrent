@@ -34,6 +34,7 @@ function ReturnPageInner() {
   const [operatingHours, setOperatingHours] = useState(machine?.operatingHours ?? 0);
   const [images, setImages] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [articleChecks, setArticleChecks] = useState<Record<string, 'returned' | 'missing'>>({});
 
   if (!initialized) return null;
 
@@ -89,8 +90,15 @@ function ReturnPageInner() {
   }, 0);
   const finalTotalPrice = rentalCost + insuranceCostAtReturn + extraArticlesTotal;
 
+  // Accessories rented out alongside the machine (extension forks, chargers, etc.) — anything
+  // billed as insurance/transport/deposit/service isn't a physical item staff need to check for.
+  const rentalArticles = (order.orderArticles ?? []).filter(
+    (row) => articles.find((a) => a.id === row.articleId)?.type === 'hyra'
+  );
+  const allArticlesChecked = rentalArticles.every((row) => articleChecks[row.articleId]);
+
   const handleSubmit = () => {
-    if (!condition) return;
+    if (!condition || !allArticlesChecked) return;
     returnMachine(order.id, {
       returnCondition: condition,
       returnNotes: notes,
@@ -99,6 +107,7 @@ function ReturnPageInner() {
       sendToService: condition === 'kraver_service' || condition === 'skadat',
       finalTotalPrice,
       rentalRevenue: rentalCost,
+      returnArticleChecks: rentalArticles.map((row) => ({ articleId: row.articleId, status: articleChecks[row.articleId] })),
     });
     if (fromOrder) {
       router.push(`/orders/${order.id}`);
@@ -236,6 +245,51 @@ function ReturnPageInner() {
           </>
         ) : (
           <>
+            {rentalArticles.length > 0 && (
+              <div className="bg-white rounded-2xl p-5 mb-4">
+                <h3 className="font-bold text-slate-900 mb-1">Hyresartiklar</h3>
+                <p className="text-xs text-slate-400 mb-3">Bekräfta att varje artikel kom tillbaka med maskinen.</p>
+                <div className="space-y-2">
+                  {rentalArticles.map((row) => {
+                    const art = articles.find((a) => a.id === row.articleId);
+                    const label = row.description ?? art?.name ?? 'Artikel';
+                    const status = articleChecks[row.articleId];
+                    return (
+                      <div key={row.articleId} className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-slate-800 truncate">{label}</p>
+                          {row.quantity > 1 && <p className="text-xs text-slate-400">{row.quantity} st</p>}
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setArticleChecks((p) => ({ ...p, [row.articleId]: 'returned' }))}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${
+                              status === 'returned' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                            }`}
+                          >
+                            Återlämnad
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setArticleChecks((p) => ({ ...p, [row.articleId]: 'missing' }))}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${
+                              status === 'missing' ? 'border-red-500 bg-red-50 text-red-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                            }`}
+                          >
+                            Saknas
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {!allArticlesChecked && (
+                  <p className="text-xs text-amber-600 mt-3">Markera alla artiklar innan du kan avsluta ordern.</p>
+                )}
+              </div>
+            )}
+
             <div className="bg-white rounded-2xl p-5 mb-4">
               <h3 className="font-bold text-slate-900 mb-3">Kommentar och dokumentation</h3>
               <textarea
@@ -361,7 +415,8 @@ function ReturnPageInner() {
               </button>
               <button
                 onClick={handleSubmit}
-                className="flex-1 py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-2"
+                disabled={!allArticlesChecked}
+                className="flex-1 py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
               >
                 <CheckCircle2 className="w-5 h-5" />
                 Avsluta order
