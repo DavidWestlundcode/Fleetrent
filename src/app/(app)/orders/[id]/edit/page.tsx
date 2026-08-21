@@ -300,7 +300,7 @@ export default function EditOrderPage() {
             <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
               <h2 className="text-[14px] font-semibold text-slate-900 mb-4">Kund och maskin</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Kund *" required>
+                <Field label="Kund" required>
                   <select
                     required
                     value={form.customerId}
@@ -368,7 +368,7 @@ export default function EditOrderPage() {
                 </Field>
 
                 <div className="md:col-span-2">
-                  <Field label="Maskin *" required>
+                  <Field label="Maskin" required>
                     <select required value={form.machineId} onChange={(e) => set('machineId', e.target.value)} className={inputClass}>
                       <option value="">Välj maskin...</option>
                       {availableMachines.map((m) => (
@@ -449,7 +449,7 @@ export default function EditOrderPage() {
             <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
               <h2 className="text-[14px] font-semibold text-slate-900 mb-4">Hyresperiod</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Startdatum *" required>
+                <Field label="Startdatum" required>
                   <input required type="date" value={form.startDate} onChange={(e) => set('startDate', e.target.value)} className={inputClass} />
                 </Field>
                 <Field label="Planerat returdatum">

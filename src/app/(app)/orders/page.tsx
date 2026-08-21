@@ -530,8 +530,8 @@ function OrdersPageInner() {
           </div>
         )}
 
-        {/* Table */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+        {/* Table (desktop) */}
+        <div className="hidden md:block bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[750px]">
             <thead>
@@ -626,6 +626,56 @@ function OrdersPageInner() {
           <div className="px-5 py-3">
             <Pagination page={page} totalPages={totalPages} totalItems={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
           </div>
+        </div>
+
+        {/* Card list (mobile) */}
+        <div className="md:hidden space-y-3">
+          {filtered.length === 0 && (
+            hasActiveFilters ? (
+              <EmptyState icon={Search} title="Inga träffar" description="Inga ordrar matchar sökningen eller filtret." actionLabel="Rensa filter" onAction={clearAllFilters} />
+            ) : (
+              <EmptyState icon={ClipboardList} title="Inga ordrar ännu" description="Skapa din första uthyrningsorder för att komma igång." actionLabel="Skapa order" actionHref="/orders/new" />
+            )
+          )}
+          {paginated.map((order) => {
+            const machine = machines.find((m) => m.id === order.machineId);
+            const customer = customers.find((c) => c.id === order.customerId);
+            const isOverdue = order.status === 'aktiv' && !!order.plannedReturnDate && new Date(order.plannedReturnDate) < new Date();
+            const daysRemaining = order.plannedReturnDate ? daysUntil(order.plannedReturnDate) : null;
+            return (
+              <Link
+                key={order.id}
+                href={`/orders/${order.id}`}
+                className={`block bg-white rounded-2xl border p-4 active:bg-slate-50 transition-colors ${isOverdue ? 'border-red-200 bg-red-50/40' : 'border-slate-200/80'}`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-[13px] font-semibold text-slate-800 truncate">{order.orderNumber}</span>
+                    {order.isLongTerm && <LongTermBadge />}
+                  </div>
+                  <OrderStatusBadge status={order.status} />
+                </div>
+                <p className="text-[13px] text-slate-700 mt-2 truncate">{customer?.companyName ?? '–'}</p>
+                <p className="text-[12px] text-slate-500 truncate">{machine?.name ?? '–'}</p>
+                <div className="flex items-end justify-between mt-3 pt-3 border-t border-slate-100">
+                  <div>
+                    <p className="text-[11px] text-slate-400">
+                      {formatDate(order.startDate)} → {order.plannedReturnDate ? formatDate(order.plannedReturnDate) : 'Löpande'}
+                    </p>
+                    {order.status === 'aktiv' && daysRemaining !== null && (
+                      <p className={`text-[11px] mt-0.5 font-medium ${isOverdue ? 'text-red-600' : daysRemaining <= 7 ? 'text-amber-600' : 'text-slate-400'}`}>
+                        {isOverdue ? `${Math.abs(daysRemaining)} dagar sen` : `${daysRemaining} dagar kvar`}
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-[13px] font-semibold text-slate-700">{formatCurrency(order.totalPrice)}</span>
+                </div>
+              </Link>
+            );
+          })}
+          {filtered.length > 0 && (
+            <Pagination page={page} totalPages={totalPages} totalItems={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
+          )}
         </div>
         </div>
         )}

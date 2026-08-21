@@ -88,7 +88,7 @@ export default function StatisticsPage() {
 
       <div className="flex-1 p-6 space-y-5">
         {/* Top KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {(() => {
             const revenueTrend = stats.revenueTrendPct !== null
               ? (stats.revenueTrendPct >= 0 ? `+${stats.revenueTrendPct}%` : `${stats.revenueTrendPct}%`)
@@ -102,17 +102,17 @@ export default function StatisticsPage() {
             return cards.map(({ label, value, icon: Icon, trend, positive }) => (
               <div key={label} className="relative bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                 <div className="absolute top-0 left-0 right-0 h-[3px] bg-blue-500" />
-                <div className="flex items-start justify-between">
-                  <div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
                     <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
-                    <p className="text-[22px] font-bold text-slate-900 mt-1.5 tracking-tight">{value}</p>
+                    <p className="text-[22px] font-bold text-slate-900 mt-1.5 tracking-tight truncate">{value}</p>
                     {trend && (
                       <p className={`text-[11px] mt-1 font-semibold ${positive ? 'text-emerald-600' : 'text-red-500'}`}>
                         {trend} vs föregående år
                       </p>
                     )}
                   </div>
-                  <div className="p-2.5 bg-blue-50 rounded-xl">
+                  <div className="p-2.5 bg-blue-50 rounded-xl shrink-0">
                     <Icon className="w-[18px] h-[18px] text-blue-600" />
                   </div>
                 </div>
