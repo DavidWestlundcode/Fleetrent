@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Truck, Users, FileText, Tag, Package, BarChart3, Settings,
   AlertTriangle, TrendingUp, Clock, Wrench, CheckCircle2, ArrowRight, Plus,
   Bell, Search, Phone, Mail,
-  Shield, Building2, Globe, Link2, Check,
+  Shield, Building2, Globe, Link2, Check, Menu, X,
 } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 
@@ -147,14 +147,27 @@ const NAV: { id: Tab; icon: React.ElementType; label: string }[] = [
   { id: 'installningar', icon: Settings,        label: 'Inställningar' },
 ];
 
-function DemoSidebar({ active, onNav }: { active: Tab; onNav: (t: Tab) => void }) {
+function DemoSidebar({ active, onNav, isOpen, onClose }: { active: Tab; onNav: (t: Tab) => void; isOpen: boolean; onClose: () => void }) {
   return (
-    <aside className="flex flex-col w-[232px] bg-[#0B1120] border-r border-white/[0.06] shrink-0 hidden md:flex">
-      <div className="flex items-center px-5 h-[56px] border-b border-white/[0.06] shrink-0">
+    <aside className={`
+      flex flex-col w-[232px] bg-[#0B1120] border-r border-white/[0.06] shrink-0
+      fixed inset-y-0 left-0 z-50 h-full
+      transition-transform duration-200 ease-in-out
+      md:static md:translate-x-0
+      ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+    `}>
+      <div className="flex items-center justify-between px-5 h-[56px] border-b border-white/[0.06] shrink-0">
         <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
           <Logo size={28} />
           <span className="text-[14px] font-semibold text-white tracking-tight">FleetOS</span>
         </Link>
+        <button
+          onClick={onClose}
+          className="md:hidden p-1 rounded-lg text-slate-500 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+          aria-label="Stäng meny"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
       <nav className="flex-1 py-3 px-2.5 space-y-px overflow-y-auto">
         {NAV.map(({ id, icon: Icon, label }) => {
@@ -162,7 +175,7 @@ function DemoSidebar({ active, onNav }: { active: Tab; onNav: (t: Tab) => void }
           return (
             <button
               key={id}
-              onClick={() => onNav(id)}
+              onClick={() => { onNav(id); onClose(); }}
               className={`relative flex items-center gap-2.5 px-3 py-[7px] rounded-lg text-[13px] font-medium transition-all duration-150 w-full text-left cursor-pointer group ${
                 isActive ? 'text-white bg-white/[0.09]' : 'text-[#8B95A8] hover:text-white hover:bg-white/[0.05]'
               }`}
@@ -192,12 +205,21 @@ function DemoSidebar({ active, onNav }: { active: Tab; onNav: (t: Tab) => void }
 }
 
 /* ── Header ────────────────────────────────────────────────────────── */
-function DemoHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+function DemoHeader({ title, subtitle, onMenuClick }: { title: string; subtitle?: string; onMenuClick: () => void }) {
   return (
-    <header className="flex items-center justify-between px-6 h-[56px] bg-white border-b border-slate-100 shrink-0 gap-3">
-      <div className="min-w-0">
-        <h1 className="text-[15px] font-semibold text-slate-900 tracking-tight leading-tight truncate">{title}</h1>
-        {subtitle && <p className="text-[11px] text-slate-400 leading-tight mt-px truncate">{subtitle}</p>}
+    <header className="flex items-center justify-between px-4 md:px-6 h-[56px] bg-white border-b border-slate-100 shrink-0 gap-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <button
+          onClick={onMenuClick}
+          className="md:hidden p-1.5 -ml-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+          aria-label="Öppna meny"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <div className="min-w-0">
+          <h1 className="text-[15px] font-semibold text-slate-900 tracking-tight leading-tight truncate">{title}</h1>
+          {subtitle && <p className="text-[11px] text-slate-400 leading-tight mt-px truncate">{subtitle}</p>}
+        </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <div className="relative hidden md:block">
@@ -479,30 +501,32 @@ function OrderTab() {
         {filtered.length === 0 ? (
           <div className="px-5 py-10 text-center text-[13px] text-slate-400">Inga order matchar denna filtrering.</div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-100">
-                {['Order', 'Kund', 'Maskin', 'Period', 'Belopp', 'Status'].map((h) => (
-                  <th key={h} className="text-left px-5 py-2.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {filtered.map((o) => (
-                <tr key={o.id} className={`hover:bg-slate-50/80 transition-colors cursor-pointer ${o.status === 'forsenad' ? 'bg-red-50/30' : ''}`}>
-                  <td className="px-5 py-3.5">
-                    <p className="text-[13px] font-medium text-slate-800">{o.orderNumber}</p>
-                    {o.orderReference && <p className="text-[11px] text-slate-400 mt-0.5">{o.orderReference}</p>}
-                  </td>
-                  <td className="px-5 py-3.5 text-[13px] text-slate-600">{customerById[o.customerId]?.companyName ?? '–'}</td>
-                  <td className="px-5 py-3.5 text-[13px] text-slate-500">{machineById[o.machineId]?.name ?? '–'}</td>
-                  <td className="px-5 py-3.5 text-[12px] text-slate-400">{o.startDate}<br />→ {o.plannedReturnDate}</td>
-                  <td className="px-5 py-3.5 text-[13px] font-semibold text-slate-700">{fmt(o.totalPrice)}</td>
-                  <td className="px-5 py-3.5"><OBadge s={o.status} /></td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  {['Order', 'Kund', 'Maskin', 'Period', 'Belopp', 'Status'].map((h) => (
+                    <th key={h} className="text-left px-5 py-2.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filtered.map((o) => (
+                  <tr key={o.id} className={`hover:bg-slate-50/80 transition-colors cursor-pointer ${o.status === 'forsenad' ? 'bg-red-50/30' : ''}`}>
+                    <td className="px-5 py-3.5 whitespace-nowrap">
+                      <p className="text-[13px] font-medium text-slate-800">{o.orderNumber}</p>
+                      {o.orderReference && <p className="text-[11px] text-slate-400 mt-0.5">{o.orderReference}</p>}
+                    </td>
+                    <td className="px-5 py-3.5 text-[13px] text-slate-600 whitespace-nowrap">{customerById[o.customerId]?.companyName ?? '–'}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-slate-500 whitespace-nowrap">{machineById[o.machineId]?.name ?? '–'}</td>
+                    <td className="px-5 py-3.5 text-[12px] text-slate-400 whitespace-nowrap">{o.startDate}<br />→ {o.plannedReturnDate}</td>
+                    <td className="px-5 py-3.5 text-[13px] font-semibold text-slate-700 whitespace-nowrap">{fmt(o.totalPrice)}</td>
+                    <td className="px-5 py-3.5 whitespace-nowrap"><OBadge s={o.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
@@ -549,33 +573,35 @@ function ArtiklarTab() {
           <h2 className="text-[14px] font-semibold text-slate-900">Alla artiklar</h2>
           <span className="text-[12px] text-slate-400">{ARTICLES.length} artiklar</span>
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-100">
-              {['Art.nr', 'Namn', 'Typ', 'Enhet', 'Pris', 'Konto', 'Moms', 'Status'].map((h) => (
-                <th key={h} className="text-left px-5 py-2.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {ARTICLES.map((a) => (
-              <tr key={a.id} className="hover:bg-slate-50/80 transition-colors cursor-pointer">
-                <td className="px-5 py-3.5 text-[13px] font-mono text-slate-500">{a.articleNumber}</td>
-                <td className="px-5 py-3.5 text-[13px] font-medium text-slate-800">{a.name}</td>
-                <td className="px-5 py-3.5 text-[12px] text-slate-500">{a.type}</td>
-                <td className="px-5 py-3.5 text-[12px] text-slate-500">{a.unit}</td>
-                <td className="px-5 py-3.5 text-[13px] font-semibold text-slate-700">{fmt(a.defaultPrice)}</td>
-                <td className="px-5 py-3.5 text-[12px] font-mono text-slate-400">{a.accountNumber}</td>
-                <td className="px-5 py-3.5 text-[12px] text-slate-400">{a.vatRate}%</td>
-                <td className="px-5 py-3.5">
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${a.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                    {a.isActive ? 'Aktiv' : 'Inaktiv'}
-                  </span>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100">
+                {['Art.nr', 'Namn', 'Typ', 'Enhet', 'Pris', 'Konto', 'Moms', 'Status'].map((h) => (
+                  <th key={h} className="text-left px-5 py-2.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {ARTICLES.map((a) => (
+                <tr key={a.id} className="hover:bg-slate-50/80 transition-colors cursor-pointer">
+                  <td className="px-5 py-3.5 text-[13px] font-mono text-slate-500 whitespace-nowrap">{a.articleNumber}</td>
+                  <td className="px-5 py-3.5 text-[13px] font-medium text-slate-800 whitespace-nowrap">{a.name}</td>
+                  <td className="px-5 py-3.5 text-[12px] text-slate-500 whitespace-nowrap">{a.type}</td>
+                  <td className="px-5 py-3.5 text-[12px] text-slate-500 whitespace-nowrap">{a.unit}</td>
+                  <td className="px-5 py-3.5 text-[13px] font-semibold text-slate-700 whitespace-nowrap">{fmt(a.defaultPrice)}</td>
+                  <td className="px-5 py-3.5 text-[12px] font-mono text-slate-400 whitespace-nowrap">{a.accountNumber}</td>
+                  <td className="px-5 py-3.5 text-[12px] text-slate-400 whitespace-nowrap">{a.vatRate}%</td>
+                  <td className="px-5 py-3.5 whitespace-nowrap">
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${a.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {a.isActive ? 'Aktiv' : 'Inaktiv'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -780,6 +806,7 @@ const TITLES: Record<Tab, { title: string; subtitle: string }> = {
 
 export default function DemoPage() {
   const [tab, setTab] = useState<Tab>('dashboard');
+  const [navOpen, setNavOpen] = useState(false);
   const { title, subtitle } = TITLES[tab];
 
   return (
@@ -794,11 +821,19 @@ export default function DemoPage() {
         </Link>
       </div>
 
+      {/* Mobile nav overlay */}
+      {navOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setNavOpen(false)}
+        />
+      )}
+
       {/* Offset for banner */}
       <div className="flex flex-1 mt-[30px] overflow-hidden">
-        <DemoSidebar active={tab} onNav={setTab} />
+        <DemoSidebar active={tab} onNav={setTab} isOpen={navOpen} onClose={() => setNavOpen(false)} />
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-          <DemoHeader title={title} subtitle={subtitle} />
+          <DemoHeader title={title} subtitle={subtitle} onMenuClick={() => setNavOpen(true)} />
           {tab === 'dashboard'     && <DashboardTab />}
           {tab === 'maskiner'      && <MaskinerTab />}
           {tab === 'kunder'        && <KunderTab />}
