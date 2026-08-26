@@ -1,9 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { Resend } from 'resend';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[+\d\s\-()]{6,20}$/;
+const LEAD_RECIPIENTS = ['david@fleetos.se', 'elias@fleetos.se'];
 
 export async function POST(request: NextRequest) {
   // Rate limit: 5 submissions per 10 minutes per IP
@@ -45,6 +47,28 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       return NextResponse.json({ error: 'Kunde inte spara förfrågan' }, { status: 500 });
+    }
+
+    // Lead is saved regardless of whether the notification email goes out.
+    const apiKey = process.env.RESEND_API_KEY;
+    if (apiKey) {
+      const resend = new Resend(apiKey);
+      const { error: emailError } = await resend.emails.send({
+        from: 'FleetOS Leads <leads@fleetos.se>',
+        to: LEAD_RECIPIENTS,
+        replyTo: sanitized.email,
+        subject: `Ny lead: ${sanitized.company} (${sanitized.name})`,
+        text: [
+          `Namn: ${sanitized.name}`,
+          `Företag: ${sanitized.company}`,
+          `E-post: ${sanitized.email}`,
+          `Telefon: ${sanitized.phone}`,
+          sanitized.machines ? `Antal maskiner: ${sanitized.machines}` : null,
+          '',
+          sanitized.message || '(inget meddelande)',
+        ].filter((line) => line !== null).join('\n'),
+      }).catch((e) => ({ error: e }));
+      if (emailError) console.error('[lead] Failed to send notification email:', emailError);
     }
 
     return NextResponse.json({ ok: true });
