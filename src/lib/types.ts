@@ -17,12 +17,21 @@ export type ReturnCondition = 'bra' | 'skadat' | 'kraver_service' | 'kraver_kont
 export type ArticleType = 'hyra' | 'försäkring' | 'transport' | 'deposition' | 'service' | 'övrigt';
 export type ArticleUnit = 'dag' | 'vecka' | 'månad' | 'st' | 'tim';
 
+export type OrderArticleBilling = 'first_invoice' | 'final_invoice' | 'every_invoice';
+
 export interface OrderArticle {
   articleId: string;
   quantity: number;
   unitPrice: number;
   discountPercent?: number;
   description?: string;
+  // Undefined = legacy behavior: only ever included on the final invoice, same as before
+  // this field existed. 'first_invoice' bills once, on the order's next/first delfaktura,
+  // then gets marked `billed` so it never repeats. 'final_invoice' bills once, at closing.
+  // 'every_invoice' bills the same quantity/price on every delfaktura AND the final invoice
+  // (e.g. insurance) — never gets `billed`, since it's never "done".
+  billing?: OrderArticleBilling;
+  billed?: boolean;
 }
 
 export interface ReturnArticleCheck {

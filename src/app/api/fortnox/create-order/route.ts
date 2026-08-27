@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { calcBreakdown, countBusinessDays } from '@/lib/utils';
 import { NextResponse, type NextRequest } from 'next/server';
 import { LIMITS } from '@/lib/rate-limit';
+import type { OrderArticle } from '@/lib/types';
 
 const FORTNOX_API = 'https://api.fortnox.se/3';
 
@@ -180,8 +181,15 @@ export async function POST(request: NextRequest) {
     const dailyDiscount = (orderRow.rental_discount as number) ?? 0;
     const insuranceDiscount = (orderRow.insurance_discount as number) ?? 0;
 
-    // Fetch article numbers for all referenced articles in one query
-    const extraArticles = (orderRow.order_articles as { articleId: string; quantity: number; unitPrice: number; discountPercent?: number; description?: string }[]) ?? [];
+    // Fetch article numbers for all referenced articles in one query.
+    // Articles flagged 'first_invoice' were already billed on the order's first delfaktura
+    // (see create-partial-invoice) — skip those here so they don't get billed twice. If no
+    // delfaktura ever ran for this order, an unbilled first_invoice article falls through to
+    // this final invoice instead of being silently dropped. 'every_invoice' and 'final_invoice'
+    // (and legacy undefined) articles are never excluded — this route only ever runs once per
+    // order, so "every invoice" and "final invoice" both just mean "this one".
+    const allExtraArticles = (orderRow.order_articles as OrderArticle[]) ?? [];
+    const extraArticles = allExtraArticles.filter((a) => !(a.billing === 'first_invoice' && a.billed));
     const allArticleIds = [
       orderRow.rental_article_id,
       orderRow.insurance_article_id,

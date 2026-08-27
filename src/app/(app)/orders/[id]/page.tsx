@@ -884,7 +884,7 @@ export default function OrderDetailPage() {
                 })
                 .filter(Boolean) as { art: (typeof articles)[number]; antal: number | string }[];
 
-              if (rows.length === 0) return null;
+              if (rows.length === 0 && (order.orderArticles ?? []).length === 0) return null;
               return (
                 <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
                   <div className="px-5 py-4 border-b border-slate-100">
@@ -899,6 +899,7 @@ export default function OrderDetailPage() {
                         <th className="text-right px-5 py-2.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Antal</th>
                         <th className="text-left px-5 py-2.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Enhet</th>
                         <th className="text-right px-5 py-2.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Pris</th>
+                        <th className="text-left px-5 py-2.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Faktureras</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -913,6 +914,7 @@ export default function OrderDetailPage() {
                           </td>
                           <td className="px-5 py-3 text-[13px] text-slate-500">{ARTICLE_UNIT_LABELS[row.art.unit]}</td>
                           <td className="px-5 py-3 text-[13px] text-right text-slate-500">–</td>
+                          <td className="px-5 py-3 text-[13px] text-slate-400">–</td>
                         </tr>
                       ))}
                       {(order.orderArticles ?? []).map((row, i) => {
@@ -925,6 +927,17 @@ export default function OrderDetailPage() {
                             <td className="px-5 py-3 text-[13px] text-right font-medium text-slate-700">{row.quantity}</td>
                             <td className="px-5 py-3 text-[13px] text-slate-500">{ARTICLE_UNIT_LABELS[art.unit]}</td>
                             <td className="px-5 py-3 text-[13px] text-right font-medium text-slate-700">{formatCurrency(row.quantity * row.unitPrice)}</td>
+                            <td className="px-5 py-3 text-[13px]">
+                              {row.billed ? (
+                                <span className="text-emerald-600">Fakturerad</span>
+                              ) : row.billing === 'first_invoice' ? (
+                                <span className="text-slate-500">Vid nästa faktura</span>
+                              ) : row.billing === 'every_invoice' ? (
+                                <span className="text-slate-500">Varje faktura</span>
+                              ) : (
+                                <span className="text-slate-500">Vid avslut</span>
+                              )}
+                            </td>
                           </tr>
                         );
                       })}

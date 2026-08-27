@@ -3,7 +3,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity, Plus, Trash2, Search, FileSignature, CalendarOff, Repeat } from 'lucide-react';
-import type { OrderArticle } from '@/lib/types';
+import type { OrderArticle, OrderArticleBilling } from '@/lib/types';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
 import { formatCurrency, daysBetween, getMatchingTemplate, calcBreakdown, countBusinessDays } from '@/lib/utils';
@@ -99,6 +99,7 @@ function NewOrderForm() {
   const [newArticlePrice, setNewArticlePrice] = useState(0);
   const [newArticleDiscount, setNewArticleDiscount] = useState(0);
   const [newArticleDescription, setNewArticleDescription] = useState('');
+  const [newArticleBilling, setNewArticleBilling] = useState<OrderArticleBilling>('final_invoice');
   const [articleSearch, setArticleSearch] = useState('');
   const [showArticleDropdown, setShowArticleDropdown] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
@@ -682,6 +683,7 @@ function NewOrderForm() {
                         <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-20">À-pris</th>
                         <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-16">Rabatt</th>
                         <th className="text-right px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-20">Totalt</th>
+                        <th className="text-left px-3 py-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider w-36">Faktureras</th>
                         <th className="w-8" />
                       </tr>
                     </thead>
@@ -705,6 +707,20 @@ function NewOrderForm() {
                               }
                             </td>
                             <td className="px-3 py-2.5 text-[13px] text-right font-medium text-slate-800">{formatCurrency(lineTotal)}</td>
+                            <td className="px-3 py-2.5">
+                              <select
+                                value={row.billing ?? 'final_invoice'}
+                                onChange={(e) => {
+                                  const billing = e.target.value as OrderArticleBilling;
+                                  setOrderArticles((p) => p.map((r, idx) => idx === i ? { ...r, billing } : r));
+                                }}
+                                className="w-full px-2 py-1.5 text-[12px] border border-slate-200 rounded-lg bg-white cursor-pointer"
+                              >
+                                <option value="first_invoice">Vid nästa faktura</option>
+                                <option value="every_invoice">Varje faktura</option>
+                                <option value="final_invoice">Vid avslut</option>
+                              </select>
+                            </td>
                             <td className="px-3 py-2.5 text-right">
                               <button type="button" onClick={() => setOrderArticles((p) => p.filter((_, idx) => idx !== i))} className="text-slate-300 hover:text-red-500 transition-colors cursor-pointer">
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -812,6 +828,18 @@ function NewOrderForm() {
                       <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none">%</span>
                     </div>
                   </div>
+                  <div className="w-36">
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Faktureras</label>
+                    <select
+                      value={newArticleBilling}
+                      onChange={(e) => setNewArticleBilling(e.target.value as OrderArticleBilling)}
+                      className={`${inputClass} cursor-pointer`}
+                    >
+                      <option value="first_invoice">Vid nästa faktura</option>
+                      <option value="every_invoice">Varje faktura</option>
+                      <option value="final_invoice">Vid avslut</option>
+                    </select>
+                  </div>
                   <button
                     type="button"
                     disabled={!newArticleId}
@@ -823,6 +851,7 @@ function NewOrderForm() {
                         articleId: newArticleId,
                         quantity: newArticleQty,
                         unitPrice: newArticlePrice,
+                        billing: newArticleBilling,
                         ...(newArticleDiscount > 0 ? { discountPercent: newArticleDiscount } : {}),
                         ...(finalDesc && finalDesc !== art?.name ? { description: finalDesc } : {}),
                       }]);
@@ -831,6 +860,7 @@ function NewOrderForm() {
                       setNewArticlePrice(0);
                       setNewArticleDiscount(0);
                       setNewArticleDescription('');
+                      setNewArticleBilling('final_invoice');
                       setArticleSearch('');
                     }}
                     className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-[13px] font-medium rounded-xl hover:bg-blue-700 disabled:opacity-40 transition-colors cursor-pointer shrink-0"
