@@ -642,14 +642,30 @@ export default function OrderDetailPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {sortedInvoices.map((period) => (
+                        {sortedInvoices.map((period, periodIdx) => {
+                          // Order-level extras get appended at send time, not baked into period.amount —
+                          // mirror that here so the displayed total matches what Fortnox will receive.
+                          const dueExtraArticles = !period.sentToAccounting
+                            ? (order.orderArticles ?? []).filter((a) =>
+                                a.billing === 'every_invoice' || (a.billing === 'first_invoice' && !a.billed && periodIdx === 0)
+                              )
+                            : [];
+                          const dueExtrasTotal = dueExtraArticles.reduce(
+                            (s, a) => s + a.quantity * a.unitPrice * (1 - (a.discountPercent ?? 0) / 100), 0
+                          );
+                          return (
                           <Fragment key={period.id}>
                           <tr className="hover:bg-slate-50/60">
                             <td className="px-3 py-2.5 text-[13px] text-slate-700">
                               {formatDate(period.startDate)} – {formatDate(period.endDate)}
                             </td>
                             <td className="px-3 py-2.5 text-[13px] text-right text-slate-600">{period.days} dagar</td>
-                            <td className="px-3 py-2.5 text-[13px] text-right font-medium text-slate-800">{formatCurrency(period.amount)}</td>
+                            <td className="px-3 py-2.5 text-[13px] text-right font-medium text-slate-800">
+                              {formatCurrency(period.amount + dueExtrasTotal)}
+                              {dueExtrasTotal > 0 && (
+                                <p className="text-[10px] text-slate-400 font-normal">varav {formatCurrency(dueExtrasTotal)} artiklar</p>
+                              )}
+                            </td>
                             <td className="px-3 py-2.5 text-right">
                               {period.sentToAccounting ? (
                                 <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600">
@@ -763,7 +779,8 @@ export default function OrderDetailPage() {
                             );
                           })()}
                           </Fragment>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                     </div>
