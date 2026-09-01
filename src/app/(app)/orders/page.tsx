@@ -466,6 +466,16 @@ function OrdersPageInner() {
                 {pendingContractInvoices.map(({ order, period }: { order: Order; period: InvoicePeriod }) => {
                   const machine = machines.find((m) => m.id === order.machineId);
                   const customer = customers.find((c) => c.id === order.customerId);
+                  // Order-level extras get appended at send time, not baked into period.amount —
+                  // mirror that here so the displayed total matches what Fortnox will receive.
+                  const sortedOrderPeriods = [...(order.invoicePeriods ?? [])].sort((a, b) => a.startDate.localeCompare(b.startDate));
+                  const isFirstPeriod = sortedOrderPeriods[0]?.id === period.id;
+                  const dueExtraArticles = (order.orderArticles ?? []).filter((a) =>
+                    a.billing === 'every_invoice' || (a.billing === 'first_invoice' && !a.billed && isFirstPeriod)
+                  );
+                  const dueExtrasTotal = dueExtraArticles.reduce(
+                    (s, a) => s + a.quantity * a.unitPrice * (1 - (a.discountPercent ?? 0) / 100), 0
+                  );
                   return (
                     <tr key={period.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-3 py-3.5">
@@ -477,7 +487,12 @@ function OrdersPageInner() {
                       <td className="px-4 py-3.5 text-[13px] text-slate-700">{customer?.companyName ?? '–'}</td>
                       <td className="px-4 py-3.5 text-[13px] text-slate-500">{machine?.name ?? '–'}</td>
                       <td className="px-4 py-3.5 text-[13px] text-slate-500">{formatDate(period.startDate)} – {formatDate(period.endDate)}</td>
-                      <td className="px-4 py-3.5 text-[13px] font-medium text-slate-700">{formatCurrency(period.amount)}</td>
+                      <td className="px-4 py-3.5 text-[13px] font-medium text-slate-700">
+                        {formatCurrency(period.amount + dueExtrasTotal)}
+                        {dueExtrasTotal > 0 && (
+                          <p className="text-[10px] text-slate-400 font-normal">varav {formatCurrency(dueExtrasTotal)} artiklar</p>
+                        )}
+                      </td>
                       <td className="px-4 py-3.5">
                         <button
                           onClick={() => sendSinglePeriod(order.id, period.id, order.orderNumber)}
