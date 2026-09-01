@@ -6,7 +6,7 @@ import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Inf
 import type { OrderArticle, OrderArticleBilling } from '@/lib/types';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
-import { formatCurrency, daysBetween, getMatchingTemplate, calcBreakdown, countBusinessDays } from '@/lib/utils';
+import { formatCurrency, daysBetween, getMatchingTemplate, calcRentalBreakdown, countBusinessDays } from '@/lib/utils';
 import { MachineStatusBadge } from '@/components/ui/StatusBadge';
 
 const inputClass = 'w-full px-3 py-2 text-[13px] bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:bg-white transition-all';
@@ -197,7 +197,9 @@ function NewOrderForm() {
   const billableDays = (!openEnded && form.startDate && form.plannedReturnDate && days > 0)
     ? (chargeWeekends ? days : countBusinessDays(form.startDate, form.plannedReturnDate))
     : days;
-  const priceBreakdown = calcBreakdown(billableDays, form.dailyPrice, form.weeklyPrice, form.monthlyPrice);
+  const priceBreakdown = (!openEnded && form.startDate && form.plannedReturnDate && days > 0)
+    ? calcRentalBreakdown(form.startDate, form.plannedReturnDate, chargeWeekends, form.dailyPrice, form.weeklyPrice, form.monthlyPrice)
+    : { months: 0, weeks: 0, days: 0, total: 0 };
   const calculatedPrice = priceBreakdown.total;
 
   const insuranceMonths = billableDays > 0 ? Math.ceil(billableDays / 30) : 0;

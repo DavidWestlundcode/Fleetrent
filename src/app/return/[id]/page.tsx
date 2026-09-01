@@ -4,7 +4,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, Truck, ArrowLeft, AlertTriangle, Wrench } from 'lucide-react';
 import { useStore } from '@/store';
-import { formatDate, daysBetween, countBusinessDays, calcBreakdown, calcDiscountedTotal, formatCurrency } from '@/lib/utils';
+import { formatDate, daysBetween, countBusinessDays, calcRentalBreakdown, calcDiscountedTotal, formatCurrency } from '@/lib/utils';
 import { MachineStatusBadge } from '@/components/ui/StatusBadge';
 import PhotoCapture from '@/components/ui/PhotoCapture';
 
@@ -73,7 +73,7 @@ function ReturnPageInner() {
   // return should bill for the days the machine was actually out.
   const rentalDays = order.chargeWeekends ? daysBetween(order.startDate, today) : countBusinessDays(order.startDate, today);
 
-  const priceBreakdown = calcBreakdown(rentalDays, order.dailyPrice, order.weeklyPrice, order.monthlyPrice);
+  const priceBreakdown = calcRentalBreakdown(order.startDate, today, order.chargeWeekends ?? false, order.dailyPrice, order.weeklyPrice, order.monthlyPrice);
   const rentalCost = calcDiscountedTotal(
     priceBreakdown, order.dailyPrice, order.weeklyPrice, order.monthlyPrice,
     order.rentalDiscount, order.weeklyDiscount, order.monthlyDiscount

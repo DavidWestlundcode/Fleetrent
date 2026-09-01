@@ -1,6 +1,6 @@
 ﻿import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { calcBreakdown, countBusinessDays } from '@/lib/utils';
+import { calcRentalBreakdown, countBusinessDays } from '@/lib/utils';
 import { NextResponse, type NextRequest } from 'next/server';
 import { LIMITS } from '@/lib/rate-limit';
 import type { OrderArticle } from '@/lib/types';
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
       machineRow.serial_number ? `S/N: ${machineRow.serial_number}` : null,
     ].filter(Boolean).join(' ') : null;
 
-    const breakdown = calcBreakdown(days, orderRow.daily_price as number, orderRow.weekly_price as number, orderRow.monthly_price as number);
+    const breakdown = calcRentalBreakdown(startDate, endDate, chargeWeekends, orderRow.daily_price as number, orderRow.weekly_price as number, orderRow.monthly_price as number);
     const monthlyDiscount = (orderRow.monthly_discount as number) ?? 0;
     const weeklyDiscount = (orderRow.weekly_discount as number) ?? 0;
     const dailyDiscount = (orderRow.rental_discount as number) ?? 0;

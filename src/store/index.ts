@@ -7,7 +7,7 @@ import type {
   ServiceType, ServiceStatus, ArticleType, ArticleUnit, OrderArticle, ContactPerson, CustomerFacility, SpMachine,
   InvoicePeriod, MachineSwap, ReturnArticleCheck,
 } from '@/lib/types';
-import { generateOrderNumber, calcBreakdown, calcDiscountedTotal, countBusinessDays, daysBetween } from '@/lib/utils';
+import { generateOrderNumber, calcRentalBreakdown, calcDiscountedTotal, countBusinessDays, daysBetween } from '@/lib/utils';
 
 type DbRow = Record<string, unknown>;
 
@@ -564,7 +564,7 @@ interface AppStore {
   activateReservedOrders: () => void;
 
   addInvoicePeriod: (orderId: string, period: Omit<InvoicePeriod, 'id' | 'createdAt'>) => void;
-  editInvoicePeriod: (orderId: string, periodId: string, updates: { days: number; amount: number }) => void;
+  editInvoicePeriod: (orderId: string, periodId: string, updates: { days: number; amount: number; manualAmount?: boolean }) => void;
   markInvoicePeriodSent: (orderId: string, periodId: string, fortnoxOrderNumber: string) => void;
   swapOrderMachine: (orderId: string, data: { newMachineId: string; reason?: string; sendOldToService?: boolean }) => void;
 }
@@ -731,7 +731,7 @@ export const useStore = create<AppStore>()((set, get) => ({
           ? {
               ...o,
               invoicePeriods: (o.invoicePeriods ?? []).map((p) =>
-                p.id === periodId ? { ...p, days: updates.days, amount: updates.amount } : p
+                p.id === periodId ? { ...p, days: updates.days, amount: updates.amount, ...(updates.manualAmount !== undefined ? { manualAmount: updates.manualAmount } : {}) } : p
               ),
             }
           : o
@@ -813,7 +813,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     if (periodStart <= today) {
       const days = order.chargeWeekends ? daysBetween(periodStart, today) : countBusinessDays(periodStart, today);
       if (days > 0) {
-        const breakdown = calcBreakdown(days, order.dailyPrice, order.weeklyPrice, order.monthlyPrice);
+        const breakdown = calcRentalBreakdown(periodStart, today, order.chargeWeekends ?? false, order.dailyPrice, order.weeklyPrice, order.monthlyPrice);
         const amount = calcDiscountedTotal(
           breakdown, order.dailyPrice, order.weeklyPrice, order.monthlyPrice,
           order.rentalDiscount, order.weeklyDiscount, order.monthlyDiscount
@@ -1194,10 +1194,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     // reverse that same amount, not the order's full totalPrice which also includes articles.
     let rentalRevenueToReverse = 0;
     if (hasRevenue) {
-      const rentalDaysBillable = order.chargeWeekends
-        ? daysBetween(order.startDate, order.actualReturnDate!)
-        : countBusinessDays(order.startDate, order.actualReturnDate!);
-      const breakdown = calcBreakdown(rentalDaysBillable, order.dailyPrice, order.weeklyPrice, order.monthlyPrice);
+      const breakdown = calcRentalBreakdown(order.startDate, order.actualReturnDate!, order.chargeWeekends ?? false, order.dailyPrice, order.weeklyPrice, order.monthlyPrice);
       const rentalOnly = calcDiscountedTotal(
         breakdown, order.dailyPrice, order.weeklyPrice, order.monthlyPrice,
         order.rentalDiscount, order.weeklyDiscount, order.monthlyDiscount

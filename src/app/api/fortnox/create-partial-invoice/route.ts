@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { calcBreakdown, countBusinessDays } from '@/lib/utils';
+import { calcRentalBreakdown } from '@/lib/utils';
 import { NextResponse, type NextRequest } from 'next/server';
 import type { InvoicePeriod, OrderArticle } from '@/lib/types';
 import { LIMITS } from '@/lib/rate-limit';
@@ -137,12 +137,7 @@ export async function POST(request: NextRequest) {
       machineRow.internal_code ? `(${machineRow.internal_code})` : null,
     ].filter(Boolean).join(' ') : 'Maskin';
 
-    // Calculate breakdown for period
     const chargeWeekends = (orderRow.charge_weekends as boolean) ?? false;
-    const billableDays = chargeWeekends
-      ? period.days
-      : countBusinessDays(period.startDate, period.endDate);
-    const breakdown = calcBreakdown(billableDays, orderRow.daily_price as number, orderRow.weekly_price as number, orderRow.monthly_price as number);
     const monthlyDiscount = (orderRow.monthly_discount as number) ?? 0;
     const weeklyDiscount = (orderRow.weekly_discount as number) ?? 0;
     const dailyDiscount = (orderRow.rental_discount as number) ?? 0;
@@ -150,34 +145,49 @@ export async function POST(request: NextRequest) {
     type FortnoxRow = { ArticleNumber?: string; Description: string; DeliveredQuantity: number; Price: number; Unit: string; Discount?: number };
     const orderRows: FortnoxRow[] = [];
 
-    if (breakdown.months > 0) {
+    if (period.manualAmount) {
+      // A person hand-edited this period's amount — send it exactly as-is, not recomputed.
       orderRows.push({
-        Description: `${machineParts} - ${period.startDate} - ${period.endDate} (${breakdown.months} mån)`,
-        DeliveredQuantity: breakdown.months,
-        Price: orderRow.monthly_price as number,
-        Unit: 'mån',
-        ...(monthlyDiscount > 0 ? { Discount: monthlyDiscount } : {}),
+        Description: `Hyra - ${machineParts} - ${period.startDate} t.o.m. ${period.endDate}`,
+        DeliveredQuantity: 1,
+        Price: period.amount,
+        Unit: 'st',
       });
-    }
-    if (breakdown.weeks > 0) {
-      orderRows.push({
-        Description: `${machineParts} - veckor`,
-        DeliveredQuantity: breakdown.weeks,
-        Price: orderRow.weekly_price as number,
-        Unit: 'vecka',
-        ...(weeklyDiscount > 0 ? { Discount: weeklyDiscount } : {}),
-      });
-    }
-    if (breakdown.days > 0 || orderRows.length === 0) {
-      orderRows.push({
-        Description: orderRows.length === 0
-          ? `Hyra - ${machineParts} - ${period.startDate} t.o.m. ${period.endDate}`
-          : `${machineParts} - dagar`,
-        DeliveredQuantity: breakdown.days > 0 ? breakdown.days : billableDays,
-        Price: orderRow.daily_price as number,
-        Unit: 'dag',
-        ...(dailyDiscount > 0 ? { Discount: dailyDiscount } : {}),
-      });
+    } else {
+      const breakdown = calcRentalBreakdown(
+        period.startDate, period.endDate, chargeWeekends,
+        orderRow.daily_price as number, orderRow.weekly_price as number, orderRow.monthly_price as number,
+      );
+
+      if (breakdown.months > 0) {
+        orderRows.push({
+          Description: `${machineParts} - ${period.startDate} - ${period.endDate} (${breakdown.months} mån)`,
+          DeliveredQuantity: breakdown.months,
+          Price: orderRow.monthly_price as number,
+          Unit: 'mån',
+          ...(monthlyDiscount > 0 ? { Discount: monthlyDiscount } : {}),
+        });
+      }
+      if (breakdown.weeks > 0) {
+        orderRows.push({
+          Description: `${machineParts} - veckor`,
+          DeliveredQuantity: breakdown.weeks,
+          Price: orderRow.weekly_price as number,
+          Unit: 'vecka',
+          ...(weeklyDiscount > 0 ? { Discount: weeklyDiscount } : {}),
+        });
+      }
+      if (breakdown.days > 0 || orderRows.length === 0) {
+        orderRows.push({
+          Description: orderRows.length === 0
+            ? `Hyra - ${machineParts} - ${period.startDate} t.o.m. ${period.endDate}`
+            : `${machineParts} - dagar`,
+          DeliveredQuantity: breakdown.days > 0 ? breakdown.days : 1,
+          Price: orderRow.daily_price as number,
+          Unit: 'dag',
+          ...(dailyDiscount > 0 ? { Discount: dailyDiscount } : {}),
+        });
+      }
     }
 
     // Lookup rental article number

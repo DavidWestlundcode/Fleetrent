@@ -7,7 +7,7 @@ import Header from '@/components/layout/Header';
 import { MachineStatusBadge, OrderStatusBadge, LongTermBadge } from '@/components/ui/StatusBadge';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useStore } from '@/store';
-import { formatCurrency, formatDate, formatDateTime, daysBetween, daysUntil, calcBreakdown, calcDiscountedTotal, countBusinessDays } from '@/lib/utils';
+import { formatCurrency, formatDate, formatDateTime, daysBetween, daysUntil, calcBreakdown, calcRentalBreakdown, calcDiscountedTotal, countBusinessDays } from '@/lib/utils';
 import { ARTICLE_UNIT_LABELS } from '@/lib/types';
 
 export default function OrderDetailPage() {
@@ -28,6 +28,7 @@ export default function OrderDetailPage() {
   const [periodFortnoxError, setPeriodFortnoxError] = useState<string | null>(null);
   const [editingPeriodId, setEditingPeriodId] = useState<string | null>(null);
   const [editPeriodDays, setEditPeriodDays] = useState(0);
+  const [editPeriodAmount, setEditPeriodAmount] = useState(0);
   const [dialog, setDialog] = useState<'cancel' | 'delete' | 'markSent' | 'sendForSigning' | null>(null);
   const [showSwapForm, setShowSwapForm] = useState(false);
   const [swapMachineId, setSwapMachineId] = useState('');
@@ -76,7 +77,9 @@ export default function OrderDetailPage() {
   const newInvoiceDays = invoiceEndDate && invoiceEndDate >= nextInvoiceStart
     ? (order.chargeWeekends ? daysBetween(nextInvoiceStart, invoiceEndDate) : countBusinessDays(nextInvoiceStart, invoiceEndDate))
     : 0;
-  const newInvoiceBreakdown = calcBreakdown(newInvoiceDays, order.dailyPrice, order.weeklyPrice, order.monthlyPrice);
+  const newInvoiceBreakdown = newInvoiceDays > 0
+    ? calcRentalBreakdown(nextInvoiceStart, invoiceEndDate, order.chargeWeekends ?? false, order.dailyPrice, order.weeklyPrice, order.monthlyPrice)
+    : { months: 0, weeks: 0, days: 0, total: 0 };
   const newInvoiceAmount = calcDiscountedTotal(
     newInvoiceBreakdown, order.dailyPrice, order.weeklyPrice, order.monthlyPrice,
     order.rentalDiscount, order.weeklyDiscount, order.monthlyDiscount
@@ -667,6 +670,7 @@ export default function OrderDetailPage() {
                                       } else {
                                         setEditingPeriodId(period.id);
                                         setEditPeriodDays(period.days);
+                                        setEditPeriodAmount(period.amount);
                                       }
                                     }}
                                     className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-500 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer"
@@ -700,7 +704,7 @@ export default function OrderDetailPage() {
                           </tr>
                           {editingPeriodId === period.id && (() => {
                             const editBreakdown = calcBreakdown(editPeriodDays, order.dailyPrice, order.weeklyPrice, order.monthlyPrice);
-                            const editAmount = calcDiscountedTotal(
+                            const suggestedAmount = calcDiscountedTotal(
                               editBreakdown, order.dailyPrice, order.weeklyPrice, order.monthlyPrice,
                               order.rentalDiscount, order.weeklyDiscount, order.monthlyDiscount
                             );
@@ -718,13 +722,27 @@ export default function OrderDetailPage() {
                                         className="w-24 px-3 py-1.5 text-[13px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
                                       />
                                     </div>
-                                    <p className="text-[12px] text-slate-500 pb-2">
-                                      Nytt belopp: <span className="font-semibold text-slate-800">{formatCurrency(editAmount)}</span>
-                                    </p>
+                                    <div>
+                                      <label className="block text-[11px] font-medium text-slate-500 mb-1">Belopp (kr)</label>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        value={editPeriodAmount}
+                                        onChange={(e) => setEditPeriodAmount(Math.max(0, Number(e.target.value)))}
+                                        className="w-32 px-3 py-1.5 text-[13px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                                      />
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditPeriodAmount(Math.round(suggestedAmount))}
+                                      className="text-[11px] text-blue-600 hover:underline pb-2 cursor-pointer"
+                                    >
+                                      Använd föreslaget: {formatCurrency(suggestedAmount)}
+                                    </button>
                                     <div className="flex gap-2 pb-0.5 ml-auto">
                                       <button
                                         onClick={() => {
-                                          editInvoicePeriod(order.id, period.id, { days: editPeriodDays, amount: editAmount });
+                                          editInvoicePeriod(order.id, period.id, { days: editPeriodDays, amount: editPeriodAmount, manualAmount: true });
                                           setEditingPeriodId(null);
                                         }}
                                         className="px-3 py-1.5 text-[12px] font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
@@ -739,6 +757,7 @@ export default function OrderDetailPage() {
                                       </button>
                                     </div>
                                   </div>
+                                  <p className="text-[11px] text-slate-400 mt-2">Belopp skickas exakt så till Fortnox, oavsett dag-/vecko-/månadspris.</p>
                                 </td>
                               </tr>
                             );
@@ -1013,8 +1032,8 @@ export default function OrderDetailPage() {
               const billableDays = totalCalDays !== null
                 ? (order.chargeWeekends ? totalCalDays : countBusinessDays(order.startDate, endDate!))
                 : null;
-              const breakdown = billableDays !== null
-                ? calcBreakdown(billableDays, order.dailyPrice, order.weeklyPrice, order.monthlyPrice)
+              const breakdown = endDate
+                ? calcRentalBreakdown(order.startDate, endDate, order.chargeWeekends ?? false, order.dailyPrice, order.weeklyPrice, order.monthlyPrice)
                 : null;
               const insuranceMonths = billableDays ? Math.ceil(billableDays / 30) : 0;
               const insDisc = order.insuranceDiscount ?? 0;

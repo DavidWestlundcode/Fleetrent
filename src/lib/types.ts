@@ -164,6 +164,10 @@ export interface InvoicePeriod {
   fortnoxOrderNumber?: string;
   sentToAccounting?: boolean;
   createdAt: string;
+  // Set when a person edits this period's amount by hand. When true, Fortnox-sending sends
+  // `amount` as a single flat line instead of recomputing it from the daily/weekly/monthly
+  // breakdown — a manual correction should never get silently overwritten by auto-pricing.
+  manualAmount?: boolean;
 }
 
 export interface MachineSwap {

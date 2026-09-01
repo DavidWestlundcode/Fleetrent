@@ -1,4 +1,4 @@
-import { calcBreakdown, calcDiscountedTotal, countBusinessDays, daysBetween } from '@/lib/utils';
+import { calcRentalBreakdown, calcDiscountedTotal, countBusinessDays, daysBetween } from '@/lib/utils';
 import type { InvoicePeriod } from '@/lib/types';
 import type { createAdminClient } from '@/lib/supabase/admin';
 
@@ -51,8 +51,10 @@ export async function generateContractInvoices(
 
       if (days <= 0) { skipped++; continue; }
 
-      const breakdown = calcBreakdown(
-        days,
+      const breakdown = calcRentalBreakdown(
+        nextStart,
+        effectiveEnd,
+        chargeWeekends,
         order.daily_price as number,
         order.weekly_price as number,
         order.monthly_price as number,

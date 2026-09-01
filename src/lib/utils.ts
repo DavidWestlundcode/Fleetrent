@@ -62,6 +62,42 @@ export function calcBreakdown(days: number, daily: number, weekly: number, month
   };
 }
 
+// Date-aware version of calcBreakdown for pricing an actual rental span. Whether a full month/week
+// was rented is decided on the calendar span (30/7 calendar days, same fixed convention calcBreakdown
+// already uses) — NOT on the weekend-excluded day count — so a calendar month always reaches the
+// monthly tier even though it only contains ~20 business days. Only the leftover tail (the days after
+// the last full month/week) is priced using actual billable days, respecting chargeWeekends, matching
+// how the daily rate has always been meant to apply to that remainder.
+export function calcRentalBreakdown(
+  startDate: string, endDate: string, chargeWeekends: boolean,
+  daily: number, weekly: number, monthly: number
+) {
+  const calendarDays = daysBetween(startDate, endDate);
+  let rem = calendarDays;
+  const months = monthly > 0 ? Math.floor(rem / 30) : 0;
+  if (monthly > 0) rem %= 30;
+  const weeks = weekly > 0 ? Math.floor(rem / 7) : 0;
+  if (weekly > 0) rem %= 7;
+
+  let days: number;
+  if (rem <= 0) {
+    days = 0;
+  } else if (chargeWeekends) {
+    days = rem;
+  } else {
+    const tailStart = new Date(endDate);
+    tailStart.setDate(tailStart.getDate() - rem);
+    days = countBusinessDays(isoDate(tailStart), endDate);
+  }
+
+  return {
+    months,
+    weeks,
+    days,
+    total: months * monthly + weeks * weekly + days * daily,
+  };
+}
+
 // Applies each price tier's own discount % to its own portion of a breakdown, rather than one
 // blended discount to the total — a rental billed mostly by month with a 40% monthly discount
 // but 0% daily discount needs the 40% applied only to the monthly portion.
