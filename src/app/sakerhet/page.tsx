@@ -44,7 +44,7 @@ const layers = [
     title: 'Åtkomstkontroll',
     items: [
       { label: 'Row Level Security (RLS)', desc: 'PostgreSQL RLS är aktiverat på alla tabeller. Varje organisation kan enbart läsa och skriva sin egen data — på databasnivå, inte bara i applikationskoden.' },
-      { label: 'Organisationsisolering', desc: 'Multitenant-arkitekturen säkerställer strikt dataisolering. Det är strukturellt omöjligt för en organisation att se en annans data.' },
+      { label: 'Organisationsisolering', desc: 'Multitenant-arkitekturen säkerställer strikt dataisolering. Organisationsdata isoleras på databasnivå med PostgreSQL Row Level Security, inte bara i applikationskoden.' },
       { label: 'Rollbaserad åtkomst', desc: 'Behörigheter styrs av roller kopplade till respektive organisation. Service role-nyckeln används enbart server-side och exponeras aldrig för klienten.' },
     ],
   },

@@ -23,7 +23,7 @@ const features = [
   },
   {
     title: 'Snabba hyresavtal',
-    desc: 'Skapa ett komplett hyresavtal på under en minut. Kunden kan signera digitalt — klart innan liften lämnar lagret. Inga utskrifter och ingen posthantering.',
+    desc: 'Skapa ett komplett hyresavtal på några minuter. Kunden kan signera digitalt — klart innan liften lämnar lagret. Inga utskrifter och ingen posthantering.',
   },
   {
     title: 'Kort- och långtidsuthyrning',
@@ -154,7 +154,7 @@ export default function LiftarPage() {
 
       <div className="not-prose flex flex-col sm:flex-row gap-3">
         <Link href="/login" className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors text-sm">
-          Kom igång gratis
+          Boka demo
         </Link>
         <Link href="/funktioner" className="inline-flex items-center justify-center px-6 py-3 border border-slate-200 hover:border-slate-300 text-slate-700 font-medium rounded-xl transition-colors text-sm">
           Se alla funktioner

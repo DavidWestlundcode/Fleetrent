@@ -197,7 +197,7 @@ function DemoSidebar({ active, onNav, isOpen, onClose }: { active: Tab; onNav: (
         </div>
         <Link href="/kom-igang" className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] text-blue-400 hover:text-white hover:bg-white/[0.05] transition-all mt-1">
           <Plus className="w-[15px] h-[15px]" />
-          Skapa riktigt konto
+          Boka demo
         </Link>
       </div>
     </aside>
@@ -817,7 +817,7 @@ export default function DemoPage() {
           🔍 Demoläge — exempeldata, ingen inloggning krävs
         </p>
         <Link href="/kom-igang" className="text-[11px] font-bold text-white underline underline-offset-2 hover:text-blue-200">
-          Skapa konto gratis →
+          Boka demo →
         </Link>
       </div>
 

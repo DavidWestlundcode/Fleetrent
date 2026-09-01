@@ -27,7 +27,7 @@ const features = [
   },
   {
     title: 'Hyresavtal på minuter',
-    desc: 'Skapa ett komplett hyresavtal på under en minut. Kunden kan signera digitalt — inga utskrifter, ingen posthantering, allt lagras i systemet.',
+    desc: 'Skapa ett komplett hyresavtal på några minuter. Kunden kan signera digitalt — inga utskrifter, ingen posthantering, allt lagras i systemet.',
   },
   {
     title: 'Flexibla hyreskonfigurationer',
@@ -116,7 +116,7 @@ export default function ByggnadsmaskinPage() {
         De flesta uthyrningsföretag inom bygg hanterar idag bokningar via telefon, avtal via e-post och service via separata anteckningar. Det fungerar — tills flottan växer, personalen byts ut eller kunden ringer och frågar om en maskin som ingen vet var den är.
       </p>
       <p className="mb-4">
-        FleetOS samlar allt i ett system som är tillgängligt var du än befinner dig. Ny order på fem minuter. Avtal klart innan maskinen lämnar depån. Servicehistorik direkt i mobilen på arbetsplatsen.
+        FleetOS samlar allt i ett system som är tillgängligt var du än befinner dig. Ny order på några minuter. Avtal klart innan maskinen lämnar depån. Servicehistorik direkt i mobilen på arbetsplatsen.
       </p>
       <p className="mb-10">
         Med AI-igenkänning av maskindata kan du också fotografera typskylten på en ny maskin och få märke, modell och serienummer ifyllda automatiskt — istället för att skriva in allt för hand.
@@ -154,7 +154,7 @@ export default function ByggnadsmaskinPage() {
 
       <div className="not-prose flex flex-col sm:flex-row gap-3">
         <Link href="/login" className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors text-sm">
-          Kom igång gratis
+          Boka demo
         </Link>
         <Link href="/funktioner" className="inline-flex items-center justify-center px-6 py-3 border border-slate-200 hover:border-slate-300 text-slate-700 font-medium rounded-xl transition-colors text-sm">
           Se alla funktioner

@@ -119,7 +119,7 @@ export default function TruckarPage() {
         Många truckuthyrare arbetar idag med en kombination av Excel-listor, e-post och handskrivna lappar. Det fungerar när flottan är liten, men skalar inte. En maskin på fel ställe, ett glömt servicedatum eller en missad faktura kan kosta mer än ett helt år av systemkostnad.
       </p>
       <p className="mb-10">
-        FleetOS ger dig en komplett bild av hela truckflottan i realtid. Ny order tar fem minuter. Fakturaunderlaget är klart automatiskt. Och servicehistoriken finns alltid tillgänglig — oavsett om du är på kontoret eller ute hos kund.
+        FleetOS ger dig en komplett bild av hela truckflottan i realtid. Ny order tar några minuter. Fakturaunderlaget är klart automatiskt. Och servicehistoriken finns alltid tillgänglig — oavsett om du är på kontoret eller ute hos kund.
       </p>
 
       <h2>Vad skiljer FleetOS från ett generellt affärssystem?</h2>
@@ -154,7 +154,7 @@ export default function TruckarPage() {
 
       <div className="not-prose flex flex-col sm:flex-row gap-3">
         <Link href="/login" className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors text-sm">
-          Kom igång gratis
+          Boka demo
         </Link>
         <Link href="/funktioner" className="inline-flex items-center justify-center px-6 py-3 border border-slate-200 hover:border-slate-300 text-slate-700 font-medium rounded-xl transition-colors text-sm">
           Se alla funktioner

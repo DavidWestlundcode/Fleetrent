@@ -594,8 +594,8 @@ export default function LandingPage() {
               Logga in
             </Link>
             <Link href="/kom-igang" className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 bg-slate-900 hover:bg-slate-700 text-white text-[13px] font-semibold rounded-xl transition-colors shadow-sm">
-              <span className="hidden sm:inline">Kom igång gratis</span>
-              <span className="sm:hidden">Kom igång</span>
+              <span className="hidden sm:inline">Boka demo</span>
+              <span className="sm:hidden">Boka demo</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -898,7 +898,7 @@ export default function LandingPage() {
                 Automatiserat
               </div>
               <h3 className="text-2xl sm:text-[32px] font-bold text-slate-900 tracking-tight mb-4 leading-tight">
-                Skapa uthyrningsorder<br />på under en minut
+                Skapa uthyrningsorder<br />på några minuter
               </h3>
               <p className="text-[15px] text-slate-500 leading-relaxed mb-7">
                 Välj kund och maskin – systemet matchar automatiskt rätt prismall baserat på maskintyp och kapacitet. Pris och villkor beräknas direkt. Du skapar ordern, AI sköter resten.
@@ -1081,7 +1081,7 @@ export default function LandingPage() {
             <p className="text-[12px] font-semibold text-blue-600 uppercase tracking-widest mb-3">Integrationer</p>
             <h2 className="text-2xl sm:text-[40px] font-bold text-slate-900 tracking-tight mb-4">Integrera dina system</h2>
             <p className="text-[16px] text-slate-500 max-w-xl mx-auto">
-              Koppla FleetOS till dina befintliga system. Fortnox, Visma och Serviceprotokoll är klara — behöver du något annat bygger vi det åt dig.
+              Koppla FleetOS till dina befintliga system. Fortnox och Serviceprotokoll är klara, Visma är på väg — behöver du något annat bygger vi det åt dig.
             </p>
           </AnimateIn>
 
@@ -1325,10 +1325,6 @@ export default function LandingPage() {
                   <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
                 </svg>
               </a>
-            </div>
-            <div className="flex items-center gap-2 text-[12px] text-slate-600">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Alla system operativa
             </div>
           </div>
         </div>
