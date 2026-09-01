@@ -5,8 +5,8 @@ import PublicLayout from '@/components/layout/PublicLayout';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: 'Uthyrningssystem för truckar och gaffeltruckar | FleetOS',
-  description: 'Digitalt uthyrningssystem för truckuthyrning. Hantera motviktstruckar, skjutstativtruckar och ledstaplare med hyresavtal, fakturering och Fortnox-integration. Prova gratis.',
+  title: 'Uthyrningssystem för truckar och gaffeltruckar',
+  description: 'Digitalt uthyrningssystem för truckuthyrning. Hantera motviktstruckar, skjutstativtruckar och ledstaplare med hyresavtal, fakturering och Fortnox-integration.',
   keywords: ['uthyrningssystem truckar', 'system gaffeltruckuthyrning', 'truckuthyrning program', 'motviktstruck uthyrning system', 'gaffeltrucks uthyrning mjukvara'],
   alternates: { canonical: 'https://fleetos.se/uthyrning/truckar' },
   openGraph: {

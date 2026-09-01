@@ -5,8 +5,8 @@ import PublicLayout from '@/components/layout/PublicLayout';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: 'Uthyrningssystem för liftar och skylift | FleetOS',
-  description: 'Digitalt uthyrningssystem för liftuthyrning. Hantera skylift, saxlift och bomlift med besiktningshistorik, hyresavtal och Fortnox-integration. Prova gratis.',
+  title: 'Uthyrningssystem för liftar och skylift',
+  description: 'Digitalt uthyrningssystem för liftuthyrning. Hantera skylift, saxlift och bomlift med besiktningshistorik, hyresavtal och Fortnox-integration.',
   keywords: ['uthyrningssystem skylift', 'system liftuthyrning', 'saxlift uthyrning program', 'bomlift uthyrning system', 'skylift uthyrning mjukvara'],
   alternates: { canonical: 'https://fleetos.se/uthyrning/liftar' },
   openGraph: {

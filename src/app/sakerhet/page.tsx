@@ -1,6 +1,19 @@
+import type { Metadata } from 'next';
 import PublicLayout from '@/components/layout/PublicLayout';
 
 export const revalidate = 86400;
+
+export const metadata: Metadata = {
+  title: 'Säkerhet – hur vi skyddar er data',
+  description: 'Så skyddar FleetOS er data: PostgreSQL Row Level Security för organisationsisolering, EU-baserad drift och rollbaserad åtkomstkontroll.',
+  keywords: ['FleetOS säkerhet', 'datasäkerhet maskinuthyrning', 'GDPR maskinuthyrningssystem'],
+  alternates: { canonical: 'https://fleetos.se/sakerhet' },
+  openGraph: {
+    title: 'Säkerhet – hur FleetOS skyddar er data',
+    description: 'PostgreSQL Row Level Security, EU-baserad drift och rollbaserad åtkomstkontroll.',
+    url: 'https://fleetos.se/sakerhet',
+  },
+};
 
 const layers = [
   {

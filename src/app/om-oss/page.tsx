@@ -1,7 +1,19 @@
 ﻿import Image from 'next/image';
+import type { Metadata } from 'next';
 import PublicLayout from '@/components/layout/PublicLayout';
 
 export const revalidate = 86400;
+
+export const metadata: Metadata = {
+  title: 'Om oss',
+  description: 'FleetOS är en produkt från DSE ENTERPRISE AB, ett svenskt teknikbolag som bygger ett modernt uthyrningssystem för maskinuthyrningsbranschen.',
+  alternates: { canonical: 'https://fleetos.se/om-oss' },
+  openGraph: {
+    title: 'Om oss – FleetOS',
+    description: 'Ett svenskt teknikbolag som bygger ett modernt uthyrningssystem för maskinuthyrningsbranschen.',
+    url: 'https://fleetos.se/om-oss',
+  },
+};
 
 export default function OmOssPage() {
   return (

@@ -1,6 +1,18 @@
-﻿import PublicLayout from '@/components/layout/PublicLayout';
+﻿import type { Metadata } from 'next';
+import PublicLayout from '@/components/layout/PublicLayout';
 
 export const revalidate = 86400;
+
+export const metadata: Metadata = {
+  title: 'Användarvillkor',
+  description: 'Användarvillkor för FleetOS, uthyrningssystemet från DSE ENTERPRISE AB.',
+  alternates: { canonical: 'https://fleetos.se/villkor' },
+  openGraph: {
+    title: 'Användarvillkor – FleetOS',
+    description: 'Användarvillkor för FleetOS, uthyrningssystemet från DSE ENTERPRISE AB.',
+    url: 'https://fleetos.se/villkor',
+  },
+};
 
 export default function VillkorPage() {
   return (

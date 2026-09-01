@@ -1,6 +1,18 @@
-﻿import PublicLayout from '@/components/layout/PublicLayout';
+﻿import type { Metadata } from 'next';
+import PublicLayout from '@/components/layout/PublicLayout';
 
 export const revalidate = 86400;
+
+export const metadata: Metadata = {
+  title: 'Kontakt',
+  description: 'Kontakta FleetOS för frågor om support, försäljning eller press. Vi svarar normalt inom en arbetsdag.',
+  alternates: { canonical: 'https://fleetos.se/kontakt' },
+  openGraph: {
+    title: 'Kontakt – FleetOS',
+    description: 'Kontakta FleetOS för frågor om support, försäljning eller press.',
+    url: 'https://fleetos.se/kontakt',
+  },
+};
 
 export default function KontaktPage() {
   return (

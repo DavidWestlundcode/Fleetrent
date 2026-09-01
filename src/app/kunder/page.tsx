@@ -101,7 +101,7 @@ export default function KunderPage() {
             <p className="text-slate-500 text-[14px] mb-6">Vill ditt företag också effektivisera sin maskinuthyrning?</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link href="/kom-igang" className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors text-[14px]">
-                Starta gratis testperiod <ArrowRight className="w-4 h-4" />
+                Boka demo <ArrowRight className="w-4 h-4" />
               </Link>
               <a href="mailto:david@fleetos.se,elias@fleetos.se" className="flex items-center gap-2 px-6 py-3 border border-slate-200 hover:border-slate-300 text-slate-700 font-medium rounded-xl transition-colors text-[14px]">
                 Kontakta oss

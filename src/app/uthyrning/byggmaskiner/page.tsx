@@ -5,8 +5,8 @@ import PublicLayout from '@/components/layout/PublicLayout';
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: 'Uthyrningssystem för byggmaskiner och grävmaskiner | FleetOS',
-  description: 'Digitalt uthyrningssystem för byggmaskiner. Hantera grävmaskiner, hjullastare och kompaktlastare med hyresavtal, servicehistorik och Fortnox-integration. Prova gratis.',
+  title: 'Uthyrningssystem för byggmaskiner och grävmaskiner',
+  description: 'Digitalt uthyrningssystem för byggmaskiner. Hantera grävmaskiner, hjullastare och kompaktlastare med hyresavtal, servicehistorik och Fortnox-integration.',
   keywords: ['uthyrningssystem byggmaskiner', 'system grävmaskinuthyrning', 'hjullastare uthyrning program', 'byggmaskiner hyra system', 'maskinuthyrning bygg mjukvara'],
   alternates: { canonical: 'https://fleetos.se/uthyrning/byggmaskiner' },
   openGraph: {

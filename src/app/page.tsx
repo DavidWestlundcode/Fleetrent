@@ -1232,6 +1232,30 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Customers ── */}
+      <section className="py-20 px-6 bg-white border-t border-slate-100">
+        <div className="max-w-3xl mx-auto text-center">
+          <AnimateIn>
+            <p className="text-[12px] font-semibold text-blue-600 uppercase tracking-widest mb-3">Kunder</p>
+            <h2 className="text-2xl sm:text-[32px] font-bold text-slate-900 tracking-tight mb-10">
+              FleetOS används i verklig uthyrningsverksamhet
+            </h2>
+            <Link
+              href="/kunder/wts-machinery-solutions"
+              className="group inline-flex flex-col items-center gap-5 px-8 py-10 bg-slate-50/80 hover:bg-slate-50 border border-slate-200/80 hover:border-blue-200 rounded-2xl transition-all"
+            >
+              <img src="/wts-logo.png" alt="WTS Machinery Solutions" className="h-9 object-contain" />
+              <p className="text-[15px] text-slate-500 max-w-lg leading-relaxed">
+                WTS Machinery Solutions använder FleetOS för att hantera hela sin uthyrningsverksamhet — från maskinregister och order till avtal och fakturering.
+              </p>
+              <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-blue-600 group-hover:gap-2.5 transition-all">
+                Läs kundcaset <ArrowRight className="w-3.5 h-3.5" />
+              </span>
+            </Link>
+          </AnimateIn>
+        </div>
+      </section>
+
       {/* ── Final CTA ── */}
       <section className="py-28 px-6 bg-[#060D1A] relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
@@ -1259,7 +1283,7 @@ export default function LandingPage() {
               Kontakta oss
             </a>
           </div>
-          <p className="text-[12px] text-slate-600 mt-6">Ingen bindningstid · AI drivet · Full kontroll på intäkterna</p>
+          <p className="text-[12px] text-slate-600 mt-6">Ingen bindningstid · AI-drivet · Full kontroll på intäkterna</p>
         </AnimateIn>
       </section>
 
