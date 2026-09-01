@@ -251,6 +251,78 @@ export function getRealizedRevenueEvents(orders: RevenueOrder[]): { date: string
   return events;
 }
 
+type StatsOrder = {
+  status: string;
+  totalPrice: number;
+  startDate: string;
+  actualReturnDate?: string;
+  machineId: string;
+  customerId: string;
+  invoicePeriods?: { id: string; amount: number; days: number }[];
+  machineSwaps?: { fromMachineId: string; invoicePeriodId?: string }[];
+};
+
+// Computed live from orders/invoicePeriods instead of a stored running counter, so it's always
+// correct regardless of which code path created a given delfaktura (manual "Ny delfaktura", the
+// avtalshyra cron, or a Fortnox send) — there's no separate counter that a code path can forget
+// to update. "Realized" = invoiced periods, plus the remaining un-invoiced balance once an order
+// actually closes (avslutad/klar_for_fakturering) — matches getRealizedRevenueEvents above.
+export function getMachineStats(orders: StatsOrder[], machineId: string) {
+  let totalRevenue = 0;
+  let totalRentalDays = 0;
+  let totalRentals = 0;
+
+  for (const order of orders) {
+    if (order.status === 'annullerad') continue;
+    const periods = order.invoicePeriods ?? [];
+    const swaps = order.machineSwaps ?? [];
+    let invoicedAmount = 0;
+    let invoicedDays = 0;
+
+    for (const p of periods) {
+      invoicedAmount += p.amount;
+      invoicedDays += p.days;
+      // A period referenced by a swap's invoicePeriodId billed the OUTGOING machine's usage.
+      const swap = swaps.find((s) => s.invoicePeriodId === p.id);
+      const periodMachineId = swap ? swap.fromMachineId : order.machineId;
+      if (periodMachineId === machineId) {
+        totalRevenue += p.amount;
+        totalRentalDays += p.days;
+      }
+    }
+
+    const isClosed = order.status === 'avslutad' || order.status === 'klar_for_fakturering';
+    if (order.machineId === machineId && isClosed) {
+      totalRevenue += Math.max(0, order.totalPrice - invoicedAmount);
+      if (order.actualReturnDate) {
+        const totalDays = Math.max(1, Math.round(
+          (new Date(order.actualReturnDate).getTime() - new Date(order.startDate).getTime()) / 86400000
+        ));
+        totalRentalDays += Math.max(0, totalDays - invoicedDays);
+      }
+    }
+
+    if (order.machineId === machineId && order.status !== 'reserverad') totalRentals += 1;
+    if (swaps.some((s) => s.fromMachineId === machineId)) totalRentals += 1;
+  }
+
+  return { totalRevenue, totalRentalDays, totalRentals };
+}
+
+export function getCustomerTotalSpent(orders: StatsOrder[], customerId: string): number {
+  let total = 0;
+  for (const order of orders) {
+    if (order.status === 'annullerad' || order.customerId !== customerId) continue;
+    const periods = order.invoicePeriods ?? [];
+    const invoicedAmount = periods.reduce((s, p) => s + p.amount, 0);
+    total += invoicedAmount;
+    if (order.status === 'avslutad' || order.status === 'klar_for_fakturering') {
+      total += Math.max(0, order.totalPrice - invoicedAmount);
+    }
+  }
+  return total;
+}
+
 export function getMonthlyRevenueData(orders: RevenueOrder[]) {
   const months: Record<string, number> = {};
   const now = new Date();

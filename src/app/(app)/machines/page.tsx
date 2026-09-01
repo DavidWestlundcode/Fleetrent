@@ -9,7 +9,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { exportToCsv } from '@/lib/csv';
 import { useStore } from '@/store';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, getMachineStats } from '@/lib/utils';
 import { CATEGORY_LABELS, FUEL_LABELS, type MachineStatus, type Machine, type MachineCategory, type FuelType } from '@/lib/types';
 import type { SearchCriteria } from '@/app/api/search-machines/route';
 import Pagination from '@/components/ui/Pagination';
@@ -112,6 +112,13 @@ function MachinesPageInner() {
   const { machines, orders, maxMachines, updateMachine, deleteMachine } = useStore();
 
   const today = new Date().toISOString().split('T')[0];
+
+  const machineStatsMap = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof getMachineStats>>();
+    machines.forEach((m) => map.set(m.id, getMachineStats(orders, m.id)));
+    return map;
+  }, [machines, orders]);
+  const emptyStats = { totalRevenue: 0, totalRentalDays: 0, totalRentals: 0 };
 
   const reservedMachineIds = useMemo(() => {
     const ids = new Set<string>();
@@ -390,7 +397,7 @@ function MachinesPageInner() {
               </Link>
             )}
             <button
-              onClick={() => exportToCsv('maskiner.csv', machinesToCsvRows(filtered))}
+              onClick={() => exportToCsv('maskiner.csv', machinesToCsvRows(filtered, machineStatsMap))}
               className="flex items-center gap-1.5 px-3.5 py-[7px] bg-white text-slate-700 border border-slate-200 text-[13px] font-medium rounded-xl hover:bg-slate-50 transition-all"
             >
               <Download className="w-3.5 h-3.5" />
@@ -679,7 +686,7 @@ function MachinesPageInner() {
                 ))}
               </select>
               <button
-                onClick={() => exportToCsv('maskiner.csv', machinesToCsvRows(selectedMachines))}
+                onClick={() => exportToCsv('maskiner.csv', machinesToCsvRows(selectedMachines, machineStatsMap))}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
@@ -763,8 +770,8 @@ function MachinesPageInner() {
                         })()}
                       </div>
                     </td>
-                    <td className="px-4 py-3.5 text-[13px] font-medium text-slate-700">{formatCurrency(machine.totalRevenue)}</td>
-                    <td className="px-4 py-3.5 text-[13px] text-slate-600">{machine.totalRentals} st</td>
+                    <td className="px-4 py-3.5 text-[13px] font-medium text-slate-700">{formatCurrency((machineStatsMap.get(machine.id) ?? emptyStats).totalRevenue)}</td>
+                    <td className="px-4 py-3.5 text-[13px] text-slate-600">{(machineStatsMap.get(machine.id) ?? emptyStats).totalRentals} st</td>
                     <td className="px-4 py-3.5 text-[12px] text-slate-400">{machine.location}</td>
                     <td className="px-4 py-3.5">
                       <Link href={`/machines/${machine.id}`} className="text-[12px] font-medium text-blue-600 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -819,11 +826,11 @@ function MachinesPageInner() {
                 <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between">
                   <div>
                     <p className="text-[10px] text-slate-400 uppercase tracking-wide">Intäkt</p>
-                    <p className="text-[13px] font-semibold text-slate-700 mt-0.5">{formatCurrency(machine.totalRevenue)}</p>
+                    <p className="text-[13px] font-semibold text-slate-700 mt-0.5">{formatCurrency((machineStatsMap.get(machine.id) ?? emptyStats).totalRevenue)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] text-slate-400 uppercase tracking-wide">Uthyrn.</p>
-                    <p className="text-[13px] font-semibold text-slate-700 mt-0.5">{machine.totalRentals} st</p>
+                    <p className="text-[13px] font-semibold text-slate-700 mt-0.5">{(machineStatsMap.get(machine.id) ?? emptyStats).totalRentals} st</p>
                   </div>
                 </div>
               </Link>
@@ -857,21 +864,24 @@ function MachinesPageInner() {
   );
 }
 
-function machinesToCsvRows(list: Machine[]) {
-  return list.map((m) => ({
-    Namn: m.name,
-    'Intern kod': m.internalCode,
-    Fabrikat: m.brand,
-    Modell: m.model,
-    Kategori: CATEGORY_LABELS[m.category],
-    Drivmedel: FUEL_LABELS[m.fuelType],
-    'Kapacitet (kg)': m.capacity,
-    Drifttimmar: m.operatingHours,
-    Status: m.status,
-    Plats: m.location,
-    'Total intäkt': m.totalRevenue,
-    'Antal uthyrningar': m.totalRentals,
-  }));
+function machinesToCsvRows(list: Machine[], statsMap: Map<string, ReturnType<typeof getMachineStats>>) {
+  return list.map((m) => {
+    const stats = statsMap.get(m.id) ?? { totalRevenue: 0, totalRentalDays: 0, totalRentals: 0 };
+    return {
+      Namn: m.name,
+      'Intern kod': m.internalCode,
+      Fabrikat: m.brand,
+      Modell: m.model,
+      Kategori: CATEGORY_LABELS[m.category],
+      Drivmedel: FUEL_LABELS[m.fuelType],
+      'Kapacitet (kg)': m.capacity,
+      Drifttimmar: m.operatingHours,
+      Status: m.status,
+      Plats: m.location,
+      'Total intäkt': stats.totalRevenue,
+      'Antal uthyrningar': stats.totalRentals,
+    };
+  });
 }
 
 export default function MachinesPage() {

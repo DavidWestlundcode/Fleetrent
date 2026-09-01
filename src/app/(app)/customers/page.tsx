@@ -5,7 +5,7 @@ import { Plus, Search, Building2, Phone, Mail, TrendingUp, Ban, Download, Check 
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, getCustomerTotalSpent } from '@/lib/utils';
 import Pagination from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
 import { exportToCsv } from '@/lib/csv';
@@ -13,7 +13,7 @@ import type { Customer } from '@/lib/types';
 
 const PAGE_SIZE = 48;
 
-function customersToCsvRows(list: Customer[]) {
+function customersToCsvRows(list: Customer[], spentMap: Map<string, number>) {
   return list.map((c) => ({
     Företagsnamn: c.companyName,
     'Org.nr': c.orgNumber,
@@ -21,7 +21,7 @@ function customersToCsvRows(list: Customer[]) {
     Telefon: c.phone,
     'E-post': c.email,
     'Aktiva order': c.activeOrders,
-    'Totalt spenderat': c.totalSpent,
+    'Totalt spenderat': spentMap.get(c.id) ?? 0,
   }));
 }
 
@@ -30,6 +30,12 @@ export default function CustomersPage() {
   const [search, setSearch] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [page, setPage] = useState(1);
+
+  const customerSpentMap = useMemo(() => {
+    const map = new Map<string, number>();
+    customers.forEach((c) => map.set(c.id, getCustomerTotalSpent(orders, c.id)));
+    return map;
+  }, [customers, orders]);
 
   const hasActiveFilters = !!search;
   const clearAllFilters = () => setSearch('');
@@ -86,7 +92,7 @@ export default function CustomersPage() {
         actions={
           <div className="flex items-center gap-2.5">
             <button
-              onClick={() => exportToCsv('kunder.csv', customersToCsvRows(filtered))}
+              onClick={() => exportToCsv('kunder.csv', customersToCsvRows(filtered, customerSpentMap))}
               className="flex items-center gap-1.5 px-3.5 py-[7px] bg-white text-slate-700 border border-slate-200 text-[13px] font-medium rounded-xl hover:bg-slate-50 transition-all"
             >
               <Download className="w-3.5 h-3.5" />
@@ -138,7 +144,7 @@ export default function CustomersPage() {
             </button>
             <div className="ml-auto flex items-center gap-2">
               <button
-                onClick={() => exportToCsv('kunder.csv', customersToCsvRows(selectedCustomers))}
+                onClick={() => exportToCsv('kunder.csv', customersToCsvRows(selectedCustomers, customerSpentMap))}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
@@ -214,7 +220,7 @@ export default function CustomersPage() {
                     <p className="text-[10px] text-slate-400 uppercase tracking-wide">Total intäkt</p>
                     <p className="text-[13px] font-semibold text-emerald-600 flex items-center gap-1 justify-end mt-0.5">
                       <TrendingUp className="w-3 h-3" />
-                      {formatCurrency(customer.totalSpent)}
+                      {formatCurrency(customerSpentMap.get(customer.id) ?? 0)}
                     </p>
                   </div>
                 </div>

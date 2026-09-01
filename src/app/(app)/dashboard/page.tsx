@@ -13,7 +13,7 @@ import Header from '@/components/layout/Header';
 import StatCard from '@/components/ui/StatCard';
 import { MachineStatusBadge, OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
-import { formatCurrency, formatDate, getMonthlyRevenueData, getRealizedRevenueEvents, daysUntil } from '@/lib/utils';
+import { formatCurrency, formatDate, getMonthlyRevenueData, getRealizedRevenueEvents, getMachineStats, daysUntil } from '@/lib/utils';
 
 const MACHINE_STATUS_COLORS: Record<string, string> = {
   'I lager': '#10B981',
@@ -88,8 +88,11 @@ export default function DashboardPage() {
   );
 
   const topMachines = useMemo(
-    () => [...machines].sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 5),
-    [machines]
+    () => machines
+      .map((m) => ({ machine: m, stats: getMachineStats(orders, m.id) }))
+      .sort((a, b) => b.stats.totalRevenue - a.stats.totalRevenue)
+      .slice(0, 5),
+    [machines, orders]
   );
 
   const overdueOrders = useMemo(
@@ -249,7 +252,7 @@ export default function DashboardPage() {
               </Link>
             </div>
             <div className="divide-y divide-slate-50">
-              {topMachines.map((machine, i) => (
+              {topMachines.map(({ machine, stats }, i) => (
                 <Link
                   key={machine.id}
                   href={`/machines/${machine.id}`}
@@ -260,10 +263,10 @@ export default function DashboardPage() {
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-medium text-slate-800 truncate">{machine.name}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">{machine.totalRentals} uthyrn. · {machine.totalRentalDays} dagar</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">{stats.totalRentals} uthyrn. · {stats.totalRentalDays} dagar</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-[13px] font-semibold text-slate-700">{formatCurrency(machine.totalRevenue)}</p>
+                    <p className="text-[13px] font-semibold text-slate-700">{formatCurrency(stats.totalRevenue)}</p>
                     <MachineStatusBadge status={machine.status} />
                   </div>
                 </Link>

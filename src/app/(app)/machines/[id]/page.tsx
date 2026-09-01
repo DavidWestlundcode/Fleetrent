@@ -15,7 +15,7 @@ import { OrderStatusBadge } from '@/components/ui/StatusBadge';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useStore } from '@/store';
 import {
-  formatCurrency, formatDate, calculateRecoveryPercent, calculateROI, getRealizedRevenueEvents,
+  formatCurrency, formatDate, calculateRecoveryPercent, calculateROI, getRealizedRevenueEvents, getMachineStats,
 } from '@/lib/utils';
 import { CATEGORY_LABELS, FUEL_LABELS } from '@/lib/types';
 
@@ -48,14 +48,21 @@ export default function MachineDetailPage() {
     [orders, id]
   );
   const machineHistoryRows = useMemo(() => {
-    const direct = machineOrders.map((order) => ({
-      key: order.id,
-      order,
-      periodStart: order.startDate,
-      periodEnd: order.plannedReturnDate,
-      amount: order.totalPrice,
-      swapped: false as const,
-    }));
+    const direct = machineOrders.map((order) => {
+      const isClosed = order.status === 'avslutad' || order.status === 'klar_for_fakturering';
+      const invoicedAmount = (order.invoicePeriods ?? []).reduce((s, p) => s + p.amount, 0);
+      return {
+        key: order.id,
+        order,
+        periodStart: order.startDate,
+        // Open-ended avtalshyra orders have no plannedReturnDate — nothing to show as an end date yet.
+        periodEnd: order.actualReturnDate ?? order.plannedReturnDate ?? null,
+        // Once closed, order.totalPrice is the accurate final total (set at return); while still
+        // running, it's just the estimate from creation — show what's actually been invoiced instead.
+        amount: isClosed ? order.totalPrice : invoicedAmount,
+        swapped: false as const,
+      };
+    });
     const swapped = swappedAwayEntries.map(({ order, swap }) => {
       const period = order.invoicePeriods?.find((p) => p.id === swap.invoicePeriodId);
       return {
@@ -128,13 +135,15 @@ export default function MachineDetailPage() {
     machine.cabin && { label: 'Hytt', value: machine.cabin },
   ].filter(Boolean) as { label: string; value: string }[];
 
+  const machineStats = useMemo(() => getMachineStats(orders, machine.id), [orders, machine.id]);
+
   const totalCosts = machine.purchasePrice + machine.leasingCost * 12 + machine.financingCost * 12 +
     machine.insuranceCost * 12 + machine.totalServiceCost + machine.otherCosts * 12;
-  const netResult = machine.totalRevenue - totalCosts;
-  const recoveryPercent = calculateRecoveryPercent(machine.totalRevenue, machine.purchasePrice);
-  const roi = calculateROI(machine.totalRevenue, totalCosts);
+  const netResult = machineStats.totalRevenue - totalCosts;
+  const recoveryPercent = calculateRecoveryPercent(machineStats.totalRevenue, machine.purchasePrice);
+  const roi = calculateROI(machineStats.totalRevenue, totalCosts);
   const monthlyCost = (machine.leasingCost + machine.financingCost + machine.insuranceCost + machine.otherCosts);
-  const avgMonthlyRevenue = machine.totalRentals > 0 ? machine.totalRevenue / 12 : 0;
+  const avgMonthlyRevenue = machineStats.totalRentals > 0 ? machineStats.totalRevenue / 12 : 0;
 
   return (
     <div className="flex flex-col flex-1 overflow-auto">
@@ -322,7 +331,7 @@ export default function MachineDetailPage() {
                             ) : '–'}
                           </td>
                           <td className="px-4 py-3 text-slate-600 text-xs">
-                            {formatDate(row.periodStart)} – {formatDate(row.periodEnd)}
+                            {formatDate(row.periodStart)} – {row.periodEnd ? formatDate(row.periodEnd) : 'Pågående'}
                           </td>
                           <td className="px-4 py-3 font-medium">{formatCurrency(row.amount)}</td>
                           <td className="px-4 py-3">
@@ -405,7 +414,7 @@ export default function MachineDetailPage() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-500">Total intäkt</span>
-                  <span className="text-sm font-semibold text-emerald-600">{formatCurrency(machine.totalRevenue)}</span>
+                  <span className="text-sm font-semibold text-emerald-600">{formatCurrency(machineStats.totalRevenue)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-500">Totala kostnader</span>
@@ -442,7 +451,7 @@ export default function MachineDetailPage() {
                 </div>
                 <p className="text-xs text-slate-500 mt-1.5">
                   {recoveryPercent < 100
-                    ? `${formatCurrency(machine.purchasePrice - machine.totalRevenue)} kvar till break-even`
+                    ? `${formatCurrency(machine.purchasePrice - machineStats.totalRevenue)} kvar till break-even`
                     : `Break-even uppnådd!`}
                 </p>
               </div>
@@ -453,9 +462,9 @@ export default function MachineDetailPage() {
               <h3 className="font-semibold text-slate-900 mb-3">Nyckeltal</h3>
               <div className="space-y-3">
                 {[
-                  { label: 'Antal uthyrningar', value: machine.totalRentals.toString() },
-                  { label: 'Totalt uthyrda dagar', value: `${machine.totalRentalDays} dagar` },
-                  { label: 'Snittintäkt/uthyrning', value: machine.totalRentals > 0 ? formatCurrency(machine.totalRevenue / machine.totalRentals) : '–' },
+                  { label: 'Antal uthyrningar', value: machineStats.totalRentals.toString() },
+                  { label: 'Totalt uthyrda dagar', value: `${machineStats.totalRentalDays} dagar` },
+                  { label: 'Snittintäkt/uthyrning', value: machineStats.totalRentals > 0 ? formatCurrency(machineStats.totalRevenue / machineStats.totalRentals) : '–' },
                   { label: 'Snitt månadsintäkt', value: formatCurrency(avgMonthlyRevenue) },
                   { label: 'Månadskostnad', value: formatCurrency(monthlyCost) },
                   { label: 'Servicekostnader', value: formatCurrency(machine.totalServiceCost) },

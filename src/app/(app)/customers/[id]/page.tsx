@@ -7,7 +7,7 @@ import Header from '@/components/layout/Header';
 import { OrderStatusBadge } from '@/components/ui/StatusBadge';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useStore } from '@/store';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, getCustomerTotalSpent } from '@/lib/utils';
 import type { SpMachine } from '@/lib/types';
 
 export default function CustomerDetailPage() {
@@ -42,6 +42,7 @@ export default function CustomerDetailPage() {
   const [dialog, setDialog] = useState<'deactivate' | 'delete' | 'blocked' | null>(null);
   const activeOrders = customerOrders.filter((o) => o.status === 'aktiv' || o.status === 'reserverad');
   const completedOrders = customerOrders.filter((o) => o.status === 'avslutad');
+  const totalSpent = getCustomerTotalSpent(orders, customer.id);
   const isActive = customer.isActive !== false;
 
   const handleDeactivate = () => setDialog('deactivate');
@@ -187,7 +188,7 @@ export default function CustomerDetailPage() {
                 customer.fortnoxCustomerNumber
                   ? { label: 'Kundnummer', value: customer.fortnoxCustomerNumber, color: 'text-slate-700' }
                   : null,
-                { label: 'Total hyresintäkt', value: formatCurrency(customer.totalSpent), color: 'text-emerald-600' },
+                { label: 'Total hyresintäkt', value: formatCurrency(totalSpent), color: 'text-emerald-600' },
                 { label: 'Aktiva order', value: activeOrders.length.toString(), color: 'text-blue-600' },
                 { label: 'Avslutade order', value: completedOrders.length.toString(), color: 'text-slate-700' },
                 { label: 'Totalt antal order', value: customerOrders.length.toString(), color: 'text-slate-700' },

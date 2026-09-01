@@ -8,7 +8,7 @@ import {
 import { TrendingUp, TrendingDown, Truck, DollarSign, BarChart2, Activity, ArrowRight } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
-import { formatCurrency, calculateROI, calculateRecoveryPercent, getMonthlyRevenueData, getRealizedRevenueByYear } from '@/lib/utils';
+import { formatCurrency, calculateROI, calculateRecoveryPercent, getMonthlyRevenueData, getRealizedRevenueByYear, getMachineStats, getCustomerTotalSpent } from '@/lib/utils';
 import { CATEGORY_LABELS } from '@/lib/types';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#F97316', '#06B6D4', '#84CC16'];
@@ -16,10 +16,17 @@ const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#F97316'
 export default function StatisticsPage() {
   const { machines, orders, customers } = useStore();
 
+  const machineStatsMap = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof getMachineStats>>();
+    machines.forEach((m) => map.set(m.id, getMachineStats(orders, m.id)));
+    return map;
+  }, [machines, orders]);
+  const revenueOf = (machineId: string) => machineStatsMap.get(machineId)?.totalRevenue ?? 0;
+
   const stats = useMemo(() => {
-    // Realized (fakturerat/avslutat) revenue only — same source machine.totalRevenue is built from,
-    // so this always matches "Intäkt per kategori" and "Maskinlönsamhet" below.
-    const totalRevenue = machines.reduce((s, m) => s + m.totalRevenue, 0);
+    // Realized (fakturerat/avslutat) revenue only — computed live from invoicePeriods, same source
+    // "Intäkt per kategori" and "Maskinlönsamhet" below use, so they always agree with each other.
+    const totalRevenue = machines.reduce((s, m) => s + revenueOf(m.id), 0);
     const totalMachineCosts = machines.reduce((s, m) => s + m.purchasePrice + m.totalServiceCost + (m.financingCost + m.insuranceCost + m.otherCosts) * 12, 0);
     const netResult = totalRevenue - totalMachineCosts;
     const avgOccupancy = machines.length > 0
@@ -36,7 +43,7 @@ export default function StatisticsPage() {
       : null;
 
     return { totalRevenue, totalMachineCosts, netResult, avgOccupancy, totalRentals, revenueTrendPct };
-  }, [machines, orders]);
+  }, [machines, orders, machineStatsMap]);
 
   const revenueByMonth = useMemo(() => getMonthlyRevenueData(orders), [orders]);
 
@@ -44,35 +51,37 @@ export default function StatisticsPage() {
     const byCategory: Record<string, number> = {};
     machines.forEach((m) => {
       const label = CATEGORY_LABELS[m.category];
-      byCategory[label] = (byCategory[label] ?? 0) + m.totalRevenue;
+      byCategory[label] = (byCategory[label] ?? 0) + revenueOf(m.id);
     });
     return Object.entries(byCategory).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [machines]);
+  }, [machines, machineStatsMap]);
 
   const revenueByCustomer = useMemo(() => {
-    return [...customers]
-      .filter((c) => c.totalSpent > 0)
-      .sort((a, b) => b.totalSpent - a.totalSpent)
+    return customers
+      .map((c) => ({ customer: c, spent: getCustomerTotalSpent(orders, c.id) }))
+      .filter(({ spent }) => spent > 0)
+      .sort((a, b) => b.spent - a.spent)
       .slice(0, 8)
-      .map((c) => ({ name: c.companyName.substring(0, 20), value: c.totalSpent }));
-  }, [customers]);
+      .map(({ customer, spent }) => ({ name: customer.companyName.substring(0, 20), value: spent }));
+  }, [customers, orders]);
 
   const topMachines = useMemo(() =>
-    [...machines].sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 10),
-    [machines]
+    [...machines].sort((a, b) => revenueOf(b.id) - revenueOf(a.id)).slice(0, 10),
+    [machines, machineStatsMap]
   );
 
   const machineROIData = useMemo(() =>
     machines.map((m) => {
       const totalCosts = m.purchasePrice + m.totalServiceCost + (m.financingCost + m.insuranceCost + m.otherCosts) * 12;
+      const revenue = revenueOf(m.id);
       return {
         name: m.name.length > 20 ? m.name.substring(0, 18) + '...' : m.name,
-        intäkt: m.totalRevenue,
+        intäkt: revenue,
         kostnad: totalCosts,
-        netto: m.totalRevenue - totalCosts,
+        netto: revenue - totalCosts,
       };
     }).sort((a, b) => b.netto - a.netto),
-    [machines]
+    [machines, machineStatsMap]
   );
 
   const tooltipStyle = {
@@ -222,9 +231,10 @@ export default function StatisticsPage() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {topMachines.map((machine, i) => {
+                const machineStats = machineStatsMap.get(machine.id) ?? { totalRevenue: 0, totalRentalDays: 0, totalRentals: 0 };
                 const totalCosts = machine.purchasePrice + machine.totalServiceCost + (machine.financingCost + machine.insuranceCost + machine.otherCosts) * 12;
-                const roi = calculateROI(machine.totalRevenue, totalCosts);
-                const recovery = calculateRecoveryPercent(machine.totalRevenue, machine.purchasePrice);
+                const roi = calculateROI(machineStats.totalRevenue, totalCosts);
+                const recovery = calculateRecoveryPercent(machineStats.totalRevenue, machine.purchasePrice);
                 return (
                   <tr key={machine.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="px-5 py-3.5">
@@ -236,9 +246,9 @@ export default function StatisticsPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-[13px] text-slate-500">{machine.totalRentals}</td>
-                    <td className="px-5 py-3.5 text-[13px] text-slate-500">{machine.totalRentalDays}</td>
-                    <td className="px-5 py-3.5 text-[13px] font-semibold text-emerald-600">{formatCurrency(machine.totalRevenue)}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-slate-500">{machineStats.totalRentals}</td>
+                    <td className="px-5 py-3.5 text-[13px] text-slate-500">{machineStats.totalRentalDays}</td>
+                    <td className="px-5 py-3.5 text-[13px] font-semibold text-emerald-600">{formatCurrency(machineStats.totalRevenue)}</td>
                     <td className="px-5 py-3.5 text-[13px] text-slate-500">{formatCurrency(machine.purchasePrice)}</td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2">
