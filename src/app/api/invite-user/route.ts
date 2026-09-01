@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse, type NextRequest } from 'next/server';
+import { Resend } from 'resend';
 import { LIMITS } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('organization_id, role')
+      .select('organization_id, role, full_name')
       .eq('id', user.id)
       .single();
 
@@ -72,7 +73,32 @@ export async function POST(request: NextRequest) {
     // Build a direct link to our confirm page — bypasses PKCE completely
     const link = `${origin}/auth/confirm?token_hash=${encodeURIComponent(hashedToken)}&type=recovery`;
 
-    return NextResponse.json({ success: true, link });
+    // Email the invite directly — the admin no longer has to copy/paste the link themselves.
+    let emailSent = false;
+    const apiKey = process.env.RESEND_API_KEY;
+    if (apiKey) {
+      const { data: org } = await admin.from('organizations').select('name').eq('id', profile.organization_id).single();
+      const inviterName = profile.full_name || user.email || 'En kollega';
+      const orgName = org?.name ?? 'företaget';
+      const resend = new Resend(apiKey);
+      const { error: emailError } = await resend.emails.send({
+        from: 'FleetOS <inbjudan@fleetos.se>',
+        to: email,
+        subject: `${inviterName} har bjudit in dig till ${orgName} på FleetOS`,
+        text: [
+          `${inviterName} har bjudit in dig att ansluta till ${orgName} på FleetOS.`,
+          '',
+          `Klicka på länken nedan för att skapa ditt lösenord och komma igång:`,
+          link,
+          '',
+          'Länken är giltig i 24 timmar.',
+        ].join('\n'),
+      });
+      if (emailError) console.error('[invite-user] Failed to send invite email:', emailError);
+      else emailSent = true;
+    }
+
+    return NextResponse.json({ success: true, link, emailSent });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Okänt fel';
     return NextResponse.json({ error: msg }, { status: 500 });
