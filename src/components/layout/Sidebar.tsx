@@ -10,6 +10,12 @@ import { createClient } from '@/lib/supabase/client';
 import { useMobileNav } from '@/components/layout/MobileNav';
 import type { User } from '@supabase/supabase-js';
 
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Admin',
+  saljare: 'Säljare',
+  verkstad: 'Verkstad',
+};
+
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/machines', icon: Truck, label: 'Maskinflotta' },
@@ -24,11 +30,18 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<{ full_name: string | null; role: string | null } | null>(null);
   const { isOpen, close } = useMobileNav();
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      if (data.user) {
+        supabase.from('profiles').select('full_name, role').eq('id', data.user.id).single()
+          .then(({ data: p }) => setProfile(p));
+      }
+    });
   }, []);
 
   const handleLogout = async () => {
@@ -37,8 +50,9 @@ export default function Sidebar() {
     window.location.href = '/login';
   };
 
-  const displayName = user?.user_metadata?.full_name ?? user?.email ?? '';
+  const displayName = profile?.full_name || user?.email || '';
   const initials = displayName.charAt(0).toUpperCase() || '?';
+  const roleLabel = ROLE_LABELS[profile?.role ?? ''] ?? 'Säljare';
 
   return (
     <aside className={`
@@ -104,7 +118,7 @@ export default function Sidebar() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[12.5px] font-medium text-white truncate leading-[1.3]">{displayName}</p>
-            <p className="text-[11px] text-[#4B5568] leading-[1.3]">Admin</p>
+            <p className="text-[11px] text-[#4B5568] leading-[1.3]">{roleLabel}</p>
           </div>
         </div>
         <button

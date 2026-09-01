@@ -1,6 +1,6 @@
 ﻿'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Save, User, Building2, Globe, Mail, Loader2, CheckCircle2, XCircle, Link2, Link2Off, Shield, Phone } from 'lucide-react';
+import { Save, User, Building2, Globe, Mail, Loader2, CheckCircle2, XCircle, Link2, Link2Off, Shield, Phone, Pencil } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { createClient } from '@/lib/supabase/client';
@@ -152,6 +152,12 @@ function SettingsInner() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [members, setMembers] = useState<Member[]>([]);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [editMemberName, setEditMemberName] = useState('');
+  const [editMemberRole, setEditMemberRole] = useState('saljare');
+  const [editMemberSaving, setEditMemberSaving] = useState(false);
+  const [editMemberError, setEditMemberError] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteStatus, setInviteStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [inviteError, setInviteError] = useState('');
@@ -181,6 +187,7 @@ function SettingsInner() {
   const [spOrgId, setSpOrgId] = useState<string | null>(null);
 
   const { userId } = useStore();
+  const isAdmin = currentUserRole === 'admin';
 
   const [org, setOrg] = useState<OrgForm>({
     name: '',
@@ -207,13 +214,14 @@ function SettingsInner() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('organization_id, full_name, phone, cost_center')
+        .select('organization_id, full_name, phone, cost_center, role')
         .eq('id', user.id)
         .single();
 
       setProfileName((profile?.full_name as string) ?? '');
       setProfilePhone((profile?.phone as string) ?? '');
       setProfileCostCenter((profile?.cost_center as string) ?? '');
+      setCurrentUserRole((profile?.role as string) ?? null);
 
       const oid = profile?.organization_id as string | null;
       setOrgId(oid);
@@ -368,6 +376,33 @@ function SettingsInner() {
     } catch (err) {
       setInviteError(err instanceof Error ? err.message : 'Något gick fel');
       setInviteStatus('error');
+    }
+  };
+
+  const startEditingMember = (m: Member) => {
+    setEditingMemberId(m.id);
+    setEditMemberName(m.fullName === '(Ej namngivet)' ? '' : m.fullName);
+    setEditMemberRole(m.role);
+    setEditMemberError('');
+  };
+
+  const handleSaveMember = async (memberId: string) => {
+    setEditMemberSaving(true);
+    setEditMemberError('');
+    try {
+      const res = await fetch('/api/update-member', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: memberId, fullName: editMemberName, role: editMemberRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setMembers((prev) => prev.map((m) => m.id === memberId ? { ...m, fullName: editMemberName || '(Ej namngivet)', role: editMemberRole } : m));
+      setEditingMemberId(null);
+    } catch (err) {
+      setEditMemberError(err instanceof Error ? err.message : 'Något gick fel');
+    } finally {
+      setEditMemberSaving(false);
     }
   };
 
@@ -588,41 +623,100 @@ function SettingsInner() {
                     <p className="text-sm text-slate-400">Inga medlemmar hittades.</p>
                   ) : (
                     <div className="space-y-2">
-                      {members.map((m) => (
-                        <div key={m.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold shrink-0">
-                              {m.fullName.charAt(0).toUpperCase()}
+                      {members.map((m) => {
+                        const isSelf = m.id === (userId ?? currentUser?.id);
+                        const isEditing = editingMemberId === m.id;
+                        return (
+                        <div key={m.id} className="p-4 bg-slate-50 rounded-lg">
+                          {isEditing ? (
+                            <div className="space-y-3">
+                              <div className="flex gap-2 flex-wrap">
+                                <input
+                                  type="text"
+                                  value={editMemberName}
+                                  onChange={(e) => setEditMemberName(e.target.value)}
+                                  placeholder="Namn"
+                                  className={`${inputClass} flex-1 min-w-[160px]`}
+                                />
+                                <select
+                                  value={editMemberRole}
+                                  onChange={(e) => setEditMemberRole(e.target.value)}
+                                  className={`${inputClass} w-40`}
+                                >
+                                  <option value="admin">Admin</option>
+                                  <option value="saljare">Säljare</option>
+                                  <option value="verkstad">Verkstad</option>
+                                </select>
+                              </div>
+                              {editMemberError && <p className="text-xs text-red-600">{editMemberError}</p>}
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveMember(m.id)}
+                                  disabled={editMemberSaving}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors cursor-pointer disabled:opacity-60"
+                                >
+                                  {editMemberSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                                  Spara
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingMemberId(null)}
+                                  className="px-3 py-1.5 text-xs font-medium bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                                >
+                                  Avbryt
+                                </button>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-sm font-medium text-slate-800">
-                                {m.fullName}
-                                {m.id === (userId ?? currentUser?.id) && (
-                                  <span className="ml-2 text-xs text-blue-600">(Du)</span>
+                          ) : (
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                                  {m.fullName.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-slate-800">
+                                    {m.fullName}
+                                    {isSelf && (
+                                      <span className="ml-2 text-xs text-blue-600">(Du)</span>
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {m.role === 'admin' && (
+                                  <Shield className="w-3.5 h-3.5 text-blue-500" />
                                 )}
-                              </p>
+                                <span className={`text-xs px-2.5 py-1 rounded-full border ${
+                                  m.role === 'admin'
+                                    ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                    : m.role === 'verkstad'
+                                    ? 'bg-orange-50 border-orange-200 text-orange-700'
+                                    : 'bg-slate-50 border-slate-200 text-slate-600'
+                                }`}>
+                                  {ROLE_LABELS[m.role] ?? m.role}
+                                </span>
+                                {isAdmin && !isSelf && (
+                                  <button
+                                    type="button"
+                                    onClick={() => startEditingMember(m)}
+                                    className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+                                    aria-label="Redigera medlem"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {m.role === 'admin' && (
-                              <Shield className="w-3.5 h-3.5 text-blue-500" />
-                            )}
-                            <span className={`text-xs px-2.5 py-1 rounded-full border ${
-                              m.role === 'admin'
-                                ? 'bg-blue-50 border-blue-200 text-blue-700'
-                                : m.role === 'verkstad'
-                                ? 'bg-orange-50 border-orange-200 text-orange-700'
-                                : 'bg-slate-50 border-slate-200 text-slate-600'
-                            }`}>
-                              {ROLE_LABELS[m.role] ?? m.role}
-                            </span>
-                          </div>
+                          )}
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
 
+                {isAdmin && (
                 <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
                   <h2 className="font-semibold text-slate-900 mb-1">Bjud in medarbetare</h2>
                   <p className="text-sm text-slate-500 mb-4">De får ett e-postmeddelande med en länk för att skapa sitt konto och ansluta till ditt företag.</p>
@@ -680,7 +774,9 @@ function SettingsInner() {
                     </div>
                   )}
                 </div>
+                )}
 
+                {isAdmin && (
                 <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
                   <h2 className="font-semibold text-slate-900 mb-1">Skapa användare manuellt</h2>
                   <p className="text-sm text-slate-500 mb-4">Skapa ett konto direkt utan e-postinbjudan. Dela inloggningsuppgifterna med medarbetaren.</p>
@@ -738,6 +834,7 @@ function SettingsInner() {
                     </div>
                   )}
                 </div>
+                )}
               </div>
             )}
 
