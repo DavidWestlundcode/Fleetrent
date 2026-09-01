@@ -823,7 +823,7 @@ export default function LandingPage() {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: "url('/Rental-truck-demo-picture.png')" }}
         />
-        <div className="absolute inset-0 bg-[#060D1A]/80" />
+        <div className="absolute inset-0 bg-[#060D1A]/70" />
         <div className="relative max-w-5xl mx-auto px-6">
           <AnimateIn>
             <div className="flex flex-col sm:flex-row items-center justify-between gap-5 bg-white/[0.04] border border-white/[0.08] rounded-2xl px-6 py-5">
