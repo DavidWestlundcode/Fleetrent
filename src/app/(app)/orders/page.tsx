@@ -9,23 +9,8 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import EmptyState from '@/components/ui/EmptyState';
 import { exportToCsv } from '@/lib/csv';
 import { useStore } from '@/store';
-import { formatCurrency, formatDate, daysUntil } from '@/lib/utils';
+import { formatCurrency, formatDate, daysUntil, needsPartialInvoice } from '@/lib/utils';
 import type { Order, OrderStatus, Machine, Customer, InvoicePeriod } from '@/lib/types';
-
-const DAYS_THRESHOLD = 30;
-
-function daysSinceLastInvoice(order: Order): number {
-  const periods = order.invoicePeriods ?? [];
-  const referenceDate = periods.length > 0
-    ? periods.reduce((latest, p) => p.endDate > latest ? p.endDate : latest, periods[0].endDate)
-    : order.startDate;
-  return Math.floor((Date.now() - new Date(referenceDate).getTime()) / 86400000);
-}
-
-function needsPartialInvoice(order: Order): boolean {
-  if (order.status !== 'aktiv' || order.isLongTerm) return false;
-  return daysSinceLastInvoice(order) >= DAYS_THRESHOLD;
-}
 import Pagination from '@/components/ui/Pagination';
 
 const PAGE_SIZE = 50;

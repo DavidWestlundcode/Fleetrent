@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { X, AlertTriangle, Clock, Calendar, Wrench, AlertCircle, FileCheck } from 'lucide-react';
 import { useStore } from '@/store';
 import { getDismissed, dismissNotification, pruneDismissed } from '@/lib/notificationDismissals';
+import { needsPartialInvoice, daysSinceLastInvoice } from '@/lib/utils';
 
 type NotifType = 'error' | 'warning' | 'info' | 'success';
 
@@ -130,6 +131,18 @@ function computeNotifications(
         id: `invoice-${o.id}`,
         type: 'success',
         title: `Klar för fakturering — ${o.orderNumber}`,
+        desc: `${label}${customerName ? ` · ${customerName}` : ''}`,
+        href: `/orders/${o.id}`,
+      });
+    }
+
+    // 30+ dagar utan delfaktura (kortsiktiga ordrar — avtalshyra sköts av cronjobbet)
+    if (needsPartialInvoice(o)) {
+      const days = daysSinceLastInvoice(o);
+      notifs.push({
+        id: `partial-invoice-${o.id}`,
+        type: 'warning',
+        title: `${days} dagar sedan senaste fakturering — ${o.orderNumber}`,
         desc: `${label}${customerName ? ` · ${customerName}` : ''}`,
         href: `/orders/${o.id}`,
       });

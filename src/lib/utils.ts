@@ -323,6 +323,31 @@ export function getCustomerTotalSpent(orders: StatsOrder[], customerId: string):
   return total;
 }
 
+const PARTIAL_INVOICE_DAYS_THRESHOLD = 30;
+
+type PartialInvoiceOrder = {
+  status: string;
+  isLongTerm?: boolean;
+  startDate: string;
+  invoicePeriods?: { endDate: string }[];
+};
+
+export function daysSinceLastInvoice(order: PartialInvoiceOrder): number {
+  const periods = order.invoicePeriods ?? [];
+  const referenceDate = periods.length > 0
+    ? periods.reduce((latest, p) => p.endDate > latest ? p.endDate : latest, periods[0].endDate)
+    : order.startDate;
+  return Math.floor((Date.now() - new Date(referenceDate).getTime()) / 86400000);
+}
+
+// Short-term (non-avtalshyra) active orders don't get auto-invoiced by the cron — this flags
+// ones that have gone 30+ days without a delfaktura, as a reminder to bill before too much
+// unbilled time accumulates. Long-term orders are excluded since the cron already handles them.
+export function needsPartialInvoice(order: PartialInvoiceOrder): boolean {
+  if (order.status !== 'aktiv' || order.isLongTerm) return false;
+  return daysSinceLastInvoice(order) >= PARTIAL_INVOICE_DAYS_THRESHOLD;
+}
+
 export function getMonthlyRevenueData(orders: RevenueOrder[]) {
   const months: Record<string, number> = {};
   const now = new Date();
