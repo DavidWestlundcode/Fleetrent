@@ -14,11 +14,11 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",  // unsafe-eval needed by Next.js/recharts
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com",  // unsafe-eval needed by Next.js/recharts
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self'",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.fortnox.se https://api.zigned.se https://app.serviceprotokoll.se https://api.openai.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.fortnox.se https://api.zigned.se https://app.serviceprotokoll.se https://api.openai.com https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com https://googleads.g.doubleclick.net https://ad.doubleclick.net https://www.google.com https://www.googleadservices.com",
       "frame-ancestors 'self'",
     ].join('; '),
   },
