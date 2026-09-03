@@ -581,7 +581,10 @@ function OrdersPageInner() {
                       </div>
                     </td>
                     <td className="px-4 py-3.5 text-[13px] text-slate-700">{customer?.companyName ?? '–'}</td>
-                    <td className="px-4 py-3.5 text-[13px] text-slate-500">{machine?.name ?? '–'}</td>
+                    <td className="px-4 py-3.5 text-[13px] text-slate-500">
+                      {machine?.name ?? '–'}
+                      {machine?.internalCode && <span className="text-slate-400"> · {machine.internalCode}</span>}
+                    </td>
                     <td className="px-4 py-3.5 text-[13px] text-slate-500">{formatDate(order.startDate)}</td>
                     <td className="px-4 py-3.5">
                       <div>
@@ -656,7 +659,10 @@ function OrdersPageInner() {
                   <OrderStatusBadge status={order.status} />
                 </div>
                 <p className="text-[13px] text-slate-700 mt-2 truncate">{customer?.companyName ?? '–'}</p>
-                <p className="text-[12px] text-slate-500 truncate">{machine?.name ?? '–'}</p>
+                <p className="text-[12px] text-slate-500 truncate">
+                  {machine?.name ?? '–'}
+                  {machine?.internalCode && <span className="text-slate-400"> · {machine.internalCode}</span>}
+                </p>
                 <div className="flex items-end justify-between mt-3 pt-3 border-t border-slate-100">
                   <div>
                     <p className="text-[11px] text-slate-400">
