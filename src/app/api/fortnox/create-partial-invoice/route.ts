@@ -4,6 +4,7 @@ import { calcRentalBreakdown } from '@/lib/utils';
 import { NextResponse, type NextRequest } from 'next/server';
 import type { InvoicePeriod, OrderArticle } from '@/lib/types';
 import { LIMITS } from '@/lib/rate-limit';
+import { decryptSecret, encryptSecret } from '@/lib/crypto';
 
 const FORTNOX_API = 'https://api.fortnox.se/3';
 
@@ -19,7 +20,7 @@ async function getValidToken(orgId: string): Promise<string | null> {
   if (!integration) return null;
 
   const expiresAt = new Date(integration.expires_at as string).getTime();
-  if (Date.now() < expiresAt - 5 * 60 * 1000) return integration.access_token as string;
+  if (Date.now() < expiresAt - 5 * 60 * 1000) return decryptSecret(integration.access_token as string);
 
   const credentials = Buffer.from(
     `${process.env.FORTNOX_CLIENT_ID}:${process.env.FORTNOX_CLIENT_SECRET}`
@@ -28,15 +29,15 @@ async function getValidToken(orgId: string): Promise<string | null> {
   const res = await fetch('https://apps.fortnox.se/oauth-v1/token', {
     method: 'POST',
     headers: { 'Authorization': `Basic ${credentials}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: integration.refresh_token as string }),
+    body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: decryptSecret(integration.refresh_token as string) }),
   });
   if (!res.ok) return null;
 
   const tokens = await res.json();
   const newExpiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
   await admin.from('integrations').update({
-    access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
+    access_token: encryptSecret(tokens.access_token),
+    refresh_token: encryptSecret(tokens.refresh_token),
     expires_at: newExpiresAt,
     updated_at: new Date().toISOString(),
   }).eq('organization_id', orgId).eq('provider', 'fortnox');

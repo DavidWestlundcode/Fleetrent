@@ -4,6 +4,7 @@ import { calcRentalBreakdown, countBusinessDays } from '@/lib/utils';
 import { NextResponse, type NextRequest } from 'next/server';
 import { LIMITS } from '@/lib/rate-limit';
 import type { OrderArticle } from '@/lib/types';
+import { decryptSecret, encryptSecret } from '@/lib/crypto';
 
 const FORTNOX_API = 'https://api.fortnox.se/3';
 
@@ -21,7 +22,7 @@ async function getValidToken(orgId: string): Promise<string | null> {
   // Refresh if expired or about to expire (within 5 min)
   const expiresAt = new Date(integration.expires_at as string).getTime();
   if (Date.now() < expiresAt - 5 * 60 * 1000) {
-    return integration.access_token as string;
+    return decryptSecret(integration.access_token as string);
   }
 
   const credentials = Buffer.from(
@@ -36,7 +37,7 @@ async function getValidToken(orgId: string): Promise<string | null> {
     },
     body: new URLSearchParams({
       grant_type: 'refresh_token',
-      refresh_token: integration.refresh_token as string,
+      refresh_token: decryptSecret(integration.refresh_token as string),
     }),
   });
 
@@ -46,8 +47,8 @@ async function getValidToken(orgId: string): Promise<string | null> {
   const newExpiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
 
   await admin.from('integrations').update({
-    access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
+    access_token: encryptSecret(tokens.access_token),
+    refresh_token: encryptSecret(tokens.refresh_token),
     expires_at: newExpiresAt,
     updated_at: new Date().toISOString(),
   }).eq('organization_id', orgId).eq('provider', 'fortnox');

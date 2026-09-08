@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextResponse, type NextRequest } from 'next/server';
 import { Resend } from 'resend';
 import { LIMITS } from '@/lib/rate-limit';
+import { logAuditEvent } from '@/lib/audit-log';
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,6 +57,15 @@ export async function POST(request: NextRequest) {
         role: 'saljare',
       });
       if (upsertErr) throw new Error(`Kunde inte sätta roll på inbjuden användare: ${upsertErr.message}`);
+
+      logAuditEvent(admin, {
+        organizationId: profile.organization_id,
+        actorUserId: user.id,
+        action: alreadyExists ? 'user.invite_existing' : 'user.invite_new',
+        targetTable: 'profiles',
+        targetId: userId,
+        metadata: { email },
+      });
     }
 
     // Generate recovery link — get the hashed_token directly

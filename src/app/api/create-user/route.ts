@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse, type NextRequest } from 'next/server';
 import { LIMITS } from '@/lib/rate-limit';
+import { logAuditEvent } from '@/lib/audit-log';
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,6 +50,15 @@ export async function POST(request: NextRequest) {
       organization_id: profile.organization_id,
       full_name: fullName || '',
       role: 'saljare',
+    });
+
+    logAuditEvent(admin, {
+      organizationId: profile.organization_id,
+      actorUserId: user.id,
+      action: 'user.create',
+      targetTable: 'profiles',
+      targetId: newUser.user.id,
+      metadata: { email, fullName: fullName || '' },
     });
 
     return NextResponse.json({ success: true });

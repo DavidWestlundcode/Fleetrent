@@ -40,20 +40,17 @@ export async function GET(request: NextRequest) {
     .single();
 
   if (!profile?.organization_id) {
-    const organizationId = user.user_metadata?.organization_id;
+    // Invited users already have organization_id + role set server-side by the
+    // handle_new_user DB trigger at account-creation time (from admin-supplied
+    // metadata in invite-user/create-user), so this branch never applies to them.
+    //
+    // Deliberately NOT trusting user.user_metadata.organization_id here: unlike
+    // app_metadata, user_metadata is freely editable by the signed-in user via
+    // `supabase.auth.updateUser()` — trusting it to join an *existing* org would
+    // let anyone assign themselves to any organization by UUID.
     const companyName = user.user_metadata?.company_name;
 
-    if (organizationId) {
-      // Invited user — join existing organization
-      await admin
-        .from('profiles')
-        .update({
-          organization_id: organizationId,
-          role: 'member',
-          full_name: user.user_metadata?.full_name ?? null,
-        })
-        .eq('id', user.id);
-    } else if (companyName) {
+    if (companyName) {
       // New signup — create organization and set user as admin
       const { data: org } = await admin
         .from('organizations')

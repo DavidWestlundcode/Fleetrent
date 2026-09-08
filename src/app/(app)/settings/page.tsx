@@ -558,35 +558,41 @@ function SettingsInner() {
                   </div>
                 ) : (
                   <>
+                    {!isAdmin && (
+                      <div className="mb-4 flex items-center gap-2 text-sm text-slate-500 bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
+                        <Shield className="w-4 h-4 shrink-0" /> Endast admins kan redigera företagsuppgifter.
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-medium text-slate-600 mb-1.5">Företagsnamn</label>
-                        <input value={org.name} onChange={(e) => setField('name', e.target.value)} className={inputClass} placeholder="Ert företagsnamn" />
+                        <input disabled={!isAdmin} value={org.name} onChange={(e) => setField('name', e.target.value)} className={inputClass} placeholder="Ert företagsnamn" />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-slate-600 mb-1.5">Organisationsnummer</label>
-                        <input value={org.orgNumber} onChange={(e) => setField('orgNumber', e.target.value)} className={inputClass} placeholder="556000-0000" />
+                        <input disabled={!isAdmin} value={org.orgNumber} onChange={(e) => setField('orgNumber', e.target.value)} className={inputClass} placeholder="556000-0000" />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-slate-600 mb-1.5">E-post</label>
-                        <input type="email" value={org.email} onChange={(e) => setField('email', e.target.value)} className={inputClass} placeholder="info@ertforetag.se" />
+                        <input disabled={!isAdmin} type="email" value={org.email} onChange={(e) => setField('email', e.target.value)} className={inputClass} placeholder="info@ertforetag.se" />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-slate-600 mb-1.5">Telefon</label>
-                        <input value={org.phone} onChange={(e) => setField('phone', e.target.value)} className={inputClass} placeholder="08-123 45 67" />
+                        <input disabled={!isAdmin} value={org.phone} onChange={(e) => setField('phone', e.target.value)} className={inputClass} placeholder="08-123 45 67" />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-slate-600 mb-1.5">Adress</label>
-                        <input value={org.address} onChange={(e) => setField('address', e.target.value)} className={inputClass} placeholder="Industrivägen 1" />
+                        <input disabled={!isAdmin} value={org.address} onChange={(e) => setField('address', e.target.value)} className={inputClass} placeholder="Industrivägen 1" />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-slate-600 mb-1.5">Postnummer och ort</label>
-                        <input value={org.postalCity} onChange={(e) => setField('postalCity', e.target.value)} className={inputClass} placeholder="141 50 Huddinge" />
+                        <input disabled={!isAdmin} value={org.postalCity} onChange={(e) => setField('postalCity', e.target.value)} className={inputClass} placeholder="141 50 Huddinge" />
                       </div>
                     </div>
                     <div className="mt-4">
                       <label className="block text-xs font-medium text-slate-600 mb-1.5">Standardvillkor</label>
                       <textarea
+                        disabled={!isAdmin}
                         value={org.standardTerms}
                         onChange={(e) => setField('standardTerms', e.target.value)}
                         className={`${inputClass} resize-none`}
@@ -599,16 +605,18 @@ function SettingsInner() {
                         <XCircle className="w-4 h-4 shrink-0" /> {saveError}
                       </div>
                     )}
-                    <div className="mt-4 flex justify-end">
-                      <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors cursor-pointer"
-                      >
-                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        {saved ? 'Sparat!' : saving ? 'Sparar...' : 'Spara ändringar'}
-                      </button>
-                    </div>
+                    {isAdmin && (
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          onClick={handleSave}
+                          disabled={saving}
+                          className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors cursor-pointer"
+                        >
+                          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                          {saved ? 'Sparat!' : saving ? 'Sparar...' : 'Spara ändringar'}
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
               </div>

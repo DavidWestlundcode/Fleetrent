@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { NextResponse } from 'next/server';
+import { logAuditEvent } from '@/lib/audit-log';
 
 export async function POST() {
   const supabase = await createClient();
@@ -26,6 +27,13 @@ export async function POST() {
     .delete()
     .eq('organization_id', profile.organization_id)
     .eq('provider', 'fortnox');
+
+  logAuditEvent(admin, {
+    organizationId: profile.organization_id,
+    actorUserId: user.id,
+    action: 'integration.fortnox_disconnected',
+    targetTable: 'integrations',
+  });
 
   return NextResponse.json({ success: true });
 }

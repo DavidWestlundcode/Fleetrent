@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { NextResponse, type NextRequest } from 'next/server';
+import { logAuditEvent } from '@/lib/audit-log';
+import { encryptSecret } from '@/lib/crypto';
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
@@ -60,11 +62,18 @@ export async function GET(request: NextRequest) {
   await admin.from('integrations').upsert({
     organization_id: profile.organization_id,
     provider: 'fortnox',
-    access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
+    access_token: encryptSecret(tokens.access_token),
+    refresh_token: encryptSecret(tokens.refresh_token),
     expires_at: expiresAt,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'organization_id,provider' });
+
+  logAuditEvent(admin, {
+    organizationId: profile.organization_id,
+    actorUserId: user.id,
+    action: 'integration.fortnox_connected',
+    targetTable: 'integrations',
+  });
 
   return NextResponse.redirect(`${origin}/settings?tab=integrations&success=fortnox_connected`);
 }

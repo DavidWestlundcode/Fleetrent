@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse, type NextRequest } from 'next/server';
 import { LIMITS } from '@/lib/rate-limit';
+import { logAuditEvent } from '@/lib/audit-log';
 
 const VALID_ROLES = ['admin', 'saljare', 'verkstad'];
 
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     // Only allow editing someone within your own organization.
     const { data: target } = await admin
       .from('profiles')
-      .select('organization_id')
+      .select('organization_id, role, full_name')
       .eq('id', userId)
       .single();
 
@@ -48,6 +49,15 @@ export async function POST(request: NextRequest) {
       .eq('id', userId);
 
     if (updateError) throw updateError;
+
+    logAuditEvent(admin, {
+      organizationId: profile.organization_id,
+      actorUserId: user.id,
+      action: 'user.update_member',
+      targetTable: 'profiles',
+      targetId: userId,
+      metadata: { before: { role: target.role, fullName: target.full_name }, after: { role, fullName: fullName || '' } },
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {
