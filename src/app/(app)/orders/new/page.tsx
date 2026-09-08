@@ -171,13 +171,13 @@ function NewOrderForm() {
     if (!form.machineId) { setAutoMatchedTemplate(null); return; }
     const machine = machines.find((m) => m.id === form.machineId);
     if (!machine) { setAutoMatchedTemplate(null); return; }
-    const matched = getMatchingTemplate(machine, templates);
+    const matched = getMatchingTemplate(machine, templates, form.customerId);
     if (matched && matched.id !== form.templateId) {
       setAutoMatchedTemplate(matched.id);
     } else if (!matched) {
       setAutoMatchedTemplate(null);
     }
-  }, [form.machineId, machines, templates]);
+  }, [form.machineId, form.customerId, machines, templates]);
 
   const selectedTemplate = templates.find((t) => t.id === form.templateId);
   const hasLongTermOption = selectedTemplate && (

@@ -286,7 +286,7 @@ export default function EditOrderPage() {
 
   // Auto-match hint when template is selected
   const autoMatchedTemplate = !form.templateId && form.machineId
-    ? getMatchingTemplate(machines.find(m => m.id === form.machineId)!, templates)
+    ? getMatchingTemplate(machines.find(m => m.id === form.machineId)!, templates, form.customerId)
     : null;
 
   return (

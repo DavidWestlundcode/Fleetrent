@@ -206,15 +206,20 @@ export function calculateRecoveryPercent(totalRevenue: number, purchasePrice: nu
   return Math.min(100, Math.round((totalRevenue / purchasePrice) * 100));
 }
 
-export function getMatchingTemplate<T extends { category: string; capacityMin: number; capacityMax: number }>(
+export function getMatchingTemplate<T extends { category: string; capacityMin: number; capacityMax: number; customerIds?: string[] }>(
   machine: { category: string; capacity: number },
-  templates: T[]
+  templates: T[],
+  customerId?: string
 ): T | undefined {
   return templates.find((t) => {
     if (t.category !== machine.category) return false;
     const minOk = t.capacityMin === 0 || machine.capacity >= t.capacityMin;
     const maxOk = t.capacityMax === 0 || machine.capacity <= t.capacityMax;
-    return minOk && maxOk;
+    if (!minOk || !maxOk) return false;
+    // Only enforce the customer restriction when a customerId is actually given — callers
+    // asking "which machines fit this template" (no customer in play) get the old behavior.
+    if (t.customerIds?.length && customerId) return t.customerIds.includes(customerId);
+    return true;
   });
 }
 
