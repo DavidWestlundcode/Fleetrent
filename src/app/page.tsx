@@ -566,11 +566,11 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-12">
-            <Link href="/kom-igang" className="flex items-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all text-[14px] shadow-xl shadow-blue-900/40 hover:shadow-blue-700/30 hover:-translate-y-0.5">
+            <Link href="/kom-igang" className="flex items-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-500 active:scale-[0.97] text-white font-semibold rounded-xl transition text-[14px] shadow-xl shadow-blue-900/40 hover:shadow-blue-700/30 hover:-translate-y-0.5">
               Boka gratis demo
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <Link href="/demo" className="flex items-center gap-2 px-6 py-3.5 bg-white/[0.06] hover:bg-white/[0.1] text-white font-medium rounded-xl border border-white/10 transition-all text-[14px] hover:-translate-y-0.5">
+            <Link href="/demo" className="flex items-center gap-2 px-6 py-3.5 bg-white/[0.06] hover:bg-white/[0.1] active:scale-[0.97] text-white font-medium rounded-xl border border-white/10 transition text-[14px] hover:-translate-y-0.5">
               Prova dashboarden
               <ChevronRight className="w-4 h-4 text-white/50" />
             </Link>
@@ -705,8 +705,8 @@ export default function LandingPage() {
                     { icon: X, text: 'Missade returdatum och förlorade intäkter', sub: 'Ingen automatisk påminnelse' },
                     { icon: X, text: 'Ingen lönsamhetsöverblick per maskin', sub: 'Vet inte vilka maskiner som lönar sig' },
                     { icon: X, text: 'Ingen digital returhantering', sub: 'Manuell hantering kostar tid och skapar fel' },
-                  ].map(({ icon: Icon, text, sub }) => (
-                    <div key={text} className="flex gap-3">
+                  ].map(({ icon: Icon, text, sub }, i) => (
+                    <AnimateIn key={text} delay={i * 60} className="flex gap-3">
                       <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center shrink-0 mt-0.5">
                         <Icon className="w-3.5 h-3.5 text-red-500" />
                       </div>
@@ -714,7 +714,7 @@ export default function LandingPage() {
                         <p className="text-[13px] font-medium text-slate-700">{text}</p>
                         <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>
                       </div>
-                    </div>
+                    </AnimateIn>
                   ))}
                 </div>
               </div>
@@ -734,8 +734,8 @@ export default function LandingPage() {
                     { icon: Check, text: 'AI fyller i maskinuppgifter från foto', sub: 'Registrering tar sekunder, inte minuter', color: 'bg-blue-500/20 text-blue-400 border border-blue-500/20' },
                     { icon: Check, text: 'Full ROI-analys per maskin i realtid', sub: 'Fatta beslut baserade på data', color: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' },
                     { icon: Check, text: 'Digital returhantering via QR-kod', sub: 'Skanna och registrera retur på sekunder', color: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' },
-                  ].map(({ icon: Icon, text, sub, color }) => (
-                    <div key={text} className="flex gap-3">
+                  ].map(({ icon: Icon, text, sub, color }, i) => (
+                    <AnimateIn key={text} delay={i * 60} className="flex gap-3">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${color}`}>
                         <Icon className="w-3.5 h-3.5" />
                       </div>
@@ -743,7 +743,7 @@ export default function LandingPage() {
                         <p className="text-[13px] font-medium text-white/90">{text}</p>
                         <p className="text-[11px] text-white/35 mt-0.5">{sub}</p>
                       </div>
-                    </div>
+                    </AnimateIn>
                   ))}
                 </div>
               </div>
@@ -773,7 +773,7 @@ export default function LandingPage() {
               </div>
               <Link
                 href="/demo"
-                className="shrink-0 flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all text-[14px] shadow-lg shadow-blue-900/30 hover:-translate-y-0.5 whitespace-nowrap"
+                className="shrink-0 flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-500 active:scale-[0.97] text-white font-semibold rounded-xl transition text-[14px] shadow-lg shadow-blue-900/30 hover:-translate-y-0.5 whitespace-nowrap"
               >
                 Öppna demo
                 <ArrowRight className="w-4 h-4" />
@@ -814,11 +814,11 @@ export default function LandingPage() {
                   { icon: TrendingUp, text: 'ROI och nettoresultat per maskin och period' },
                   { icon: Target, text: 'Beläggningsgrad och återbetalningstid' },
                   { icon: Database, text: 'Fullständig kostnadsanalys inklusive service' },
-                ].map(({ icon: Icon, text }) => (
-                  <div key={text} className="flex items-center gap-3">
+                ].map(({ icon: Icon, text }, i) => (
+                  <AnimateIn key={text} delay={i * 60} className="flex items-center gap-3">
                     <Icon className="w-4 h-4 text-violet-600 shrink-0" />
                     <span className="text-[14px] text-slate-700 font-medium">{text}</span>
-                  </div>
+                  </AnimateIn>
                 ))}
               </div>
             </AnimateIn>
@@ -848,11 +848,11 @@ export default function LandingPage() {
                   { icon: Tag, text: 'Prismallar matchas automatiskt till rätt maskin' },
                   { icon: Activity, text: 'Priskalkyl beräknas direkt för dag, vecka, månad' },
                   { icon: Shield, text: 'Valfri försäkring kopplas till varje order' },
-                ].map(({ icon: Icon, text }) => (
-                  <div key={text} className="flex items-center gap-3">
+                ].map(({ icon: Icon, text }, i) => (
+                  <AnimateIn key={text} delay={i * 60} className="flex items-center gap-3">
                     <Icon className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span className="text-[14px] text-slate-700 font-medium">{text}</span>
-                  </div>
+                  </AnimateIn>
                 ))}
               </div>
             </AnimateIn>
@@ -876,11 +876,11 @@ export default function LandingPage() {
                   { icon: Camera, text: 'Fotografera typskylten – det tar 3 sekunder' },
                   { icon: Sparkles, text: 'AI analyserar och fyller i alla fält' },
                   { icon: CheckCircle, text: 'Granska och spara – klart på under 30 sekunder' },
-                ].map(({ icon: Icon, text }) => (
-                  <div key={text} className="flex items-center gap-3">
+                ].map(({ icon: Icon, text }, i) => (
+                  <AnimateIn key={text} delay={i * 60} className="flex items-center gap-3">
                     <Icon className="w-4 h-4 text-blue-600 shrink-0" />
                     <span className="text-[14px] text-slate-700 font-medium">{text}</span>
-                  </div>
+                  </AnimateIn>
                 ))}
               </div>
             </AnimateIn>
@@ -909,11 +909,11 @@ export default function LandingPage() {
                   { icon: FileSignature, text: 'Avtal genereras och skickas automatiskt från ordern' },
                   { icon: Shield, text: 'Kunden signerar med BankID – juridiskt bindande' },
                   { icon: Mail, text: 'Båda parter får signerat avtal direkt på e-post' },
-                ].map(({ icon: Icon, text }) => (
-                  <div key={text} className="flex items-center gap-3">
+                ].map(({ icon: Icon, text }, i) => (
+                  <AnimateIn key={text} delay={i * 60} className="flex items-center gap-3">
                     <Icon className="w-4 h-4 text-indigo-600 shrink-0" />
                     <span className="text-[14px] text-slate-700 font-medium">{text}</span>
-                  </div>
+                  </AnimateIn>
                 ))}
               </div>
             </AnimateIn>
@@ -937,11 +937,11 @@ export default function LandingPage() {
                   { icon: QrCode, text: 'Scanna QR-koden — se maskin, order och kundinfo direkt' },
                   { icon: CheckCircle, text: 'Registrera skick, drifttimmar och notering på plats' },
                   { icon: RefreshCw, text: 'Order och maskinstatus uppdateras automatiskt i systemet' },
-                ].map(({ icon: Icon, text }) => (
-                  <div key={text} className="flex items-center gap-3">
+                ].map(({ icon: Icon, text }, i) => (
+                  <AnimateIn key={text} delay={i * 60} className="flex items-center gap-3">
                     <Icon className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span className="text-[14px] text-slate-700 font-medium">{text}</span>
-                  </div>
+                  </AnimateIn>
                 ))}
               </div>
             </AnimateIn>
@@ -980,8 +980,8 @@ export default function LandingPage() {
                 { title: 'Mer tid för kärnverksamheten', desc: 'Mindre administration betyder mer tid till kunder, maskiner och tillväxt istället för pappersarbete.' },
                 { title: 'Snabbare betalt', desc: 'Order blir fakturaunderlag direkt vid retur — inga glömda debiteringar eller dröjande fakturor.' },
                 { title: 'Högre beläggningsgrad', desc: 'Full överblick över flottan gör det enklare att hyra ut fler maskiner, oftare.' },
-              ].map(({ title, desc }) => (
-                <AnimateIn key={title} direction="left">
+              ].map(({ title, desc }, i) => (
+                <AnimateIn key={title} direction="left" delay={i * 80}>
                   <h3 className="text-[15px] font-semibold text-white mb-2">{title}</h3>
                   <p className="text-[13px] text-slate-400 leading-relaxed">{desc}</p>
                 </AnimateIn>
@@ -999,8 +999,8 @@ export default function LandingPage() {
                 { title: 'Färre fel och missförstånd', desc: 'Automatiska flöden minskar risken för manuella misstag och glapp mellan kontor och verkstad.' },
                 { title: 'Nöjdare kunder', desc: 'Tydliga avtal, snabba returer och proffsig hantering stärker förtroendet för er som leverantör.' },
                 { title: 'Väx utan att anställa fler', desc: 'Ett system som skalar med verksamheten utan att administrationen växer i samma takt.' },
-              ].map(({ title, desc }) => (
-                <AnimateIn key={title} direction="right">
+              ].map(({ title, desc }, i) => (
+                <AnimateIn key={title} direction="right" delay={i * 80}>
                   <h3 className="text-[15px] font-semibold text-white mb-2">{title}</h3>
                   <p className="text-[13px] text-slate-400 leading-relaxed">{desc}</p>
                 </AnimateIn>
@@ -1094,8 +1094,8 @@ export default function LandingPage() {
                     badgeClass: 'bg-slate-100 text-slate-600 border border-slate-200',
                     desc: 'Vi anpassar integrationer efter dina önskemål — bokföring, GPS-tracking, SMS-notiser eller något helt annat.',
                   },
-                ].map(({ name, badge, badgeClass, desc }) => (
-                  <div key={name} className="flex items-start gap-4">
+                ].map(({ name, badge, badgeClass, desc }, i) => (
+                  <AnimateIn key={name} delay={i * 80} className="flex items-start gap-4">
                     <div className="w-0.5 self-stretch bg-slate-200 rounded-full shrink-0" />
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -1104,7 +1104,7 @@ export default function LandingPage() {
                       </div>
                       <p className="text-[13px] text-slate-500 leading-relaxed">{desc}</p>
                     </div>
-                  </div>
+                  </AnimateIn>
                 ))}
               </div>
             </AnimateIn>
@@ -1215,11 +1215,11 @@ export default function LandingPage() {
             Digitalisera hela uthyrningsprocessen med FleetOS — från order och hyresavtal till returhantering och fakturaunderlag.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/kom-igang" className="flex items-center gap-2 px-7 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-[15px] shadow-xl shadow-blue-900/40 hover:-translate-y-0.5">
+            <Link href="/kom-igang" className="flex items-center gap-2 px-7 py-4 bg-blue-600 hover:bg-blue-500 active:scale-[0.97] text-white font-bold rounded-xl transition text-[15px] shadow-xl shadow-blue-900/40 hover:-translate-y-0.5">
               Kom igång med FleetOS
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <a href="mailto:david@fleetos.se,elias@fleetos.se" className="flex items-center gap-2 px-7 py-4 bg-white/[0.06] hover:bg-white/[0.1] text-white font-medium rounded-xl border border-white/10 transition-all text-[15px]">
+            <a href="mailto:david@fleetos.se,elias@fleetos.se" className="flex items-center gap-2 px-7 py-4 bg-white/[0.06] hover:bg-white/[0.1] active:scale-[0.97] text-white font-medium rounded-xl border border-white/10 transition text-[15px]">
               Kontakta oss
             </a>
           </div>
