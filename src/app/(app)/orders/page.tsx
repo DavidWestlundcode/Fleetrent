@@ -171,6 +171,7 @@ function OrdersPageInner() {
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { all: orders.length };
     orders.forEach((o) => { counts[o.status] = (counts[o.status] ?? 0) + 1; });
+    counts['forsenad'] = orders.filter(isOrderOverdue).length;
     counts['30_dagar'] = orders.filter(needsPartialInvoice).length;
     counts['klar_for_fakturering'] = (counts['klar_for_fakturering'] ?? 0) + pendingContractInvoices.length;
     return counts;
