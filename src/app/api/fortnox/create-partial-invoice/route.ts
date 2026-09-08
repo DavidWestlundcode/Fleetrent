@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
       }
       if (breakdown.weeks > 0) {
         orderRows.push({
-          Description: `${machineParts} - veckor`,
+          Description: `${machineParts} - ${period.startDate} - ${period.endDate} (${breakdown.weeks} v)`,
           DeliveredQuantity: breakdown.weeks,
           Price: orderRow.weekly_price as number,
           Unit: 'vecka',
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
         orderRows.push({
           Description: orderRows.length === 0
             ? `Hyra - ${machineParts} - ${period.startDate} t.o.m. ${period.endDate}`
-            : `${machineParts} - dagar`,
+            : `${machineParts} - ${period.startDate} - ${period.endDate} (${breakdown.days} dagar)`,
           DeliveredQuantity: breakdown.days > 0 ? breakdown.days : 1,
           Price: orderRow.daily_price as number,
           Unit: 'dag',

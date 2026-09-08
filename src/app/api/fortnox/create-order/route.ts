@@ -214,10 +214,12 @@ export async function POST(request: NextRequest) {
     type FortnoxRow = { ArticleNumber?: string; Description: string; DeliveredQuantity: number; Price: number; Unit: string; Discount?: number };
     const orderRows: FortnoxRow[] = [];
 
+    const periodRange = `${startDate} - ${endDate}`;
+
     if (breakdown.months > 0) {
       orderRows.push({
         ...(rentalArt?.article_number ? { ArticleNumber: rentalArt.article_number } : {}),
-        Description: machineParts ? `Hyra – ${machineParts} – ${breakdown.months} mån` : `Hyra – ${breakdown.months} mån`,
+        Description: machineParts ? `Hyra – ${machineParts} – ${breakdown.months} mån (${periodRange})` : `Hyra – ${breakdown.months} mån (${periodRange})`,
         DeliveredQuantity: breakdown.months,
         Price: (orderRow.monthly_price as number) ?? 0,
         Unit: 'mån',
@@ -227,7 +229,7 @@ export async function POST(request: NextRequest) {
     if (breakdown.weeks > 0) {
       orderRows.push({
         ...(rentalArt?.article_number ? { ArticleNumber: rentalArt.article_number } : {}),
-        Description: machineParts ? `Hyra – ${machineParts} – ${breakdown.weeks} v` : `Hyra – ${breakdown.weeks} v`,
+        Description: machineParts ? `Hyra – ${machineParts} – ${breakdown.weeks} v (${periodRange})` : `Hyra – ${breakdown.weeks} v (${periodRange})`,
         DeliveredQuantity: breakdown.weeks,
         Price: (orderRow.weekly_price as number) ?? 0,
         Unit: 'vecka',
@@ -238,7 +240,7 @@ export async function POST(request: NextRequest) {
       const dayQty = breakdown.days > 0 ? breakdown.days : days;
       orderRows.push({
         ...(rentalArt?.article_number ? { ArticleNumber: rentalArt.article_number } : {}),
-        Description: machineParts ? `Hyra – ${machineParts} – ${dayQty} dagar` : `Hyra – ${dayQty} dagar`,
+        Description: machineParts ? `Hyra – ${machineParts} – ${dayQty} dagar (${periodRange})` : `Hyra – ${dayQty} dagar (${periodRange})`,
         DeliveredQuantity: dayQty,
         Price: (orderRow.daily_price as number) ?? 0,
         Unit: 'dag',
