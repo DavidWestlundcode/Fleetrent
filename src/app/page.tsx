@@ -11,6 +11,7 @@ import { AnimateIn, CountUp } from '@/components/ui/AnimateIn';
 import { Logo } from '@/components/ui/Logo';
 import PublicHeader from '@/components/public/PublicHeader';
 import PublicFooter from '@/components/public/PublicFooter';
+import FAQSection from '@/components/public/FAQSection';
 
 export const metadata: Metadata = {
   title: 'FleetOS – Maskinuthyrningssystem för Sverige',
@@ -1146,31 +1147,7 @@ export default function LandingPage() {
       </section>
 
 
-      {/* ── FAQ ── */}
-      <section className="py-14 sm:py-24 px-4 sm:px-6 border-t border-slate-100 bg-slate-50">
-        <div className="max-w-2xl mx-auto">
-          <AnimateIn className="text-center mb-14">
-            <p className="text-[12px] font-semibold text-blue-600 uppercase tracking-widest mb-3">Vanliga frågor</p>
-            <h2 className="text-2xl sm:text-[36px] font-bold text-slate-900 tracking-tight">Frågor & svar</h2>
-          </AnimateIn>
-          <div className="space-y-4">
-            {[
-              { q: 'Hur lång tid tar det att komma igång?', a: 'De flesta kunder är igång med full drift inom en arbetsdag. Vi hjälper dig att lägga upp flottan och onboarda teamet.' },
-              { q: 'Fungerar det i mobilen?', a: 'Ja, FleetOS är fullt responsivt och optimerat för mobila enheter. QR-funktionen kräver bara en webbläsare.' },
-              { q: 'Hur säker är datan?', a: 'All data lagras krypterad i EU-baserade datacenter (Supabase/AWS Irland). Vi följer GDPR fullt ut.' },
-              { q: 'Kan jag bjuda in hela teamet?', a: 'Ja, alla planer inkluderar obegränsat antal användare. Du styr vilka roller och behörigheter varje person har.' },
-              { q: 'Vad händer med mina befintliga data i Excel?', a: 'Vi hjälper dig migrera din befintliga data. Kontakta oss så sätter vi upp en import anpassad för din situation.' },
-            ].map(({ q, a }, i) => (
-              <AnimateIn key={q} delay={i * 60}>
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 hover:border-slate-300 hover:shadow-sm transition-all">
-                  <h3 className="text-[14px] font-semibold text-slate-900 mb-2">{q}</h3>
-                  <p className="text-[13px] text-slate-500 leading-relaxed">{a}</p>
-                </div>
-              </AnimateIn>
-            ))}
-          </div>
-        </div>
-      </section>
+      <FAQSection />
 
       {/* ── Customers ── */}
       <section className="py-20 px-6 bg-white border-t border-slate-100">
