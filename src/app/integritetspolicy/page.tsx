@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 export default function IntegritetspolicyPage() {
   return (
-    <PublicLayout title="Integritetspolicy">
+    <PublicLayout title="Integritetspolicy" narrow>
       <p className="text-sm text-slate-400 mb-8">Senast uppdaterad: maj 2026</p>
 
       <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">1. Personuppgiftsansvarig</h2>

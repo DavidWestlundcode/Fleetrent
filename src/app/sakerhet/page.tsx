@@ -76,7 +76,7 @@ const layers = [
 
 export default function SakerhetPage() {
   return (
-    <PublicLayout title="Säkerhet">
+    <PublicLayout title="Säkerhet" narrow>
       <p className="text-lg text-slate-500 mb-10">
         Säkerhet är inbyggt i varje lager av FleetOS — från infrastruktur till applikationskod. Här beskriver vi hur vi skyddar din data i praktiken.
       </p>

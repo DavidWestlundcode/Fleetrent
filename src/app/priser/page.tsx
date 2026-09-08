@@ -142,8 +142,9 @@ export default function PriserPage() {
 
             </div>
 
-            {/* Premium */}
-            <div className="rounded-2xl border-2 border-blue-600 p-8 flex flex-col relative bg-gradient-to-b from-blue-50/50 to-white">
+            {/* Premium — wrapped in an outer shell to give the recommended tier more visual weight */}
+            <div className="rounded-[1.75rem] bg-gradient-to-br from-blue-100 to-blue-50 ring-1 ring-blue-200/60 p-1.5 shadow-md shadow-blue-900/5">
+            <div className="rounded-[calc(1.75rem-0.375rem)] border-2 border-blue-600 p-8 flex flex-col relative bg-gradient-to-b from-blue-50/50 to-white h-full">
               <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                 <span className="bg-blue-600 text-white text-[11px] font-bold px-4 py-1.5 rounded-full tracking-wide">
                   POPULÄRAST
@@ -182,6 +183,7 @@ export default function PriserPage() {
                   Byggt för uthyrare som växer sin flotta och behöver snabbare svarstid från oss när det gäller.
                 </p>
               </div>
+            </div>
             </div>
           </div>
 

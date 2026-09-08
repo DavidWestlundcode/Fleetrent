@@ -1,5 +1,5 @@
 ﻿import type { Metadata } from 'next';
-import PublicLayout from '@/components/layout/PublicLayout';
+import PublicLayoutWithTOC from '@/components/layout/PublicLayoutWithTOC';
 
 export const revalidate = 86400;
 
@@ -14,36 +14,46 @@ export const metadata: Metadata = {
   },
 };
 
+const sections = [
+  { id: 'tjansten', label: '1. Tjänsten' },
+  { id: 'konto', label: '2. Konto och ansvar' },
+  { id: 'tillaten-anvandning', label: '3. Tillåten användning' },
+  { id: 'tillganglighet', label: '4. Tillgänglighet' },
+  { id: 'priser', label: '5. Priser och ändringar' },
+  { id: 'uppsagning', label: '6. Uppsägning' },
+  { id: 'tillamplig-lag', label: '7. Tillämplig lag' },
+  { id: 'kontakt', label: '8. Kontakt' },
+  { id: 'ansvarsbegransning', label: '9. Ansvarsbegränsning' },
+];
+
 export default function VillkorPage() {
   return (
-    <PublicLayout title="Användarvillkor">
-      <p className="text-sm text-slate-400 mb-8">Senast uppdaterad: juni 2026</p>
-
-      <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">1. Tjänsten</h2>
+    <PublicLayoutWithTOC title="Användarvillkor" updated="Senast uppdaterad: juni 2026" sections={sections}>
+      <h2 id="tjansten" className="text-lg font-semibold text-slate-900 mt-0 mb-3">1. Tjänsten</h2>
       <p className="mb-4">FleetOS tillhandahålls av DSE ENTERPRISE AB som en molnbaserad tjänst (SaaS) för hantering av maskinflottor. Användning av tjänsten innebär att du accepterar dessa villkor.</p>
 
-      <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">2. Konto och ansvar</h2>
+      <h2 id="konto" className="text-lg font-semibold text-slate-900 mt-8 mb-3">2. Konto och ansvar</h2>
       <p className="mb-4">Du ansvarar för att hålla dina inloggningsuppgifter konfidentiella och för all aktivitet som sker via ditt konto. Kontakta oss omedelbart vid misstänkt obehörig åtkomst.</p>
 
-      <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">3. Tillåten användning</h2>
+      <h2 id="tillaten-anvandning" className="text-lg font-semibold text-slate-900 mt-8 mb-3">3. Tillåten användning</h2>
       <p className="mb-4">Tjänsten får endast användas för lagliga ändamål och i enlighet med dessa villkor. Det är inte tillåtet att missbruka tjänsten, försöka komma åt data som inte tillhör dig eller använda automatiserade metoder för att extrahera data.</p>
 
-      <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">4. Tillgänglighet</h2>
+      <h2 id="tillganglighet" className="text-lg font-semibold text-slate-900 mt-8 mb-3">4. Tillgänglighet</h2>
       <p className="mb-4">Vi strävar efter hög tillgänglighet men garanterar inte att tjänsten är tillgänglig utan avbrott. Planerat underhåll meddelas i förväg.</p>
 
-      <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">5. Priser och ändringar</h2>
+      <h2 id="priser" className="text-lg font-semibold text-slate-900 mt-8 mb-3">5. Priser och ändringar</h2>
       <p className="mb-4">FleetOS förbehåller sig rätten att justera priser och tjänstens innehåll. Eventuella prisändringar meddelas minst 30 dagar innan de träder i kraft.</p>
 
-      <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">6. Uppsägning</h2>
+      <h2 id="uppsagning" className="text-lg font-semibold text-slate-900 mt-8 mb-3">6. Uppsägning</h2>
       <p className="mb-4">Antingen part kan säga upp avtalet. Vid uppsägning avslutas åtkomsten till tjänsten och data raderas i enlighet med vår <a href="/gdpr" className="text-blue-600 hover:underline">lagringspolicy för personuppgifter</a>.</p>
 
-      <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">7. Tillämplig lag</h2>
+      <h2 id="tillamplig-lag" className="text-lg font-semibold text-slate-900 mt-8 mb-3">7. Tillämplig lag</h2>
       <p className="mb-4">Dessa villkor regleras av svensk lag. Tvister ska i första hand lösas genom förhandling och i andra hand via allmän domstol med Stockholm som forum.</p>
 
-      <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">8. Kontakt</h2>
+      <h2 id="kontakt" className="text-lg font-semibold text-slate-900 mt-8 mb-3">8. Kontakt</h2>
       <p className="mb-4">Frågor om dessa villkor skickas till <a href="mailto:david@fleetos.se,elias@fleetos.se" className="text-blue-600 hover:underline">david@fleetos.se & elias@fleetos.se</a>.</p>
 
-      <h2 className="text-lg font-semibold text-slate-900 mt-8 mb-3">9. Ansvarsbegränsning</h2>
+      <h2 id="ansvarsbegransning" className="text-lg font-semibold text-slate-900 mt-8 mb-3">9. Ansvarsbegränsning</h2>
       <p className="mb-4">9.1 FleetOS är en molnbaserad programvarutjänst som tillhandahålls av DSE ENTERPRISE AB ("Leverantören") för administration och hantering av kundens verksamhet. FleetOS utgör endast ett tekniskt hjälpmedel och Leverantören ansvarar inte för kundens affärsverksamhet, affärsbeslut, uthyrningsprocesser eller operativa verksamhet.</p>
       <p className="mb-4">9.2 Kunden ansvarar för att all information som registreras, behandlas eller lagras i FleetOS är korrekt, fullständig och uppdaterad. Kunden ansvarar vidare för att granska och verifiera uppgifter, rapporter, avtal, fakturaunderlag, prisuppgifter, kunduppgifter och annan information som genereras eller hanteras genom tjänsten innan sådan information används eller kommuniceras till tredje man.</p>
       <p className="mb-4">9.3 Kunden ansvarar för att löpande exportera och säkerhetskopiera affärskritisk information i den utsträckning kunden bedömer nödvändig för sin verksamhet.</p>
@@ -60,6 +70,6 @@ export default function VillkorPage() {
       <p className="mb-4">9.14 Ansvarsbegränsningarna i denna punkt gäller inte för skada som orsakats genom uppsåt eller grov vårdslöshet från Leverantörens sida eller i den utsträckning ansvar inte får begränsas enligt tvingande lag.</p>
       <p className="mb-4">9.15 Leverantören ska inte anses ansvarig för underlåtenhet att fullgöra sina skyldigheter enligt avtalet om sådan underlåtenhet beror på omständighet utanför Leverantörens rimliga kontroll, inklusive men inte begränsat till naturkatastrof, krig, myndighetsåtgärd, arbetskonflikt, cyberattack, omfattande driftstörning hos tredjepartsleverantör, avbrott i elförsörjning, internetstörning eller annan jämförbar händelse (force majeure).</p>
       <p className="mb-4">9.16 Ansvarsbegränsningen i denna punkt ska tillämpas i den utsträckning som är tillåten enligt tillämplig lag och gäller oavsett om anspråket grundas på avtal, skadeståndsrätt eller annan rättslig grund.</p>
-    </PublicLayout>
+    </PublicLayoutWithTOC>
   );
 }

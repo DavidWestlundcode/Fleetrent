@@ -20,6 +20,16 @@ body {
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 body {
   background-color: #F8FAFC;
   color: #0F172A;
@@ -69,6 +79,15 @@ body {
 
 .recharts-wrapper {
   font-size: 12px;
+}
+
+/* Subtle fractal-noise texture for dark sections — breaks up flat color without
+   reading as an obvious "effect". Kept as a static background-image (not animated)
+   so it costs nothing on scroll/repaint. */
+.bg-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.05;
+  mix-blend-mode: overlay;
 }
 
 ::-webkit-scrollbar {

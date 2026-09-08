@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import PublicLayout from '@/components/layout/PublicLayout';
+import PublicLayoutWithTOC from '@/components/layout/PublicLayoutWithTOC';
 
 export const revalidate = 86400;
 
@@ -40,16 +40,28 @@ const legalBases = [
   { purpose: 'Säkerhetsloggning och missbruksskydd', basis: 'Berättigat intresse', article: 'Art. 6(1)(f)' },
 ];
 
+const sections = [
+  { id: 'personuppgiftsansvarig', label: '1. Personuppgiftsansvarig' },
+  { id: 'vilka-uppgifter', label: '2. Vilka uppgifter' },
+  { id: 'andamal', label: '3. Ändamål och laglig grund' },
+  { id: 'lagringstider', label: '4. Lagringstider' },
+  { id: 'underbitraden', label: '5. Underbiträden' },
+  { id: 'internationella-overforingar', label: '6. Internationella överföringar' },
+  { id: 'datasakerhet', label: '7. Datasäkerhet' },
+  { id: 'rattigheter', label: '8. Dina rättigheter' },
+  { id: 'utova-rattigheter', label: '9. Utöva rättigheter' },
+  { id: 'andringar', label: '10. Ändringar' },
+];
+
 export default function GdprPage() {
   return (
-    <PublicLayout title="GDPR & Dataskydd">
-      <p className="text-sm text-slate-400 mb-2">Senast uppdaterad: juni 2026</p>
+    <PublicLayoutWithTOC title="GDPR & Dataskydd" updated="Senast uppdaterad: juni 2026" sections={sections}>
       <p className="text-lg text-slate-500 mb-10">
         FleetOS behandlar personuppgifter i enlighet med EU:s dataskyddsförordning (GDPR, 2016/679). Den här sidan beskriver vad vi samlar in, varför, hur länge vi sparar det och vilka rättigheter du har.
       </p>
 
       {/* 1. Personuppgiftsansvarig */}
-      <h2>1. Personuppgiftsansvarig</h2>
+      <h2 id="personuppgiftsansvarig">1. Personuppgiftsansvarig</h2>
       <div className="not-prose mb-8 p-5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 space-y-1">
         <p className="font-semibold text-slate-900">DSE ENTERPRISE AB</p>
         <p>Org.nr: 559510-0248</p>
@@ -61,7 +73,7 @@ export default function GdprPage() {
       </div>
 
       {/* 2. Vilka uppgifter */}
-      <h2>2. Vilka personuppgifter behandlar vi?</h2>
+      <h2 id="vilka-uppgifter">2. Vilka personuppgifter behandlar vi?</h2>
       <p className="mb-4">Vi behandlar personuppgifter i tre huvudkategorier:</p>
       <div className="not-prose mb-8 space-y-3">
         {[
@@ -93,7 +105,7 @@ export default function GdprPage() {
       </div>
 
       {/* 3. Ändamål och laglig grund */}
-      <h2>3. Ändamål och laglig grund</h2>
+      <h2 id="andamal">3. Ändamål och laglig grund</h2>
       <p className="mb-4">Vi behandlar personuppgifter enbart för specificerade ändamål med stöd av laglig grund enligt GDPR artikel 6.</p>
       <div className="not-prose mb-8 overflow-hidden rounded-xl border border-slate-200">
         <table className="w-full text-sm">
@@ -117,7 +129,7 @@ export default function GdprPage() {
       </div>
 
       {/* 4. Lagringstider */}
-      <h2>4. Lagringstider</h2>
+      <h2 id="lagringstider">4. Lagringstider</h2>
       <p className="mb-4">Vi sparar personuppgifter så länge det är nödvändigt för respektive ändamål.</p>
       <div className="not-prose mb-8 space-y-2">
         {[
@@ -134,7 +146,7 @@ export default function GdprPage() {
       </div>
 
       {/* 5. Underbiträden */}
-      <h2>5. Underbiträden och tredjeparter</h2>
+      <h2 id="underbitraden">5. Underbiträden och tredjeparter</h2>
       <p className="mb-4">
         Vi anlitar ett antal underbiträden för att tillhandahålla tjänsten. Samtliga är bundna av personuppgiftsbiträdesavtal och får endast behandla uppgifter enligt våra instruktioner.
       </p>
@@ -162,13 +174,13 @@ export default function GdprPage() {
       </div>
 
       {/* 6. Internationella överföringar */}
-      <h2>6. Internationella överföringar</h2>
+      <h2 id="internationella-overforingar">6. Internationella överföringar</h2>
       <p className="mb-8">
         Vissa underbiträden (Supabase, Vercel, OpenAI) är etablerade i USA. Överföringar till dessa sker med stöd av EU-kommissionens standardavtalsklausuler (SCC) enligt GDPR artikel 46(2)(c), vilket säkerställer en adekvat skyddsnivå för dina uppgifter.
       </p>
 
       {/* 7. Datasäkerhet */}
-      <h2>7. Datasäkerhet</h2>
+      <h2 id="datasakerhet">7. Datasäkerhet</h2>
       <p className="mb-4">Vi vidtar tekniska och organisatoriska åtgärder för att skydda personuppgifter mot obehörig åtkomst, förlust eller ändring:</p>
       <div className="not-prose mb-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
         {[
@@ -185,7 +197,7 @@ export default function GdprPage() {
       </div>
 
       {/* 8. Dina rättigheter */}
-      <h2>8. Dina rättigheter</h2>
+      <h2 id="rattigheter">8. Dina rättigheter</h2>
       <p className="mb-4">Som registrerad har du följande rättigheter enligt GDPR. Vi svarar på alla begäran inom 30 dagar.</p>
       <div className="not-prose space-y-2 mb-8">
         {rights.map(({ title, desc }) => (
@@ -202,7 +214,7 @@ export default function GdprPage() {
       </div>
 
       {/* 9. Utöva rättigheter + klagomål */}
-      <h2>9. Utöva dina rättigheter och lämna klagomål</h2>
+      <h2 id="utova-rattigheter">9. Utöva dina rättigheter och lämna klagomål</h2>
       <div className="not-prose mb-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="p-5 bg-slate-50 border border-slate-200 rounded-xl">
           <p className="text-sm font-semibold text-slate-900 mb-2">Kontakta oss</p>
@@ -217,10 +229,10 @@ export default function GdprPage() {
       </div>
 
       {/* 10. Ändringar */}
-      <h2>10. Ändringar i denna information</h2>
+      <h2 id="andringar">10. Ändringar i denna information</h2>
       <p className="mb-8">
         Vi kan komma att uppdatera denna sida när tjänsten förändras eller lagkrav ändras. Väsentliga förändringar meddelas via e-post till registrerade användare. Datumet längst upp på sidan anger när informationen senast reviderades.
       </p>
-    </PublicLayout>
+    </PublicLayoutWithTOC>
   );
 }

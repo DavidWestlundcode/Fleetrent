@@ -363,7 +363,7 @@ function FeatureCard({ badge, badgeIcon: BadgeIcon, badgeColor, title, desc, ben
           </div>
         </div>
         <div className="order-2 bg-slate-50 flex items-center justify-center p-6 sm:p-10">
-          <div className="w-full max-w-sm">
+          <div className="w-full max-w-sm rounded-[1.75rem] bg-gradient-to-br from-slate-100 to-slate-200/80 ring-1 ring-slate-200/70 p-2 shadow-sm">
             <Mockup />
           </div>
         </div>

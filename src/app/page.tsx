@@ -268,6 +268,7 @@ export default function LandingPage() {
               backgroundSize: '64px 64px',
             }}
           />
+          <div className="absolute inset-0 bg-grain" />
           <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-[#060D1A] to-transparent" />
         </div>
 
@@ -509,6 +510,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 right-1/4 w-[500px] h-[400px] bg-blue-600/[0.05] rounded-full blur-[100px]" />
           <div className="absolute bottom-0 left-1/4 w-[400px] h-[300px] bg-violet-600/[0.05] rounded-full blur-[100px]" />
+          <div className="absolute inset-0 bg-grain" />
         </div>
         <div className="max-w-5xl mx-auto relative">
           <AnimateIn className="text-center max-w-2xl mx-auto mb-16 sm:mb-20">
@@ -730,6 +732,7 @@ export default function LandingPage() {
           <div className="absolute inset-0 opacity-[0.022]"
             style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '64px 64px' }}
           />
+          <div className="absolute inset-0 bg-grain" />
         </div>
         <AnimateIn direction="scale" className="relative max-w-2xl mx-auto text-center">
           <div className="mx-auto mb-8">
