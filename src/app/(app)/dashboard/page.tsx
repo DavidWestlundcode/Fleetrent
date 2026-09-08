@@ -13,7 +13,7 @@ import Header from '@/components/layout/Header';
 import StatCard from '@/components/ui/StatCard';
 import { MachineStatusBadge, OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
-import { formatCurrency, formatDate, getMonthlyRevenueData, getRealizedRevenueEvents, getMachineStats, daysUntil } from '@/lib/utils';
+import { formatCurrency, formatDate, getMonthlyRevenueData, getRealizedRevenueEvents, getMachineStats, daysUntil, isOrderOverdue } from '@/lib/utils';
 
 const MACHINE_STATUS_COLORS: Record<string, string> = {
   'I lager': '#10B981',
@@ -34,9 +34,7 @@ export default function DashboardPage() {
     const damaged = machines.filter((m) => m.status === 'skadad').length;
     const reserved = machines.filter((m) => m.status === 'reserverad').length;
     const activeOrders = orders.filter((o) => o.status === 'aktiv' || o.status === 'forsenad');
-    const overdueOrders = orders.filter(
-      (o) => o.status === 'aktiv' && new Date(o.plannedReturnDate) < new Date()
-    );
+    const overdueOrders = orders.filter(isOrderOverdue);
     const returningIn7Days = orders.filter((o) => {
       const days = daysUntil(o.plannedReturnDate);
       return o.status === 'aktiv' && days >= 0 && days <= 7;
@@ -96,7 +94,7 @@ export default function DashboardPage() {
   );
 
   const overdueOrders = useMemo(
-    () => orders.filter((o) => o.status === 'aktiv' && new Date(o.plannedReturnDate) < new Date()),
+    () => orders.filter(isOrderOverdue),
     [orders]
   );
 
@@ -126,7 +124,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex flex-wrap gap-2">
               {stats.overdueOrders > 0 && (
-                <Link href="/orders?status=aktiv" className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-[12px] font-medium rounded-lg transition-colors cursor-pointer">
+                <Link href="/orders?status=forsenad" className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-[12px] font-medium rounded-lg transition-colors cursor-pointer">
                   <Clock className="w-3.5 h-3.5" />
                   {stats.overdueOrders} försenad{stats.overdueOrders !== 1 ? 'e' : ''} retur{stats.overdueOrders !== 1 ? 'er' : ''}
                 </Link>

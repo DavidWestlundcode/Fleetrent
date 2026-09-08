@@ -9,7 +9,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import EmptyState from '@/components/ui/EmptyState';
 import { exportToCsv } from '@/lib/csv';
 import { useStore } from '@/store';
-import { formatCurrency, formatDate, daysUntil, needsPartialInvoice } from '@/lib/utils';
+import { formatCurrency, formatDate, daysUntil, needsPartialInvoice, isOrderOverdue } from '@/lib/utils';
 import type { Order, OrderStatus, Machine, Customer, InvoicePeriod } from '@/lib/types';
 import Pagination from '@/components/ui/Pagination';
 
@@ -88,6 +88,7 @@ function OrdersPageInner() {
           statusFilter === 'all' ? true :
           statusFilter === '30_dagar' ? needsPartialInvoice(o) :
           statusFilter === 'returning_soon' ? isReturningSoon(o) :
+          statusFilter === 'forsenad' ? isOrderOverdue(o) :
           o.status === statusFilter;
         const matchesRentalType =
           statusFilter !== 'aktiv' || rentalTypeFilter === 'all' ? true :
@@ -564,7 +565,7 @@ function OrdersPageInner() {
               {paginated.map((order) => {
                 const machine = machines.find((m) => m.id === order.machineId);
                 const customer = customers.find((c) => c.id === order.customerId);
-                const isOverdue = order.status === 'aktiv' && !!order.plannedReturnDate && new Date(order.plannedReturnDate) < new Date();
+                const isOverdue = isOrderOverdue(order);
                 const daysRemaining = order.plannedReturnDate ? daysUntil(order.plannedReturnDate) : null;
                 return (
                   <tr
@@ -643,7 +644,7 @@ function OrdersPageInner() {
           {paginated.map((order) => {
             const machine = machines.find((m) => m.id === order.machineId);
             const customer = customers.find((c) => c.id === order.customerId);
-            const isOverdue = order.status === 'aktiv' && !!order.plannedReturnDate && new Date(order.plannedReturnDate) < new Date();
+            const isOverdue = isOrderOverdue(order);
             const daysRemaining = order.plannedReturnDate ? daysUntil(order.plannedReturnDate) : null;
             return (
               <Link

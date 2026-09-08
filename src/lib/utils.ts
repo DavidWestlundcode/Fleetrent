@@ -348,6 +348,12 @@ export function needsPartialInvoice(order: PartialInvoiceOrder): boolean {
   return daysSinceLastInvoice(order) >= PARTIAL_INVOICE_DAYS_THRESHOLD;
 }
 
+// "Försenad" isn't a status that ever gets written to an order — it's computed from
+// plannedReturnDate so it's always accurate, the same way needsPartialInvoice is.
+export function isOrderOverdue(order: { status: string; plannedReturnDate?: string }): boolean {
+  return order.status === 'aktiv' && !!order.plannedReturnDate && new Date(order.plannedReturnDate) < new Date();
+}
+
 export function getMonthlyRevenueData(orders: RevenueOrder[]) {
   const months: Record<string, number> = {};
   const now = new Date();
