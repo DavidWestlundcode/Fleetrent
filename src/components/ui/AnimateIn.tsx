@@ -6,11 +6,18 @@ export function AnimateIn({
   className = '',
   delay = 0,
   direction = 'up',
+  threshold = 0.08,
+  rootMargin = '0px 0px -20px 0px',
 }: {
   children: React.ReactNode;
   className?: string;
   delay?: number;
   direction?: 'up' | 'left' | 'right' | 'scale' | 'none';
+  /** How much of the element must be visible before it triggers (0-1). Raise this for large
+   *  elements (e.g. tall cards) — at the default 0.08, a big card's fade finishes before the
+   *  user has scrolled far enough to actually see it happen. */
+  threshold?: number;
+  rootMargin?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -30,11 +37,11 @@ export function AnimateIn({
     if (!el) return;
     const io = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) { setVisible(true); io.disconnect(); } },
-      { threshold: 0.08, rootMargin: '0px 0px -20px 0px' }
+      { threshold, rootMargin }
     );
     io.observe(el);
     return () => io.disconnect();
-  }, []);
+  }, [threshold, rootMargin]);
 
   // Reduced motion keeps the fade (it aids comprehension of what's changing) but drops
   // the translate/scale movement, per prefers-reduced-motion guidance.

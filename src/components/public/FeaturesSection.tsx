@@ -392,7 +392,7 @@ export default function FeaturesSection() {
 
           <div className="space-y-6 sm:space-y-8">
             {FEATURES.map((f) => (
-              <AnimateIn key={f.title} direction="up">
+              <AnimateIn key={f.title} direction="up" threshold={0.01} rootMargin="0px 0px -22% 0px">
                 <FeatureCard {...f} />
               </AnimateIn>
             ))}
