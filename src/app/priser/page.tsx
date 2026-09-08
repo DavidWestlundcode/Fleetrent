@@ -1,16 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Check, ArrowRight, Zap, PenLine } from 'lucide-react';
-import { Logo } from '@/components/ui/Logo';
-import PublicMobileNav from '@/components/public/PublicMobileNav';
-import CustomersNavDropdown from '@/components/public/CustomersNavDropdown';
-
-const NAV_ITEMS = [
-  { label: 'Funktioner', href: '/funktioner' },
-  { label: 'Hur det fungerar', href: '/#how-it-works' },
-  { label: 'Priser', href: '/priser' },
-  { label: 'Kunder', href: '/kunder' },
-];
+import { Check, ArrowRight, PenLine } from 'lucide-react';
+import PublicHeader from '@/components/public/PublicHeader';
+import PublicFooter from '@/components/public/PublicFooter';
 
 export const metadata: Metadata = {
   title: 'Priser – maskinuthyrningssystem från 2 499 kr/mån',
@@ -94,11 +86,8 @@ const BASIC_FEATURES = [
 ];
 
 const PREMIUM_FEATURES = [
-  'Allt i Basic',
-  'Obegränsat antal användare',
   'Obegränsat antal maskiner',
   'Prioriterad support',
-  'E-signering av hyresavtal*',
 ];
 
 export default function PriserPage() {
@@ -106,37 +95,7 @@ export default function PriserPage() {
     <div className="min-h-screen bg-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
-      {/* Navbar */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
-        <div className="relative max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <PublicMobileNav items={NAV_ITEMS} />
-            <Link href="/" className="flex items-center gap-2">
-              <Logo size={28} />
-              <span className="font-bold text-slate-900 text-[15px] tracking-tight">FleetOS</span>
-            </Link>
-          </div>
-          <nav className="hidden md:flex items-center gap-1">
-            {NAV_ITEMS.map(({ label, href }) =>
-              label === 'Kunder' ? (
-                <CustomersNavDropdown key={label} />
-              ) : (
-                <Link key={label} href={href} className="px-3 py-1.5 text-[13px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors font-medium">
-                  {label}
-                </Link>
-              )
-            )}
-          </nav>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link href="/login" className="text-[13px] font-medium text-slate-600 hover:text-slate-900 transition-colors">
-              Logga in
-            </Link>
-            <Link href="/kom-igang" className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold rounded-xl transition-colors">
-              Kom igång <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       <div className="pt-32 pb-24 px-6">
         <div className="max-w-5xl mx-auto">
@@ -172,7 +131,7 @@ export default function PriserPage() {
                 Kom igång med Basic
               </Link>
 
-              <ul className="space-y-3 flex-1">
+              <ul className="space-y-3">
                 {BASIC_FEATURES.map(f => (
                   <li key={f} className="flex items-start gap-3 text-[14px] text-slate-700">
                     <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
@@ -202,21 +161,27 @@ export default function PriserPage() {
 
               <Link
                 href="/kom-igang"
-                className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all text-[14px] mb-8 shadow-lg shadow-blue-600/25"
+                className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold rounded-xl transition-all text-[14px] mb-8 shadow-lg shadow-blue-600/25"
               >
                 Kom igång med Premium
                 <ArrowRight className="w-4 h-4" />
               </Link>
 
-              <ul className="space-y-3 flex-1">
+              <p className="text-[13px] font-semibold text-slate-900 mb-3">Allt i Basic, plus:</p>
+              <ul className="space-y-3">
                 {PREMIUM_FEATURES.map(f => (
                   <li key={f} className="flex items-start gap-3 text-[14px] text-slate-700">
                     <Check className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-                    {f === 'Allt i Basic' ? <span className="font-semibold">{f}</span> : f}
+                    {f}
                   </li>
                 ))}
               </ul>
 
+              <div className="mt-8 pt-6 border-t border-blue-100 flex-1 flex flex-col justify-end">
+                <p className="text-[13px] text-slate-500 leading-relaxed">
+                  Byggt för uthyrare som växer sin flotta och behöver snabbare svarstid från oss när det gäller.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -256,6 +221,7 @@ export default function PriserPage() {
 
         </div>
       </div>
+      <PublicFooter />
     </div>
   );
 }

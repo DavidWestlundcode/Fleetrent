@@ -1,17 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
-import { Logo } from '@/components/ui/Logo';
-import PublicMobileNav from '@/components/public/PublicMobileNav';
-import CustomersNavDropdown from '@/components/public/CustomersNavDropdown';
+import { ArrowRight, Check } from 'lucide-react';
+import PublicHeader from '@/components/public/PublicHeader';
+import PublicFooter from '@/components/public/PublicFooter';
+import { AnimateIn } from '@/components/ui/AnimateIn';
 import { CUSTOMER_CASES } from '@/lib/customer-cases';
-
-const NAV_ITEMS = [
-  { label: 'Funktioner', href: '/funktioner' },
-  { label: 'Hur det fungerar', href: '/#how-it-works' },
-  { label: 'Priser', href: '/priser' },
-  { label: 'Kunder', href: '/kunder' },
-];
 
 export const metadata: Metadata = {
   title: 'Kunder – så använder företag FleetOS',
@@ -28,38 +21,7 @@ export const metadata: Metadata = {
 export default function KunderPage() {
   return (
     <div className="min-h-screen bg-white">
-      {/* Navbar */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
-        <div className="relative max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <PublicMobileNav items={NAV_ITEMS} />
-            <Link href="/" className="flex items-center gap-2">
-              <Logo size={28} />
-              <span className="font-bold text-slate-900 text-[15px] tracking-tight">FleetOS</span>
-            </Link>
-          </div>
-          <nav className="hidden md:flex items-center gap-1">
-            <Link href="/funktioner" className="px-3 py-1.5 text-[13px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors font-medium">
-              Funktioner
-            </Link>
-            <Link href="/#how-it-works" className="px-3 py-1.5 text-[13px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors font-medium">
-              Hur det fungerar
-            </Link>
-            <Link href="/priser" className="px-3 py-1.5 text-[13px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors font-medium">
-              Priser
-            </Link>
-            <CustomersNavDropdown />
-          </nav>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link href="/login" className="text-[13px] font-medium text-slate-600 hover:text-slate-900 transition-colors">
-              Logga in
-            </Link>
-            <Link href="/kom-igang" className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold rounded-xl transition-colors">
-              Kom igång <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       <div className="pt-32 pb-24 px-6">
         <div className="max-w-5xl mx-auto">
@@ -75,26 +37,61 @@ export default function KunderPage() {
             </p>
           </div>
 
-          {/* Case grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {CUSTOMER_CASES.map((c) => (
-              <Link
-                key={c.slug}
-                href={`/kunder/${c.slug}`}
-                className="group bg-white border border-slate-200 rounded-2xl p-6 hover:border-blue-200 hover:shadow-md transition-all duration-200"
-              >
-                <div className="flex items-center justify-center h-12 mb-5">
-                  <img src={c.logo} alt={c.name} className="max-h-8 max-w-[160px] object-contain" />
-                </div>
-                <p className="text-[11px] font-semibold text-blue-600 uppercase tracking-wider mb-1.5">{c.industry}</p>
-                <h2 className="text-[16px] font-bold text-slate-900 mb-2">{c.name}</h2>
-                <p className="text-[13px] text-slate-500 leading-relaxed mb-4">{c.summary}</p>
-                <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-blue-600 group-hover:gap-2.5 transition-all">
-                  Läs mer <ArrowRight className="w-3.5 h-3.5" />
-                </span>
-              </Link>
-            ))}
-          </div>
+          {/* Case grid — a single case gets a fuller spotlight treatment instead of
+              looking like one card lost in an empty multi-column grid. */}
+          {CUSTOMER_CASES.length === 1 ? (
+            <AnimateIn direction="scale">
+              {(() => {
+                const c = CUSTOMER_CASES[0];
+                return (
+                  <Link
+                    href={`/kunder/${c.slug}`}
+                    className="group block bg-white border border-slate-200 rounded-2xl p-8 sm:p-10 hover:border-blue-200 hover:shadow-lg hover:shadow-slate-200/60 transition-all duration-300 max-w-2xl mx-auto"
+                  >
+                    <div className="flex items-center justify-center h-14 mb-6">
+                      <img src={c.logo} alt={c.name} className="max-h-10 max-w-[200px] object-contain" />
+                    </div>
+                    <p className="text-[11px] font-semibold text-blue-600 uppercase tracking-wider mb-1.5 text-center">{c.industry}</p>
+                    <h2 className="text-[22px] font-bold text-slate-900 mb-3 text-center">{c.name}</h2>
+                    <p className="text-[14px] text-slate-500 leading-relaxed mb-7 text-center max-w-lg mx-auto">{c.summary}</p>
+                    <ul className="space-y-2.5 mb-7 max-w-sm mx-auto">
+                      {c.highlights.map((h) => (
+                        <li key={h} className="flex items-start gap-2.5 text-[13.5px] text-slate-700">
+                          <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                          {h}
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="flex justify-center">
+                      <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-blue-600 group-hover:gap-2.5 transition-all">
+                        Läs kundcaset <ArrowRight className="w-3.5 h-3.5" />
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })()}
+            </AnimateIn>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {CUSTOMER_CASES.map((c) => (
+                <Link
+                  key={c.slug}
+                  href={`/kunder/${c.slug}`}
+                  className="group bg-white border border-slate-200 rounded-2xl p-6 hover:border-blue-200 hover:shadow-md transition-all duration-200"
+                >
+                  <div className="flex items-center justify-center h-12 mb-5">
+                    <img src={c.logo} alt={c.name} className="max-h-8 max-w-[160px] object-contain" />
+                  </div>
+                  <p className="text-[11px] font-semibold text-blue-600 uppercase tracking-wider mb-1.5">{c.industry}</p>
+                  <h2 className="text-[16px] font-bold text-slate-900 mb-2">{c.name}</h2>
+                  <p className="text-[13px] text-slate-500 leading-relaxed mb-4">{c.summary}</p>
+                  <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-blue-600 group-hover:gap-2.5 transition-all">
+                    Läs mer <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
 
           {/* CTA */}
           <div className="mt-20 text-center">
@@ -111,6 +108,7 @@ export default function KunderPage() {
 
         </div>
       </div>
+      <PublicFooter />
     </div>
   );
 }

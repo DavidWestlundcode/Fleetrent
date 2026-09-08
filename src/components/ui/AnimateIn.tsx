@@ -14,6 +14,15 @@ export function AnimateIn({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReducedMotion(mq.matches);
+    const onChange = () => setReducedMotion(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   useEffect(() => {
     const el = ref.current;
@@ -26,7 +35,9 @@ export function AnimateIn({
     return () => io.disconnect();
   }, []);
 
-  const from =
+  // Reduced motion keeps the fade (it aids comprehension of what's changing) but drops
+  // the translate/scale movement, per prefers-reduced-motion guidance.
+  const from = reducedMotion ? 'none' :
     direction === 'up' ? 'translateY(28px)' :
     direction === 'left' ? 'translateX(-28px)' :
     direction === 'right' ? 'translateX(28px)' :

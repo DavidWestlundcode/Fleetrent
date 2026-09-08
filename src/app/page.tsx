@@ -9,16 +9,8 @@ import {
 } from 'lucide-react';
 import { AnimateIn, CountUp } from '@/components/ui/AnimateIn';
 import { Logo } from '@/components/ui/Logo';
-import PublicMobileNav from '@/components/public/PublicMobileNav';
-import CustomersNavDropdown from '@/components/public/CustomersNavDropdown';
-
-const NAV_ITEMS = [
-  { label: 'Funktioner', href: '/funktioner' },
-  { label: 'Hur det fungerar', href: '#how-it-works' },
-  { label: 'Integrationer', href: '#integrations' },
-  { label: 'Priser', href: '/priser' },
-  { label: 'Kunder', href: '/kunder' },
-];
+import PublicHeader from '@/components/public/PublicHeader';
+import PublicFooter from '@/components/public/PublicFooter';
 
 export const metadata: Metadata = {
   title: 'FleetOS – Maskinuthyrningssystem för Sverige',
@@ -51,31 +43,6 @@ const jsonLd = {
   inLanguage: 'sv-SE',
   keywords: 'maskinuthyrningssystem, affärssystem för maskinuthyrning, uthyrningssystem maskiner, maskinflotta, orderhantering, Fortnox integration',
 };
-
-/* ─── Static data ─────────────────────────────────────────────────── */
-const TESTIMONIALS = [
-  {
-    name: 'Magnus Eriksson',
-    title: 'VD, Eriksson Maskinuthyrning AB',
-    text: 'Vi hanterade allt i Excel tidigare. FleetOS gav oss full kontroll på dag ett – beläggningsgrad, försenade returer, lönsamhet per maskin. Det tog oss under en vecka att komma igång.',
-    initials: 'ME',
-    color: 'from-blue-500 to-blue-700',
-  },
-  {
-    name: 'Sara Lindgren',
-    title: 'Driftchef, Nordmark Hyrmaskiner',
-    text: 'QR-funktionen är guld värd. Förut ringde mekanikerna mig varje gång en maskin kom in. Nu skannar de bara koden och allt uppdateras automatiskt. Sparar oss timmar varje vecka.',
-    initials: 'SL',
-    color: 'from-violet-500 to-violet-700',
-  },
-  {
-    name: 'Johan Pettersson',
-    title: 'Ägare, JP Anläggning & Uthyrning',
-    text: 'Har testat tre andra system. FleetOS är det enda som faktiskt funkar för maskinuthyrning specifikt. Statistiken och ROI-analysen per maskin är något de andra saknar helt.',
-    initials: 'JP',
-    color: 'from-emerald-500 to-emerald-700',
-  },
-];
 
 /* ─── Sub-components ─────────────────────────────────────────────── */
 function DashboardMockup() {
@@ -568,39 +535,7 @@ export default function LandingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* ── Navbar ── */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <PublicMobileNav items={NAV_ITEMS} />
-            <div className="flex items-center gap-2">
-              <Logo size={28} />
-              <span className="font-bold text-slate-900 text-[15px] tracking-tight">FleetOS</span>
-            </div>
-          </div>
-          <nav className="hidden md:flex items-center justify-center gap-1 absolute left-1/2 -translate-x-1/2">
-            {NAV_ITEMS.map(({ label, href }) =>
-              label === 'Kunder' ? (
-                <CustomersNavDropdown key={label} />
-              ) : (
-                <a key={label} href={href} className="px-3 py-1.5 text-[13px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors font-medium">
-                  {label}
-                </a>
-              )
-            )}
-          </nav>
-          <div className="flex items-center gap-2">
-            <Link href="/login" className="text-[13px] font-medium text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">
-              Logga in
-            </Link>
-            <Link href="/kom-igang" className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 bg-slate-900 hover:bg-slate-700 text-white text-[13px] font-semibold rounded-xl transition-colors shadow-sm">
-              <span className="hidden sm:inline">Boka demo</span>
-              <span className="sm:hidden">Boka demo</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       {/* ── Hero ── */}
       <section className="relative pt-24 pb-0 bg-[#060D1A] overflow-hidden">
@@ -1292,73 +1227,7 @@ export default function LandingPage() {
         </AnimateIn>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="bg-[#030810] border-t border-white/[0.04]">
-        <div className="max-w-6xl mx-auto px-6 py-14">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-12">
-            <div className="col-span-2">
-              <div className="flex items-center gap-2 mb-4">
-                <Logo size={28} />
-                <span className="text-[14px] font-bold text-white tracking-tight">FleetOS</span>
-              </div>
-              <p className="text-[13px] text-slate-500 leading-relaxed max-w-[220px]">
-                Det moderna uthyrningssystemet för maskinföretag i Sverige.
-              </p>
-            </div>
-            {[
-              { title: 'Företag', links: [
-                { label: 'Om oss', href: '/om-oss' },
-                { label: 'Karriär', href: '/karriar' },
-                { label: 'Press', href: '/press' },
-                { label: 'Kontakt', href: '/kontakt' },
-              ]},
-              { title: 'Branscher', links: [
-                { label: 'Byggmaskiner', href: '/uthyrning/byggmaskiner' },
-                { label: 'Truckar', href: '/uthyrning/truckar' },
-                { label: 'Liftar & skylift', href: '/uthyrning/liftar' },
-              ]},
-              { title: 'Juridik', links: [
-                { label: 'Integritetspolicy', href: '/integritetspolicy' },
-                { label: 'Villkor', href: '/villkor' },
-                { label: 'GDPR', href: '/gdpr' },
-                { label: 'Säkerhet', href: '/sakerhet' },
-              ]},
-            ].map(({ title, links }) => (
-              <div key={title}>
-                <h4 className="text-[12px] font-semibold text-white uppercase tracking-wider mb-4">{title}</h4>
-                <ul className="space-y-2.5">
-                  {links.map(({ label, href }) => (
-                    <li key={label}>
-                      <a href={href} className="text-[13px] text-slate-500 hover:text-slate-300 transition-colors">{label}</a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-          <div className="pt-8 border-t border-white/[0.05] flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-[12px] text-slate-600">
-              © {new Date().getFullYear()} DSE ENTERPRISE AB. Alla rättigheter förbehållna.
-            </p>
-            <div className="flex items-center gap-2">
-              <a
-                href="https://www.instagram.com/fleetos.se/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Instagram"
-                className="text-slate-500 hover:text-slate-300 transition-colors"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-                </svg>
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
-
+      <PublicFooter />
     </div>
   );
 }
