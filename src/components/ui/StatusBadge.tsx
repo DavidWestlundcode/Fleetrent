@@ -1,4 +1,4 @@
-import { Repeat } from 'lucide-react';
+import { Repeat, CheckCircle2 } from 'lucide-react';
 import type { MachineStatus, OrderStatus } from '@/lib/types';
 import { STATUS_LABELS, ORDER_STATUS_LABELS } from '@/lib/types';
 
@@ -36,6 +36,15 @@ export function OrderStatusBadge({ status }: { status: OrderStatus }) {
     <span className={`inline-flex items-center gap-1.5 px-2 py-[3px] rounded-full text-[11px] font-medium ${s.bg}`}>
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.dot}`} />
       {ORDER_STATUS_LABELS[status]}
+    </span>
+  );
+}
+
+export function SentToAccountingBadge({ className = '' }: { className?: string }) {
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-[3px] rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/80 ${className}`}>
+      <CheckCircle2 className="w-3 h-3 shrink-0" />
+      Skickad till bokföringsprogrammet
     </span>
   );
 }

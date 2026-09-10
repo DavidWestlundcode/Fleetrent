@@ -4,7 +4,7 @@ import { useState, Fragment } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, Truck, Building2, Calendar, CheckCircle2, Trash2, Pencil, Send, Loader2, ExternalLink, Receipt, Plus, ChevronDown, ChevronUp, FileSignature, Camera, Repeat, Wrench, Search } from 'lucide-react';
 import Header from '@/components/layout/Header';
-import { MachineStatusBadge, OrderStatusBadge, LongTermBadge } from '@/components/ui/StatusBadge';
+import { MachineStatusBadge, OrderStatusBadge, LongTermBadge, SentToAccountingBadge } from '@/components/ui/StatusBadge';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useStore } from '@/store';
 import { formatCurrency, formatDate, formatDateTime, daysBetween, daysUntil, calcBreakdown, calcRentalBreakdown, calcDiscountedTotal, countBusinessDays } from '@/lib/utils';
@@ -411,6 +411,7 @@ export default function OrderDetailPage() {
                 <h2 className="font-semibold text-slate-900">Orderdetaljer</h2>
                 <div className="flex items-center gap-2">
                   {order.isLongTerm && <LongTermBadge />}
+                  {(order.fortnoxOrderNumber || order.sentToAccounting) && <SentToAccountingBadge />}
                   <OrderStatusBadge status={order.status} />
                 </div>
               </div>
