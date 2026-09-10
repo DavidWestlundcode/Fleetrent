@@ -156,9 +156,11 @@ export async function POST(request: NextRequest) {
     // This route only runs once an order is klar_for_fakturering, i.e. already returned — always
     // bill the actual period the machine was out, whether the return happened early or late
     // relative to any planned date, not the originally planned/agreed period.
-    const endDate = (orderRow.actual_return_date as string)
+    // .split('T')[0] guards against historical rows where actual_return_date was stored with a
+    // time-of-day — otherwise it'd leak into the Fortnox row description below.
+    const endDate = ((orderRow.actual_return_date as string)
       || (orderRow.planned_return_date as string)
-      || startDate;
+      || startDate).split('T')[0];
     const calendarDays = daysBetween(startDate, endDate);
     const chargeWeekends = (orderRow.charge_weekends as boolean) ?? false;
     // Whether to count weekends is purely the order's own setting — independent of whether it's
