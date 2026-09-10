@@ -305,9 +305,7 @@ export function getMachineStats(orders: StatsOrder[], machineId: string) {
     if (order.machineId === machineId && isClosed) {
       totalRevenue += Math.max(0, order.totalPrice - invoicedAmount);
       if (order.actualReturnDate) {
-        const totalDays = Math.max(1, Math.round(
-          (new Date(order.actualReturnDate).getTime() - new Date(order.startDate).getTime()) / 86400000
-        ));
+        const totalDays = daysBetween(order.startDate, order.actualReturnDate);
         totalRentalDays += Math.max(0, totalDays - invoicedDays);
       }
     }

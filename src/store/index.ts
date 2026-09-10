@@ -1185,9 +1185,7 @@ export const useStore = create<AppStore>()((set, get) => ({
 
     // Reconstruct the rental days that were added when the machine was returned
     const rentalDaysToReverse = hasRevenue
-      ? Math.max(1, Math.round(
-          (new Date(order.actualReturnDate!).getTime() - new Date(order.startDate).getTime()) / 86400000
-        ))
+      ? daysBetween(order.startDate, order.actualReturnDate!)
       : 0;
 
     // Machine/customer stats only ever received the rental-only portion (see returnMachine) —
@@ -1278,8 +1276,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     const alreadyInvoicedDays = (order.invoicePeriods ?? []).reduce((s, p) => s + p.days, 0);
     const remainingPrice = Math.max(0, rentalPrice - alreadyInvoicedAmount);
 
-    const startDate = new Date(order.startDate);
-    const rentalDays = Math.max(1, Math.round((Date.now() - startDate.getTime()) / 86400000));
+    const rentalDays = daysBetween(order.startDate, returnDate);
     const remainingDays = Math.max(0, rentalDays - alreadyInvoicedDays);
 
     set((s) => ({

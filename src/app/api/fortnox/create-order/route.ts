@@ -1,6 +1,6 @@
 ﻿import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { calcRentalBreakdown, countBusinessDays } from '@/lib/utils';
+import { calcRentalBreakdown, countBusinessDays, daysBetween } from '@/lib/utils';
 import { NextResponse, type NextRequest } from 'next/server';
 import { LIMITS } from '@/lib/rate-limit';
 import type { OrderArticle } from '@/lib/types';
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
     const endDate = (orderRow.actual_return_date as string)
       || (orderRow.planned_return_date as string)
       || startDate;
-    const calendarDays = Math.max(1, Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000));
+    const calendarDays = daysBetween(startDate, endDate);
     const chargeWeekends = (orderRow.charge_weekends as boolean) ?? false;
     // Whether to count weekends is purely the order's own setting — independent of whether it's
     // open-ended or fixed-term (that only decides which end date to measure from, above).
