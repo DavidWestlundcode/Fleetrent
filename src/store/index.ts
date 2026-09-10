@@ -1257,6 +1257,10 @@ export const useStore = create<AppStore>()((set, get) => ({
 
   returnMachine: (orderId, data) => {
     const now = new Date().toISOString();
+    // actual_return_date is a date, not a timestamp — storing the full "now" here (with a
+    // time-of-day) made daysBetween/countBusinessDays round the rental length up by a day
+    // depending on what time the return happened to be registered.
+    const returnDate = now.split('T')[0];
     const { organizationId, userId, userName } = get();
     const order = get().orders.find((o) => o.id === orderId);
     if (!order) return;
@@ -1284,7 +1288,7 @@ export const useStore = create<AppStore>()((set, get) => ({
           ? {
               ...o,
               status: 'klar_for_fakturering' as const,
-              actualReturnDate: now,
+              actualReturnDate: returnDate,
               returnCondition: data.returnCondition as Order['returnCondition'],
               returnNotes: data.returnNotes,
               returnOperatingHours: data.returnOperatingHours,
@@ -1342,7 +1346,7 @@ export const useStore = create<AppStore>()((set, get) => ({
         }) as unknown as Promise<{ error: unknown }>,
         client.from('orders').update({
           status: 'klar_for_fakturering',
-          actual_return_date: now,
+          actual_return_date: returnDate,
           return_condition: data.returnCondition,
           return_notes: data.returnNotes,
           return_operating_hours: data.returnOperatingHours,

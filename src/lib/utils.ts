@@ -30,10 +30,12 @@ export function formatDateTime(dateString: string): string {
   });
 }
 
+// Inclusive of both endpoints: the start day and the return day both count as a
+// day of possession (a machine returned the same day it started is still 1 day).
 export function daysBetween(startDate: string, endDate: string): number {
   const start = new Date(startDate);
   const end = new Date(endDate);
-  return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 }
 
 export function isOverdue(plannedReturnDate: string, status: string): boolean {
@@ -85,8 +87,10 @@ export function calcRentalBreakdown(
   } else if (chargeWeekends) {
     days = rem;
   } else {
+    // rem is an inclusive day count, so the tail's first day is (rem - 1) days before
+    // endDate — e.g. rem=1 means the tail is just endDate itself.
     const tailStart = new Date(endDate);
-    tailStart.setDate(tailStart.getDate() - rem);
+    tailStart.setDate(tailStart.getDate() - (rem - 1));
     days = countBusinessDays(isoDate(tailStart), endDate);
   }
 
@@ -161,6 +165,7 @@ export function getSwedishHolidays(year: number): Set<string> {
   return s;
 }
 
+// Inclusive of both endpoints, matching daysBetween — the return day is a billable day too.
 export function countBusinessDays(start: string, end: string): number {
   const startDate = new Date(start);
   const endDate = new Date(end);
@@ -170,7 +175,7 @@ export function countBusinessDays(start: string, end: string): number {
   }
   let count = 0;
   const cur = new Date(startDate);
-  while (cur < endDate) {
+  while (cur <= endDate) {
     const day = cur.getDay();
     if (day !== 0 && day !== 6 && !holidays.has(isoDate(cur))) count++;
     cur.setDate(cur.getDate() + 1);

@@ -67,7 +67,9 @@ function ReturnPageInner() {
     );
   }
 
-  const today = new Date().toISOString();
+  // Date-only, not a timestamp — feeding a time-of-day into daysBetween/countBusinessDays
+  // shifted the billed day count depending on what time the return happened to be registered.
+  const today = new Date().toISOString().split('T')[0];
   const isOpenEnded = order.openEnded === true || !order.plannedReturnDate;
   // Always settle on the actual return date, not the originally planned one — an early or late
   // return should bill for the days the machine was actually out.

@@ -57,7 +57,7 @@ export default function OrderDetailPage() {
   const daysRemaining = order.plannedReturnDate ? daysUntil(order.plannedReturnDate) : null;
   const actualDays = order.actualReturnDate
     ? daysBetween(order.startDate, order.actualReturnDate)
-    : daysBetween(order.startDate, new Date().toISOString());
+    : daysBetween(order.startDate, new Date().toISOString().split('T')[0]);
 
   // Invoice period calculations
   const todayStr = new Date().toISOString().split('T')[0];
