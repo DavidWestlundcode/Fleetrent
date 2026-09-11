@@ -267,7 +267,7 @@ function QRReturnMockup() {
       <div className="pt-2 border-t border-white/[0.06] grid grid-cols-3 gap-2">
         {[
           { label: 'Registreringstid', value: '< 1 min', color: 'text-blue-400' },
-          { label: 'Ingen inloggning', value: 'QR', color: 'text-emerald-400' },
+          { label: 'QR-skanning', value: 'QR', color: 'text-emerald-400' },
           { label: 'Uppdateras', value: 'Direkt', color: 'text-violet-400' },
         ].map(({ label, value, color }) => (
           <div key={label} className="text-center">
@@ -324,7 +324,7 @@ const FEATURES = [
     badgeColor: 'text-emerald-700',
     title: 'Registrera returer på under en minut',
     desc: 'Lagerpersonalen skannar QR-koden på maskinen och registrerar skick, drifttimmar och eventuella skador direkt i mobilen. Ordern och maskinens tillgänglighet uppdateras automatiskt.',
-    benefits: ['Skanna maskinens QR-kod utan inloggning', 'Registrera skick och drifttimmar på plats', 'Order- och maskinstatus uppdateras direkt'],
+    benefits: ['Skanna maskinens QR-kod direkt i mobilen', 'Registrera skick och drifttimmar på plats', 'Order- och maskinstatus uppdateras direkt'],
     Mockup: QRReturnMockup,
   },
 ];
