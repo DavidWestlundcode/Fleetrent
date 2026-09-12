@@ -12,6 +12,7 @@ import PublicHeader from '@/components/public/PublicHeader';
 import PublicFooter from '@/components/public/PublicFooter';
 import FAQSection from '@/components/public/FAQSection';
 import FeaturesSection from '@/components/public/FeaturesSection';
+import LatestEventsSection from '@/components/public/LatestEventsSection';
 
 export const metadata: Metadata = {
   title: 'FleetOS – Maskinuthyrningssystem för Sverige',
@@ -698,6 +699,9 @@ export default function LandingPage() {
         </div>
       </section>
 
+
+      {/* ── Senaste händelserna ── */}
+      <LatestEventsSection />
 
       <FAQSection />
 

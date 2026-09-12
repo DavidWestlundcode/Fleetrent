@@ -5,6 +5,7 @@ const FOOTER_COLUMNS = [
     { label: 'Om oss', href: '/om-oss' },
     { label: 'Karriär', href: '/karriar' },
     { label: 'Press', href: '/press' },
+    { label: 'Senaste händelserna', href: '/handelser' },
     { label: 'Kontakt', href: '/kontakt' },
   ]},
   { title: 'Branscher', links: [

@@ -20,9 +20,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200 px-6 h-14 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <Link href="/admin" className="font-bold text-slate-900 text-[15px]">FleetOS Admin</Link>
-          <span className="text-[11px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">Super Admin</span>
+        <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3">
+            <Link href="/admin" className="font-bold text-slate-900 text-[15px]">FleetOS Admin</Link>
+            <span className="text-[11px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">Super Admin</span>
+          </div>
+          <nav className="flex items-center gap-4 text-sm">
+            <Link href="/admin" className="text-slate-500 hover:text-slate-700 transition-colors">Organisationer</Link>
+            <Link href="/admin/handelser" className="text-slate-500 hover:text-slate-700 transition-colors">Händelser</Link>
+          </nav>
         </div>
         <Link href="/dashboard" className="text-sm text-slate-500 hover:text-slate-700 transition-colors">
           ← Tillbaka till appen
