@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   const { data: profile } = await admin.from('profiles').select('is_super_admin, organization_id').eq('id', user.id).single();
   if (!profile?.is_super_admin) return NextResponse.json({ error: 'Ej behörig' }, { status: 403 });
 
-  const { title, description, category, event_date, is_published } = await req.json();
+  const { title, description, category, event_date, is_published, image_url, meta_title, meta_description } = await req.json();
   if (!title?.trim() || !description?.trim()) {
     return NextResponse.json({ error: 'Titel och beskrivning krävs' }, { status: 400 });
   }
@@ -25,6 +25,9 @@ export async function POST(req: NextRequest) {
       category: category?.trim() || null,
       event_date: event_date || new Date().toISOString().slice(0, 10),
       is_published: is_published ?? true,
+      image_url: image_url?.trim() || null,
+      meta_title: meta_title?.trim() || null,
+      meta_description: meta_description?.trim() || null,
     })
     .select()
     .single();

@@ -21,7 +21,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (auth.error) return auth.error;
   const { user, profile, admin } = auth;
 
-  const { title, description, category, event_date, is_published } = await req.json();
+  const { title, description, category, event_date, is_published, image_url, meta_title, meta_description } = await req.json();
 
   const { data: before } = await admin.from('landing_events').select('*').eq('id', id).single();
 
@@ -33,6 +33,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(category !== undefined && { category: category?.trim() || null }),
       ...(event_date !== undefined && { event_date }),
       ...(is_published !== undefined && { is_published }),
+      ...(image_url !== undefined && { image_url: image_url?.trim() || null }),
+      ...(meta_title !== undefined && { meta_title: meta_title?.trim() || null }),
+      ...(meta_description !== undefined && { meta_description: meta_description?.trim() || null }),
     })
     .eq('id', id)
     .select()
