@@ -102,6 +102,8 @@ export async function POST(request: NextRequest) {
           link,
           '',
           'Länken är giltig i 24 timmar.',
+          '',
+          'Fyll i dina uppgifter i inställningar efter du skapat ditt konto.',
         ].join('\n'),
       });
       if (emailError) console.error('[invite-user] Failed to send invite email:', emailError);
