@@ -1,9 +1,9 @@
 ﻿import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { calcRentalBreakdown, countBusinessDays, daysBetween } from '@/lib/utils';
+import { calcRentalBreakdown, calcDiscountedTotal, countBusinessDays, daysBetween } from '@/lib/utils';
 import { NextResponse, type NextRequest } from 'next/server';
 import { LIMITS } from '@/lib/rate-limit';
-import type { OrderArticle } from '@/lib/types';
+import type { InvoicePeriod, OrderArticle } from '@/lib/types';
 import { decryptSecret, encryptSecret } from '@/lib/crypto';
 
 const FORTNOX_API = 'https://api.fortnox.se/3';
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Build order rows
-    const startDate = orderRow.start_date as string;
+    const orderStartDate = orderRow.start_date as string;
     // This route only runs once an order is klar_for_fakturering, i.e. already returned — always
     // bill the actual period the machine was out, whether the return happened early or late
     // relative to any planned date, not the originally planned/agreed period.
@@ -160,12 +160,28 @@ export async function POST(request: NextRequest) {
     // time-of-day — otherwise it'd leak into the Fortnox row description below.
     const endDate = ((orderRow.actual_return_date as string)
       || (orderRow.planned_return_date as string)
-      || startDate).split('T')[0];
-    const calendarDays = daysBetween(startDate, endDate);
+      || orderStartDate).split('T')[0];
+
+    // Skip any days already covered by a delfaktura (sent to Fortnox or not — a pending
+    // delfaktura still reserves its date range) so this final invoice never re-bills days a
+    // partial invoice already claimed. Mirrors the nextInvoiceStart calculation the order
+    // detail page uses to compute "Fakturerat"/"Ej fakturerat".
+    const existingInvoicePeriods = ((orderRow.invoice_periods as InvoicePeriod[]) ?? [])
+      .slice()
+      .sort((a, b) => a.startDate.localeCompare(b.startDate));
+    const lastInvoiceEnd = existingInvoicePeriods.length > 0
+      ? existingInvoicePeriods[existingInvoicePeriods.length - 1].endDate
+      : null;
+    const startDate = lastInvoiceEnd
+      ? new Date(new Date(lastInvoiceEnd).getTime() + 86400000).toISOString().split('T')[0]
+      : orderStartDate;
+
     const chargeWeekends = (orderRow.charge_weekends as boolean) ?? false;
     // Whether to count weekends is purely the order's own setting — independent of whether it's
     // open-ended or fixed-term (that only decides which end date to measure from, above).
-    const days = chargeWeekends
+    const hasRemainingDays = startDate <= endDate;
+    const calendarDays = hasRemainingDays ? daysBetween(startDate, endDate) : 0;
+    const days = !hasRemainingDays ? 0 : chargeWeekends
       ? calendarDays
       : countBusinessDays(startDate, endDate);
 
@@ -178,7 +194,9 @@ export async function POST(request: NextRequest) {
       machineRow.serial_number ? `S/N: ${machineRow.serial_number}` : null,
     ].filter(Boolean).join(' ') : null;
 
-    const breakdown = calcRentalBreakdown(startDate, endDate, chargeWeekends, orderRow.daily_price as number, orderRow.weekly_price as number, orderRow.monthly_price as number);
+    const breakdown = hasRemainingDays
+      ? calcRentalBreakdown(startDate, endDate, chargeWeekends, orderRow.daily_price as number, orderRow.weekly_price as number, orderRow.monthly_price as number)
+      : { months: 0, weeks: 0, days: 0 };
     const monthlyDiscount = (orderRow.monthly_discount as number) ?? 0;
     const weeklyDiscount = (orderRow.weekly_discount as number) ?? 0;
     const dailyDiscount = (orderRow.rental_discount as number) ?? 0;
@@ -218,36 +236,40 @@ export async function POST(request: NextRequest) {
 
     const periodRange = `${startDate} - ${endDate}`;
 
-    if (breakdown.months > 0) {
-      orderRows.push({
-        ...(rentalArt?.article_number ? { ArticleNumber: rentalArt.article_number } : {}),
-        Description: machineParts ? `Hyra – ${machineParts} – ${breakdown.months} mån (${periodRange})` : `Hyra – ${breakdown.months} mån (${periodRange})`,
-        DeliveredQuantity: breakdown.months,
-        Price: (orderRow.monthly_price as number) ?? 0,
-        Unit: 'mån',
-        ...(monthlyDiscount > 0 ? { Discount: monthlyDiscount } : {}),
-      });
-    }
-    if (breakdown.weeks > 0) {
-      orderRows.push({
-        ...(rentalArt?.article_number ? { ArticleNumber: rentalArt.article_number } : {}),
-        Description: machineParts ? `Hyra – ${machineParts} – ${breakdown.weeks} v (${periodRange})` : `Hyra – ${breakdown.weeks} v (${periodRange})`,
-        DeliveredQuantity: breakdown.weeks,
-        Price: (orderRow.weekly_price as number) ?? 0,
-        Unit: 'vecka',
-        ...(weeklyDiscount > 0 ? { Discount: weeklyDiscount } : {}),
-      });
-    }
-    if (breakdown.days > 0 || orderRows.length === 0) {
-      const dayQty = breakdown.days > 0 ? breakdown.days : days;
-      orderRows.push({
-        ...(rentalArt?.article_number ? { ArticleNumber: rentalArt.article_number } : {}),
-        Description: machineParts ? `Hyra – ${machineParts} – ${dayQty} dagar (${periodRange})` : `Hyra – ${dayQty} dagar (${periodRange})`,
-        DeliveredQuantity: dayQty,
-        Price: (orderRow.daily_price as number) ?? 0,
-        Unit: 'dag',
-        ...(dailyDiscount > 0 ? { Discount: dailyDiscount } : {}),
-      });
+    // If a delfaktura already covers every day up to endDate, there's nothing left to bill for
+    // the rental itself — skip these rows entirely rather than falling back to a 0-day line.
+    if (hasRemainingDays) {
+      if (breakdown.months > 0) {
+        orderRows.push({
+          ...(rentalArt?.article_number ? { ArticleNumber: rentalArt.article_number } : {}),
+          Description: machineParts ? `Hyra – ${machineParts} – ${breakdown.months} mån (${periodRange})` : `Hyra – ${breakdown.months} mån (${periodRange})`,
+          DeliveredQuantity: breakdown.months,
+          Price: (orderRow.monthly_price as number) ?? 0,
+          Unit: 'mån',
+          ...(monthlyDiscount > 0 ? { Discount: monthlyDiscount } : {}),
+        });
+      }
+      if (breakdown.weeks > 0) {
+        orderRows.push({
+          ...(rentalArt?.article_number ? { ArticleNumber: rentalArt.article_number } : {}),
+          Description: machineParts ? `Hyra – ${machineParts} – ${breakdown.weeks} v (${periodRange})` : `Hyra – ${breakdown.weeks} v (${periodRange})`,
+          DeliveredQuantity: breakdown.weeks,
+          Price: (orderRow.weekly_price as number) ?? 0,
+          Unit: 'vecka',
+          ...(weeklyDiscount > 0 ? { Discount: weeklyDiscount } : {}),
+        });
+      }
+      if (breakdown.days > 0 || orderRows.length === 0) {
+        const dayQty = breakdown.days > 0 ? breakdown.days : days;
+        orderRows.push({
+          ...(rentalArt?.article_number ? { ArticleNumber: rentalArt.article_number } : {}),
+          Description: machineParts ? `Hyra – ${machineParts} – ${dayQty} dagar (${periodRange})` : `Hyra – ${dayQty} dagar (${periodRange})`,
+          DeliveredQuantity: dayQty,
+          Price: (orderRow.daily_price as number) ?? 0,
+          Unit: 'dag',
+          ...(dailyDiscount > 0 ? { Discount: dailyDiscount } : {}),
+        });
+      }
     }
 
     if ((orderRow.insurance_cost as number) > 0) {
@@ -272,6 +294,13 @@ export async function POST(request: NextRequest) {
         Unit: art?.unit ?? 'st',
         ...(artDiscount > 0 ? { Discount: artDiscount } : {}),
       });
+    }
+
+    if (orderRows.length === 0) {
+      // Every day was already covered by delfakturor and there's nothing else to bill —
+      // don't send an empty order to Fortnox, just mark this order as done.
+      await admin.from('orders').update({ sent_to_accounting: true }).eq('id', orderId);
+      return NextResponse.json({ success: true, fortnoxOrderNumber: null, invoicePeriods: existingInvoicePeriods });
     }
 
     const fortnoxRes = await fetch(`${FORTNOX_API}/orders`, {
@@ -303,13 +332,32 @@ export async function POST(request: NextRequest) {
     const fortnoxJson = await fortnoxRes.json();
     const fortnoxOrderNumber = fortnoxJson.Order?.DocumentNumber as string;
 
+    // Record the billed days as a settled invoice period too, so "Fakturerat"/"Ej fakturerat"
+    // on the order detail page reflects this final invoice immediately, not just delfakturor.
+    const updatedInvoicePeriods = hasRemainingDays
+      ? [
+          ...existingInvoicePeriods,
+          {
+            id: crypto.randomUUID(),
+            startDate,
+            endDate,
+            days,
+            amount: calcDiscountedTotal(breakdown, orderRow.daily_price as number, orderRow.weekly_price as number, orderRow.monthly_price as number, dailyDiscount, weeklyDiscount, monthlyDiscount),
+            fortnoxOrderNumber,
+            sentToAccounting: true,
+            createdAt: new Date().toISOString(),
+          } satisfies InvoicePeriod,
+        ]
+      : existingInvoicePeriods;
+
     // Update order in DB
     await admin.from('orders').update({
       sent_to_accounting: true,
       fortnox_order_number: fortnoxOrderNumber,
+      invoice_periods: updatedInvoicePeriods,
     }).eq('id', orderId);
 
-    return NextResponse.json({ success: true, fortnoxOrderNumber });
+    return NextResponse.json({ success: true, fortnoxOrderNumber, invoicePeriods: updatedInvoicePeriods });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Okänt fel';
     return NextResponse.json({ error: msg }, { status: 500 });

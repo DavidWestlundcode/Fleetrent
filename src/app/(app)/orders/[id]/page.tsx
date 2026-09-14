@@ -201,6 +201,7 @@ export default function OrderDetailPage() {
       updateOrder(order.id, {
         sentToAccounting: true,
         fortnoxOrderNumber: data.fortnoxOrderNumber,
+        invoicePeriods: data.invoicePeriods,
       });
     } finally {
       setSendingToFortnox(false);
