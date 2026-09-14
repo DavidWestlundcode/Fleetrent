@@ -2,7 +2,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity, Plus, Trash2, Search, FileSignature, CalendarOff, Repeat } from 'lucide-react';
+import { ArrowLeft, Save, Calculator, Shield, Sparkles, Clock, CalendarDays, Infinity, Plus, Trash2, Search, FileSignature, CalendarOff, CalendarX, Repeat } from 'lucide-react';
 import type { OrderArticle, OrderArticleBilling } from '@/lib/types';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
@@ -69,6 +69,7 @@ function NewOrderForm() {
     templateId: '',
     startDate: today,
     plannedReturnDate: nextMonth,
+    billingEndDate: '',
     dailyPrice: 0,
     weeklyPrice: 0,
     monthlyPrice: 0,
@@ -91,6 +92,7 @@ function NewOrderForm() {
   const [rentalType, setRentalType] = useState<'short' | 'long'>('short');
   const [autoMatchedTemplate, setAutoMatchedTemplate] = useState<string | null>(null);
   const [openEnded, setOpenEnded] = useState(false);
+  const [endOrderEarly, setEndOrderEarly] = useState(false);
   const [chargeWeekends, setChargeWeekends] = useState(false);
   const [isLongTerm, setIsLongTerm] = useState(false);
   const [orderArticles, setOrderArticles] = useState<OrderArticle[]>([]);
@@ -242,6 +244,7 @@ function NewOrderForm() {
       templateId: form.templateId || undefined,
       startDate: form.startDate,
       plannedReturnDate: openEnded ? '' : form.plannedReturnDate,
+      billingEndDate: form.billingEndDate || undefined,
       dailyPrice: form.dailyPrice,
       weeklyPrice: form.weeklyPrice,
       monthlyPrice: form.monthlyPrice,
@@ -592,6 +595,39 @@ function NewOrderForm() {
                   <span className="text-[12px] text-amber-600 bg-amber-50 px-3 py-1.5 rounded-xl">
                     Pris beräknas när retur registreras
                   </span>
+                )}
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={endOrderEarly}
+                    onChange={(e) => {
+                      setEndOrderEarly(e.target.checked);
+                      if (!e.target.checked) set('billingEndDate', '');
+                    }}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <span className="text-[13px] text-slate-600 font-medium flex items-center gap-1.5">
+                    <CalendarX className="w-3.5 h-3.5 text-slate-400" />
+                    Avsluta order tidigare
+                  </span>
+                </label>
+                {endOrderEarly && (
+                  <div className="mt-2.5 max-w-[220px]">
+                    <input
+                      type="date"
+                      required
+                      value={form.billingEndDate}
+                      min={form.startDate}
+                      onChange={(e) => set('billingEndDate', e.target.value)}
+                      className={inputClass}
+                    />
+                    <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                      Fakturering sker t.o.m. detta datum istället för faktisk returdag — använd om kunden vill avsluta hyran innan maskinen hämtas.
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
