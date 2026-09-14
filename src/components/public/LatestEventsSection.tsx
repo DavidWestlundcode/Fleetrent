@@ -7,7 +7,7 @@ export default async function LatestEventsSection() {
   const supabase = await createClient();
   const { data: events } = await supabase
     .from('landing_events')
-    .select('id, title, description, category, event_date, image_url')
+    .select('id, title, category, event_date, image_url')
     .eq('is_published', true)
     .order('event_date', { ascending: false })
     .limit(3);
@@ -44,8 +44,7 @@ export default async function LatestEventsSection() {
                       {new Date(event.event_date).toLocaleDateString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </span>
                   </div>
-                  <h3 className="font-semibold text-slate-900 mb-2 leading-snug">{event.title}</h3>
-                  <p className="text-[13px] text-slate-500 leading-relaxed">{event.description}</p>
+                  <h3 className="font-semibold text-slate-900 leading-snug">{event.title}</h3>
                 </div>
               </Link>
             </AnimateIn>
