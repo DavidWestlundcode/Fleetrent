@@ -324,6 +324,15 @@ export default function LandingPage() {
                 <p className="text-[10px] text-slate-400">Toyota 8FBN25 · Lindström AB</p>
               </div>
             </div>
+            <div className="absolute -top-5 left-8 z-20 hidden lg:flex items-center gap-2.5 bg-white rounded-2xl border border-slate-200 shadow-2xl px-3.5 py-2.5 animate-float4">
+              <div className="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
+                <FileText className="w-4 h-4 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold text-slate-800">10 månadsfakturor klara</p>
+                <p className="text-[10px] text-slate-400">Skickade till Fortnox</p>
+              </div>
+            </div>
             <div className="absolute -bottom-4 left-8 z-20 hidden lg:flex items-center gap-2.5 bg-white rounded-2xl border border-slate-200 shadow-2xl px-3.5 py-2.5 animate-float2">
               <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
                 <TrendingUp className="w-4 h-4 text-blue-600" />
