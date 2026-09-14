@@ -182,6 +182,7 @@ function fromDbOrder(r: DbRow): Order {
     startDate: r.start_date as string,
     plannedReturnDate: (r.planned_return_date as string) ?? '',
     actualReturnDate: r.actual_return_date as string | undefined,
+    billingEndDate: (r.billing_end_date as string) || undefined,
     dailyPrice: (r.daily_price as number) ?? 0,
     weeklyPrice: (r.weekly_price as number) ?? 0,
     monthlyPrice: (r.monthly_price as number) ?? 0,
@@ -247,6 +248,7 @@ function toDbOrder(o: Order, orgId: string): DbRow {
     start_date: o.startDate,
     planned_return_date: o.plannedReturnDate || null,
     actual_return_date: o.actualReturnDate ?? null,
+    billing_end_date: o.billingEndDate || null,
     daily_price: o.dailyPrice,
     weekly_price: o.weeklyPrice,
     monthly_price: o.monthlyPrice,
@@ -504,6 +506,7 @@ interface AppStore {
     templateId?: string;
     startDate: string;
     plannedReturnDate: string;
+    billingEndDate?: string;
     dailyPrice: number;
     weeklyPrice: number;
     monthlyPrice: number;
@@ -1089,6 +1092,7 @@ export const useStore = create<AppStore>()((set, get) => ({
       if (updates.status !== undefined) dbUpdates.status = updates.status;
       if (updates.totalPrice !== undefined) dbUpdates.total_price = updates.totalPrice;
       if (updates.actualReturnDate !== undefined) dbUpdates.actual_return_date = updates.actualReturnDate;
+      if (updates.billingEndDate !== undefined) dbUpdates.billing_end_date = updates.billingEndDate;
       if (updates.returnCondition !== undefined) dbUpdates.return_condition = updates.returnCondition;
       if (updates.returnNotes !== undefined) dbUpdates.return_notes = updates.returnNotes;
       if (updates.returnOperatingHours !== undefined) dbUpdates.return_operating_hours = updates.returnOperatingHours;

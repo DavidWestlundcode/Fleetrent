@@ -2,7 +2,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useState, Fragment } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Clock, Truck, Building2, Calendar, CheckCircle2, Trash2, Pencil, Send, Loader2, ExternalLink, Receipt, Plus, ChevronDown, ChevronUp, FileSignature, Camera, Repeat, Wrench, Search } from 'lucide-react';
+import { ArrowLeft, Clock, Truck, Building2, Calendar, CheckCircle2, Trash2, Pencil, Send, Loader2, ExternalLink, Receipt, Plus, ChevronDown, ChevronUp, FileSignature, Camera, Repeat, Wrench, Search, CalendarX } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { MachineStatusBadge, OrderStatusBadge, LongTermBadge, SentToAccountingBadge } from '@/components/ui/StatusBadge';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -66,7 +66,7 @@ export default function OrderDetailPage() {
   const nextInvoiceStart = lastInvoiceEnd
     ? new Date(new Date(lastInvoiceEnd).getTime() + 86400000).toISOString().split('T')[0]
     : order.startDate;
-  const effectiveEnd = order.actualReturnDate || todayStr;
+  const effectiveEnd = order.billingEndDate || order.actualReturnDate || todayStr;
   const totalRentedDays = order.startDate >= effectiveEnd ? 0 : Math.max(0, order.chargeWeekends
     ? daysBetween(order.startDate, effectiveEnd)
     : countBusinessDays(order.startDate, effectiveEnd));
@@ -478,6 +478,14 @@ export default function OrderDetailPage() {
                     <p className="text-[13px] font-medium text-slate-800">{formatDate(order.actualReturnDate)}</p>
                   </div>
                 )}
+                {order.billingEndDate && (
+                  <div>
+                    <p className="text-[11px] text-slate-400 mb-1 flex items-center gap-1">
+                      <CalendarX className="w-3 h-3" /> Avslutad (fakturering)
+                    </p>
+                    <p className="text-[13px] font-medium text-amber-700">{formatDate(order.billingEndDate)}</p>
+                  </div>
+                )}
               </div>
 
               {order.accessories.length > 0 && (
@@ -628,6 +636,13 @@ export default function OrderDetailPage() {
                     </div>
                   ))}
                 </div>
+
+                {order.billingEndDate && (
+                  <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-4 flex items-center gap-1.5">
+                    <CalendarX className="w-3.5 h-3.5 shrink-0" />
+                    Ordern avslutades manuellt {formatDate(order.billingEndDate)} — fakturering räknas t.o.m. detta datum, oavsett faktisk returdag.
+                  </p>
+                )}
 
                 {/* Period history */}
                 {sortedInvoices.length > 0 && (
@@ -1046,7 +1061,7 @@ export default function OrderDetailPage() {
           <div className="space-y-4">
             {/* Pricing */}
             {(() => {
-              const endDate = order.actualReturnDate || order.plannedReturnDate || null;
+              const endDate = order.billingEndDate || order.actualReturnDate || order.plannedReturnDate || null;
               const totalCalDays = endDate ? daysBetween(order.startDate, endDate) : null;
               const billableDays = totalCalDays !== null
                 ? (order.chargeWeekends ? totalCalDays : countBusinessDays(order.startDate, endDate!))

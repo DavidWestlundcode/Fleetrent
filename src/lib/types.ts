@@ -189,6 +189,11 @@ export interface Order {
   startDate: string;
   plannedReturnDate: string;
   actualReturnDate?: string;
+  // Manual override for where billing should stop — set via "Avsluta order" when a customer
+  // asks to end the rental before the machine is actually picked up/returned. When set, this
+  // wins over actualReturnDate for every invoicing calculation (delfaktura, final Fortnox
+  // invoice); when unset, billing continues to follow actualReturnDate as before.
+  billingEndDate?: string;
   dailyPrice: number;
   weeklyPrice: number;
   monthlyPrice: number;
