@@ -718,10 +718,11 @@ export default function LandingPage() {
       <section className="py-20 px-6 bg-white border-t border-slate-100">
         <div className="max-w-3xl mx-auto text-center">
           <AnimateIn>
-            <p className="text-[12px] font-semibold text-blue-600 uppercase tracking-widest mb-3">Kunder</p>
-            <h2 className="text-2xl sm:text-[32px] font-bold text-slate-900 tracking-tight mb-10">
-              FleetOS används i verklig uthyrningsverksamhet
-            </h2>
+            <div className="flex items-center gap-6 max-w-sm mx-auto mb-12">
+              <div className="flex-1 h-px bg-slate-200" />
+              <span className="shrink-0 font-serif-accent italic text-[24px] sm:text-[28px] text-slate-500">Betrodd av</span>
+              <div className="flex-1 h-px bg-slate-200" />
+            </div>
             <Link
               href="/kunder/wts-machinery-solutions"
               className="group inline-flex flex-col items-center gap-5 px-8 py-10 bg-slate-50/80 hover:bg-slate-50 border border-slate-200/80 hover:border-blue-200 rounded-2xl transition-all"
