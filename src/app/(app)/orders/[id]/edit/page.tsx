@@ -106,6 +106,7 @@ export default function EditOrderPage() {
   const [dailyDiscount, setDailyDiscount] = useState(0);
   const [weeklyDiscount, setWeeklyDiscount] = useState(0);
   const [monthlyDiscount, setMonthlyDiscount] = useState(0);
+  const [customOrderer, setCustomOrderer] = useState(false);
 
   // Pre-populate from existing order
   useEffect(() => {
@@ -144,6 +145,12 @@ export default function EditOrderPage() {
     setDailyDiscount(order.rentalDiscount ?? 0);
     setWeeklyDiscount(order.weeklyDiscount ?? 0);
     setMonthlyDiscount(order.monthlyDiscount ?? 0);
+    // If the saved orderer name isn't one of the customer's/facility's known contacts, it was
+    // typed in manually — default back to that mode so the field doesn't render blank.
+    const cust = customers.find((c) => c.id === order.customerId);
+    const fac = order.facilityName ? cust?.facilities?.find((f) => f.name === order.facilityName) : undefined;
+    const contacts = order.facilityName ? (fac?.contacts ?? []) : (cust?.contacts ?? []);
+    setCustomOrderer(!!order.ordererName && !contacts.some((c) => c.name === order.ordererName));
     setInitialized(true);
   }, [order, initialized]);
 
@@ -318,6 +325,7 @@ export default function EditOrderPage() {
                       set('ordererName', '');
                       set('ordererPhone', '');
                       set('ordererEmail', '');
+                      setCustomOrderer(false);
                     }}
                     className={inputClass}
                   >
@@ -346,6 +354,7 @@ export default function EditOrderPage() {
                         set('ordererName', '');
                         set('ordererPhone', '');
                         set('ordererEmail', '');
+                        setCustomOrderer(false);
                       }}
                       className={inputClass}
                     >
@@ -358,21 +367,53 @@ export default function EditOrderPage() {
                 )}
 
                 <Field label="Beställare">
-                  <select
-                    value={form.ordererName}
-                    onChange={(e) => {
-                      const contact = availableContacts.find((c) => c.name === e.target.value);
-                      set('ordererName', e.target.value);
-                      set('ordererPhone', contact?.phone ?? '');
-                      set('ordererEmail', contact?.email ?? '');
-                    }}
-                    className={inputClass}
-                  >
-                    <option value="">Välj beställare (valfritt)...</option>
-                    {availableContacts.map((c, i) => (
-                      <option key={i} value={c.name}>{c.name}{c.title ? ` – ${c.title}` : ''}</option>
-                    ))}
-                  </select>
+                  {customOrderer ? (
+                    <div className="flex gap-1.5">
+                      <input
+                        type="text"
+                        value={form.ordererName}
+                        onChange={(e) => set('ordererName', e.target.value)}
+                        placeholder="Namn på beställare"
+                        className={inputClass}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomOrderer(false);
+                          set('ordererName', '');
+                          set('ordererPhone', '');
+                          set('ordererEmail', '');
+                        }}
+                        className="shrink-0 px-2.5 text-[12px] text-slate-500 hover:text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
+                      >
+                        Lista
+                      </button>
+                    </div>
+                  ) : (
+                    <select
+                      value={form.ordererName}
+                      onChange={(e) => {
+                        if (e.target.value === '__custom__') {
+                          setCustomOrderer(true);
+                          set('ordererName', '');
+                          set('ordererPhone', '');
+                          set('ordererEmail', '');
+                          return;
+                        }
+                        const contact = availableContacts.find((c) => c.name === e.target.value);
+                        set('ordererName', e.target.value);
+                        set('ordererPhone', contact?.phone ?? '');
+                        set('ordererEmail', contact?.email ?? '');
+                      }}
+                      className={inputClass}
+                    >
+                      <option value="">Välj beställare (valfritt)...</option>
+                      {availableContacts.map((c, i) => (
+                        <option key={i} value={c.name}>{c.name}{c.title ? ` – ${c.title}` : ''}</option>
+                      ))}
+                      <option value="__custom__">+ Skriv in eget namn...</option>
+                    </select>
+                  )}
                 </Field>
 
                 <div className="md:col-span-2">

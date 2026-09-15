@@ -318,6 +318,7 @@ export async function POST(request: NextRequest) {
           OrderDate: new Date().toISOString().split('T')[0],
           OurReference: orderRow.order_number,
           YourOrderNumber: (orderRow.order_reference as string) || '',
+          ...(orderRow.orderer_name ? { YourReference: orderRow.orderer_name as string } : {}),
           Comments: `FleetOS-order ${orderRow.order_number}`,
           ...(costCenter ? { CostCenter: costCenter } : {}),
           OrderRows: orderRows,
