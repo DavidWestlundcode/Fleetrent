@@ -42,7 +42,7 @@ export default function VillkorPage() {
       <p className="mb-4">Vi strävar efter hög tillgänglighet men garanterar inte att tjänsten är tillgänglig utan avbrott. Planerat underhåll meddelas i förväg.</p>
 
       <h2 id="priser" className="text-lg font-semibold text-slate-900 mt-8 mb-3">5. Priser och ändringar</h2>
-      <p className="mb-4">FleetOS förbehåller sig rätten att justera priser och tjänstens innehåll. Eventuella prisändringar meddelas minst 30 dagar innan de träder i kraft.</p>
+      <p className="mb-4">Samtliga priser som anges av FleetOS, inklusive på <a href="/priser" className="text-blue-600 hover:underline">prissidan</a>, är exklusive moms om inget annat anges. FleetOS förbehåller sig rätten att justera priser och tjänstens innehåll. Eventuella prisändringar meddelas minst 30 dagar innan de träder i kraft.</p>
 
       <h2 id="uppsagning" className="text-lg font-semibold text-slate-900 mt-8 mb-3">6. Uppsägning</h2>
       <p className="mb-4">Antingen part kan säga upp avtalet. Vid uppsägning avslutas åtkomsten till tjänsten och data raderas i enlighet med vår <a href="/gdpr" className="text-blue-600 hover:underline">lagringspolicy för personuppgifter</a>.</p>

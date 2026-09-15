@@ -6,7 +6,7 @@ import PublicFooter from '@/components/public/PublicFooter';
 
 export const metadata: Metadata = {
   title: 'Priser – maskinuthyrningssystem från 2 499 kr/mån',
-  description: 'Se priser för FleetOS, affärssystemet för maskinuthyrning. Basic från 2 499 kr/mån och Premium från 3 999 kr/mån. Ingen bindningstid, hela plattformen inkluderad.',
+  description: 'Se priser för FleetOS, affärssystemet för maskinuthyrning. Basic från 2 499 kr/mån och Premium från 3 999 kr/mån, exkl. moms. Ingen bindningstid, hela plattformen inkluderad.',
   keywords: ['pris maskinuthyrningssystem', 'kostnad affärssystem maskinuthyrning', 'FleetOS pris', 'uthyrningssystem pris'],
   alternates: { canonical: 'https://fleetos.se/priser' },
   openGraph: {
@@ -121,7 +121,7 @@ export default function PriserPage() {
                   <span className="text-[44px] font-bold text-slate-900 leading-none">2 499</span>
                   <span className="text-slate-500 text-[15px] mb-1.5">kr/mån</span>
                 </div>
-                <p className="text-[13px] text-slate-400">Faktureras månadsvis. Ingen bindningstid.</p>
+                <p className="text-[13px] text-slate-400">Exkl. moms. Faktureras månadsvis. Ingen bindningstid.</p>
               </div>
 
               <Link
@@ -157,7 +157,7 @@ export default function PriserPage() {
                   <span className="text-[44px] font-bold text-slate-900 leading-none">3 999</span>
                   <span className="text-slate-500 text-[15px] mb-1.5">kr/mån</span>
                 </div>
-                <p className="text-[13px] text-slate-400">Faktureras månadsvis. Ingen bindningstid.</p>
+                <p className="text-[13px] text-slate-400">Exkl. moms. Faktureras månadsvis. Ingen bindningstid.</p>
               </div>
 
               <Link
