@@ -25,6 +25,7 @@ const features = [
   { title: 'Lönsamhetsanalys', desc: 'Se ROI, återbetalningstakt och intäktsutveckling per maskin — fatta beslut baserade på data.' },
   { title: 'QR-koder', desc: 'Varje maskin får en unik QR-kod för snabb åtkomst till maskinkort, utlämning och retur i fält.' },
   { title: 'Fortnox-integration', desc: 'Fakturaunderlag förs automatiskt över till Fortnox när en order avslutas — ingen dubbelinmatning.' },
+  { title: 'Serviceprotokoll-integration', desc: 'Maskiner och kunder synkroniseras automatiskt mellan FleetOS och Serviceprotokoll — utan manuell dubbelregistrering.' },
   { title: 'Mobilanpassat', desc: 'Fungerar i webbläsaren på alla enheter — ingen app att installera för dig eller dina kunder.' },
 ];
 
