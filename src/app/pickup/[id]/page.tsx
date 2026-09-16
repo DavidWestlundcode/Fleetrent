@@ -1,5 +1,5 @@
 'use client';
-import { useState, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, Truck, ArrowLeft, AlertTriangle } from 'lucide-react';
@@ -7,6 +7,7 @@ import { useStore } from '@/store';
 import { formatDate } from '@/lib/utils';
 import { MachineStatusBadge } from '@/components/ui/StatusBadge';
 import PhotoCapture from '@/components/ui/PhotoCapture';
+import { checkOrgFreshness } from '@/lib/org-freshness';
 
 type PickupCondition = 'bra' | 'skadat' | 'kraver_service' | 'kraver_kontroll';
 
@@ -34,6 +35,10 @@ function PickupPageInner() {
   const [operatingHours, setOperatingHours] = useState(machine?.operatingHours ?? 0);
   const [images, setImages] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (initialized) checkOrgFreshness(organizationId);
+  }, [initialized, organizationId]);
 
   if (!initialized) return null;
 

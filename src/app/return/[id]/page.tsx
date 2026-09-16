@@ -1,5 +1,5 @@
 'use client';
-import { useState, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, Truck, ArrowLeft, AlertTriangle, Wrench } from 'lucide-react';
@@ -7,6 +7,7 @@ import { useStore } from '@/store';
 import { formatDate, daysBetween, countBusinessDays, calcRentalBreakdown, calcDiscountedTotal, formatCurrency } from '@/lib/utils';
 import { MachineStatusBadge } from '@/components/ui/StatusBadge';
 import PhotoCapture from '@/components/ui/PhotoCapture';
+import { checkOrgFreshness } from '@/lib/org-freshness';
 
 type ReturnCondition = 'bra' | 'skadat' | 'kraver_service' | 'kraver_kontroll';
 
@@ -35,6 +36,10 @@ function ReturnPageInner() {
   const [images, setImages] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [articleChecks, setArticleChecks] = useState<Record<string, 'returned' | 'missing'>>({});
+
+  useEffect(() => {
+    if (initialized) checkOrgFreshness(organizationId);
+  }, [initialized, organizationId]);
 
   if (!initialized) return null;
 

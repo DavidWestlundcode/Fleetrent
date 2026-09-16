@@ -1,4 +1,5 @@
 'use client';
+import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -6,14 +7,19 @@ import { Truck, Clock, User, Calendar, CheckCircle2, AlertTriangle, Wrench, Prin
 import { useStore } from '@/store';
 import { MachineStatusBadge, OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { formatDate, daysUntil } from '@/lib/utils';
+import { checkOrgFreshness } from '@/lib/org-freshness';
 
 const QRCodeSVG = dynamic(() => import('qrcode.react').then((m) => m.QRCodeSVG), { ssr: false });
 
 export default function QRPage() {
   const { id } = useParams<{ id: string }>();
-  const { machines, orders, customers, initialized } = useStore();
+  const { machines, orders, customers, organizationId, initialized } = useStore();
 
   const machine = machines.find((m) => m.id === id);
+
+  useEffect(() => {
+    if (initialized) checkOrgFreshness(organizationId);
+  }, [initialized, organizationId]);
 
   if (!initialized) return null;
 
