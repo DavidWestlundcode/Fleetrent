@@ -28,19 +28,28 @@ export default async function OrgDetailPage({ params }: { params: Promise<{ orgI
 
   const [
     { data: org },
-    { data: profiles },
+    { data: memberRows },
     { data: machines },
     { data: orders },
     { data: authData },
   ] = await Promise.all([
     admin.from('organizations').select('*, plan, max_users, max_machines').eq('id', orgId).single(),
-    admin.from('profiles').select('id, full_name, role, created_at').eq('organization_id', orgId).order('created_at'),
+    admin.from('organization_members').select('user_id').eq('organization_id', orgId),
     admin.from('machines').select('id, name, brand, model, internal_code, status').eq('organization_id', orgId).order('created_at', { ascending: false }),
     admin.from('orders').select('id, rental_start, rental_end, status, created_at, customers(name), machines(name, brand, model)').eq('organization_id', orgId).order('created_at', { ascending: false }).limit(30),
     admin.auth.admin.listUsers({ perPage: 1000 }),
   ]);
 
   if (!org) notFound();
+
+  // organization_members and profiles don't share a direct FK, so this can't
+  // be embedded — look up profiles for exactly the org's members. This shows
+  // everyone with ACCESS to this org, not just whoever's currently "standing
+  // in" it (their profiles.organization_id may point elsewhere).
+  const memberIds = (memberRows ?? []).map((r) => r.user_id as string);
+  const { data: profiles } = memberIds.length
+    ? await admin.from('profiles').select('id, full_name, role, created_at').in('id', memberIds).order('created_at')
+    : { data: [] as { id: string; full_name: string | null; role: string; created_at: string }[] };
 
   const emailMap = Object.fromEntries((authData?.users ?? []).map(u => [u.id, u.email ?? '']));
 

@@ -206,6 +206,30 @@ function SettingsInner() {
     if (searchParams.get('tab') === 'integrations') setActiveTab('integrations');
   }, [searchParams]);
 
+  // organization_members and profiles don't share a direct FK (both point to
+  // auth.users independently), so this can't be embedded in one query — fetch
+  // member ids for this org, then look up their profiles. This also means
+  // someone who has since switched their active org elsewhere still shows up
+  // here, since membership (not "currently active org") is what determines
+  // who belongs to a team. Reused both on initial load and right after a
+  // successful invite, so a newly added member appears immediately.
+  const reloadMembers = async (oid: string) => {
+    const supabase = createClient();
+    const { data: memberRows } = await supabase.from('organization_members').select('user_id').eq('organization_id', oid);
+    const memberIds = (memberRows ?? []).map((r) => r.user_id as string);
+    const { data: profileRows } = memberIds.length
+      ? await supabase.from('profiles').select('id, full_name, role').in('id', memberIds)
+      : { data: [] as { id: string; full_name: string | null; role: string | null }[] };
+
+    setMembers(
+      (profileRows ?? []).map((r) => ({
+        id: r.id as string,
+        fullName: (r.full_name as string) || '(Ej namngivet)',
+        role: (r.role as string) || 'saljare',
+      }))
+    );
+  };
+
   useEffect(() => {
     const load = async () => {
       const supabase = createClient();
@@ -228,21 +252,10 @@ function SettingsInner() {
       setOrgId(oid);
 
       if (oid) {
-        // organization_members and profiles don't share a direct FK (both
-        // point to auth.users independently), so this can't be embedded in
-        // one query — fetch member ids for this org, then look up their
-        // profiles. This also means someone who has since switched their
-        // active org elsewhere still shows up here, since membership (not
-        // "currently active org") is what determines who belongs to a team.
-        const [orgRes, memberRowsRes] = await Promise.all([
+        const [orgRes] = await Promise.all([
           supabase.from('organizations').select('*').eq('id', oid).single(),
-          supabase.from('organization_members').select('user_id').eq('organization_id', oid),
+          reloadMembers(oid),
         ]);
-
-        const memberIds = (memberRowsRes.data ?? []).map((r) => r.user_id as string);
-        const membersRes = memberIds.length
-          ? await supabase.from('profiles').select('id, full_name, role').in('id', memberIds)
-          : { data: [] as { id: string; full_name: string | null; role: string | null }[] };
 
         if (orgRes.data) {
           const d = orgRes.data as Record<string, string>;
@@ -260,14 +273,6 @@ function SettingsInner() {
           setSpLastSync(d.sp_last_sync ?? null);
           setSpOrgId(oid);
         }
-
-        setMembers(
-          (membersRes.data ?? []).map((r) => ({
-            id: r.id as string,
-            fullName: (r.full_name as string) || '(Ej namngivet)',
-            role: (r.role as string) || 'saljare',
-          }))
-        );
       }
 
       setOrgLoading(false);
@@ -386,6 +391,7 @@ function SettingsInner() {
       setInviteGrantedExisting(!!data.grantedExisting);
       setInvitedEmailAddress(inviteEmail);
       setInviteEmail('');
+      if (orgId) reloadMembers(orgId);
     } catch (err) {
       setInviteError(err instanceof Error ? err.message : 'Något gick fel');
       setInviteStatus('error');
@@ -453,6 +459,7 @@ function SettingsInner() {
       setCreateEmail('');
       setCreatePassword('');
       setTimeout(() => setCreateStatus('idle'), 4000);
+      if (orgId) reloadMembers(orgId);
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : 'Något gick fel');
       setCreateStatus('error');

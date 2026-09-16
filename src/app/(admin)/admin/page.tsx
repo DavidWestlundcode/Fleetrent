@@ -8,12 +8,12 @@ export default async function AdminPage() {
 
   const [
     { data: orgs },
-    { data: profiles },
+    { data: memberships },
     { data: machines },
     { data: orders },
   ] = await Promise.all([
     admin.from('organizations').select('id, name, email, org_number, created_at').order('created_at', { ascending: false }),
-    admin.from('profiles').select('organization_id'),
+    admin.from('organization_members').select('organization_id'),
     admin.from('machines').select('organization_id'),
     admin.from('orders').select('organization_id'),
   ]);
@@ -63,7 +63,7 @@ export default async function AdminPage() {
                 <td className="px-4 py-4 text-center">
                   <span className="inline-flex items-center gap-1 text-slate-700 font-medium">
                     <Users className="w-3.5 h-3.5 text-slate-400" />
-                    {countFor(profiles, org.id)}
+                    {countFor(memberships, org.id)}
                   </span>
                 </td>
                 <td className="px-4 py-4 text-center">
