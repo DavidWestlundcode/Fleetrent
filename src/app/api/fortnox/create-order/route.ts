@@ -262,13 +262,17 @@ export async function POST(request: NextRequest) {
           ...(weeklyDiscount > 0 ? { Discount: weeklyDiscount } : {}),
         });
       }
-      if (breakdown.days > 0 || orderRows.length === 0) {
+      // Skip a leftover-days row when there's no daily rate to charge it at
+      // (e.g. a purely monthly-priced contract) and a month/week row already
+      // covers the period — a 0 kr line is never useful on the invoice.
+      const dailyPrice = (orderRow.daily_price as number) ?? 0;
+      if ((breakdown.days > 0 && dailyPrice > 0) || orderRows.length === 0) {
         const dayQty = breakdown.days > 0 ? breakdown.days : days;
         orderRows.push({
           ...(rentalArt?.article_number ? { ArticleNumber: rentalArt.article_number } : {}),
           Description: machineParts ? `Hyra – ${machineParts} – ${dayQty} dagar (${periodRange})` : `Hyra – ${dayQty} dagar (${periodRange})`,
           DeliveredQuantity: dayQty,
-          Price: (orderRow.daily_price as number) ?? 0,
+          Price: dailyPrice,
           Unit: 'dag',
           ...(dailyDiscount > 0 ? { Discount: dailyDiscount } : {}),
         });

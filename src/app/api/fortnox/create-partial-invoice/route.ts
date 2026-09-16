@@ -179,13 +179,19 @@ export async function POST(request: NextRequest) {
           ...(weeklyDiscount > 0 ? { Discount: weeklyDiscount } : {}),
         });
       }
-      if (breakdown.days > 0 || orderRows.length === 0) {
+      // Skip a leftover-days row when there's no daily rate to charge it at
+      // (e.g. a purely monthly-priced contract) and a month/week row already
+      // covers the period — a 0 kr line is never useful on the invoice.
+      // Still fall back to a single row when literally nothing else priced,
+      // so the order is never sent to Fortnox with zero rows.
+      const dailyPrice = orderRow.daily_price as number;
+      if ((breakdown.days > 0 && dailyPrice > 0) || orderRows.length === 0) {
         orderRows.push({
           Description: orderRows.length === 0
             ? `Hyra - ${machineParts} - ${period.startDate} t.o.m. ${period.endDate}`
             : `${machineParts} - ${period.startDate} - ${period.endDate} (${breakdown.days} dagar)`,
           DeliveredQuantity: breakdown.days > 0 ? breakdown.days : 1,
-          Price: orderRow.daily_price as number,
+          Price: dailyPrice,
           Unit: 'dag',
           ...(dailyDiscount > 0 ? { Discount: dailyDiscount } : {}),
         });
