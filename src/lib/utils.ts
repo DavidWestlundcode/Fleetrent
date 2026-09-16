@@ -64,35 +64,56 @@ export function calcBreakdown(days: number, daily: number, weekly: number, month
   };
 }
 
-// Date-aware version of calcBreakdown for pricing an actual rental span. Whether a full month/week
-// was rented is decided on the calendar span (30/7 calendar days, same fixed convention calcBreakdown
-// already uses) — NOT on the weekend-excluded day count — so a calendar month always reaches the
-// monthly tier even though it only contains ~20 business days. Only the leftover tail (the days after
-// the last full month/week) is priced using actual billable days, respecting chargeWeekends, matching
-// how the daily rate has always been meant to apply to that remainder.
+// Adds exactly one real calendar month to a date, clamping to the target month's
+// last day if the original day-of-month doesn't exist there (e.g. Jan 31 -> Feb 28).
+// Always computed in UTC regardless of runtime timezone, since ISO date-only
+// strings ("2026-08-17") are parsed as UTC midnight throughout this file.
+function addCalendarMonth(dateStr: string): string {
+  const d = new Date(dateStr);
+  const year = d.getUTCFullYear();
+  const month = d.getUTCMonth();
+  const day = d.getUTCDate();
+  const daysInTargetMonth = new Date(Date.UTC(year, month + 2, 0)).getUTCDate();
+  return isoDate(new Date(Date.UTC(year, month + 1, Math.min(day, daysInTargetMonth))));
+}
+
+// Date-aware version of calcBreakdown for pricing an actual rental span. Whether a full month was
+// rented is decided by real calendar-month boundaries (e.g. 17 Aug–16 Sep is exactly one month, even
+// though August has 31 days) — NOT a fixed 30-day chunk, which would wrongly add a leftover day for
+// any month longer than 30 days, and just as wrongly fail to reach the monthly tier at all for a
+// full month spent in February. Weeks are still counted from raw calendar days of whatever remains
+// after whole months are removed. Only the final leftover tail is priced using actual billable days,
+// respecting chargeWeekends, matching how the daily rate has always been meant to apply to that
+// remainder.
 export function calcRentalBreakdown(
   startDate: string, endDate: string, chargeWeekends: boolean,
   daily: number, weekly: number, monthly: number
 ) {
-  const calendarDays = daysBetween(startDate, endDate);
-  let rem = calendarDays;
-  const months = monthly > 0 ? Math.floor(rem / 30) : 0;
-  if (monthly > 0) rem %= 30;
-  const weeks = weekly > 0 ? Math.floor(rem / 7) : 0;
-  if (weekly > 0) rem %= 7;
+  let months = 0;
+  let cursor = startDate;
 
-  let days: number;
-  if (rem <= 0) {
-    days = 0;
-  } else if (chargeWeekends) {
-    days = rem;
-  } else {
-    // rem is an inclusive day count, so the tail's first day is (rem - 1) days before
-    // endDate — e.g. rem=1 means the tail is just endDate itself.
-    const tailStart = new Date(endDate);
-    tailStart.setDate(tailStart.getDate() - (rem - 1));
-    days = countBusinessDays(isoDate(tailStart), endDate);
+  if (monthly > 0) {
+    while (true) {
+      const nextCursor = addCalendarMonth(cursor);
+      // Last day of the [cursor, nextCursor) one-month block, inclusive.
+      const blockEnd = isoDate(new Date(new Date(nextCursor).getTime() - 86400000));
+      if (blockEnd > endDate) break;
+      months++;
+      cursor = nextCursor;
+    }
   }
+
+  let weeks = 0;
+  if (weekly > 0 && cursor <= endDate) {
+    weeks = Math.floor(daysBetween(cursor, endDate) / 7);
+    if (weeks > 0) {
+      cursor = isoDate(new Date(new Date(cursor).getTime() + weeks * 7 * 86400000));
+    }
+  }
+
+  const days = cursor <= endDate
+    ? (chargeWeekends ? daysBetween(cursor, endDate) : countBusinessDays(cursor, endDate))
+    : 0;
 
   return {
     months,
@@ -331,8 +352,6 @@ export function getCustomerTotalSpent(orders: StatsOrder[], customerId: string):
   return total;
 }
 
-const PARTIAL_INVOICE_DAYS_THRESHOLD = 30;
-
 type PartialInvoiceOrder = {
   status: string;
   isLongTerm?: boolean;
@@ -340,20 +359,27 @@ type PartialInvoiceOrder = {
   invoicePeriods?: { endDate: string }[];
 };
 
-export function daysSinceLastInvoice(order: PartialInvoiceOrder): number {
+function lastInvoiceReferenceDate(order: PartialInvoiceOrder): string {
   const periods = order.invoicePeriods ?? [];
-  const referenceDate = periods.length > 0
+  return periods.length > 0
     ? periods.reduce((latest, p) => p.endDate > latest ? p.endDate : latest, periods[0].endDate)
     : order.startDate;
+}
+
+export function daysSinceLastInvoice(order: PartialInvoiceOrder): number {
+  const referenceDate = lastInvoiceReferenceDate(order);
   return Math.floor((Date.now() - new Date(referenceDate).getTime()) / 86400000);
 }
 
 // Short-term (non-avtalshyra) active orders don't get auto-invoiced by the cron — this flags
-// ones that have gone 30+ days without a delfaktura, as a reminder to bill before too much
-// unbilled time accumulates. Long-term orders are excluded since the cron already handles them.
+// ones where a full calendar month has passed since the last delfaktura (or the start date, if
+// none exists yet), as a reminder to bill before too much unbilled time accumulates. Long-term
+// orders are excluded since the cron already handles them. Calendar-month-based (not a flat 30
+// days) so this lines up with when the order would actually reach the monthly price tier.
 export function needsPartialInvoice(order: PartialInvoiceOrder): boolean {
   if (order.status !== 'aktiv' || order.isLongTerm) return false;
-  return daysSinceLastInvoice(order) >= PARTIAL_INVOICE_DAYS_THRESHOLD;
+  const referenceDate = lastInvoiceReferenceDate(order);
+  return addCalendarMonth(referenceDate) <= isoDate(new Date());
 }
 
 // "Försenad" isn't a status that ever gets written to an order — it's computed from

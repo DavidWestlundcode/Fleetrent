@@ -179,7 +179,7 @@ function OrdersPageInner() {
 
   const statusLabels: Record<string, string> = {
     all: 'Alla', aktiv: 'Aktiva', reserverad: 'Reserverade',
-    forsenad: 'Försenade', '30_dagar': '30 dagar',
+    forsenad: 'Försenade', '30_dagar': 'Väntar fakturering',
     klar_for_fakturering: 'Klar för fakturering',
     avslutad: 'Avslutade', annullerad: 'Annullerade',
   };
