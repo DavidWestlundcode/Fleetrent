@@ -63,6 +63,9 @@ export async function GET(request: NextRequest) {
           .from('profiles')
           .update({ organization_id: org.id, role: 'admin' })
           .eq('id', user.id);
+
+        await admin.from('organization_members')
+          .upsert({ user_id: user.id, organization_id: org.id }, { onConflict: 'user_id,organization_id', ignoreDuplicates: true });
       }
     }
   }

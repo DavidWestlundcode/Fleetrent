@@ -163,6 +163,7 @@ function SettingsInner() {
   const [inviteError, setInviteError] = useState('');
   const [inviteLink, setInviteLink] = useState('');
   const [inviteEmailSent, setInviteEmailSent] = useState(false);
+  const [inviteGrantedExisting, setInviteGrantedExisting] = useState(false);
   const [invitedEmailAddress, setInvitedEmailAddress] = useState('');
   const [createName, setCreateName] = useState('');
   const [createEmail, setCreateEmail] = useState('');
@@ -227,10 +228,21 @@ function SettingsInner() {
       setOrgId(oid);
 
       if (oid) {
-        const [orgRes, membersRes] = await Promise.all([
+        // organization_members and profiles don't share a direct FK (both
+        // point to auth.users independently), so this can't be embedded in
+        // one query — fetch member ids for this org, then look up their
+        // profiles. This also means someone who has since switched their
+        // active org elsewhere still shows up here, since membership (not
+        // "currently active org") is what determines who belongs to a team.
+        const [orgRes, memberRowsRes] = await Promise.all([
           supabase.from('organizations').select('*').eq('id', oid).single(),
-          supabase.from('profiles').select('id, full_name, role').eq('organization_id', oid),
+          supabase.from('organization_members').select('user_id').eq('organization_id', oid),
         ]);
+
+        const memberIds = (memberRowsRes.data ?? []).map((r) => r.user_id as string);
+        const membersRes = memberIds.length
+          ? await supabase.from('profiles').select('id, full_name, role').in('id', memberIds)
+          : { data: [] as { id: string; full_name: string | null; role: string | null }[] };
 
         if (orgRes.data) {
           const d = orgRes.data as Record<string, string>;
@@ -371,6 +383,7 @@ function SettingsInner() {
       setInviteStatus('success');
       setInviteLink(data.link ?? '');
       setInviteEmailSent(!!data.emailSent);
+      setInviteGrantedExisting(!!data.grantedExisting);
       setInvitedEmailAddress(inviteEmail);
       setInviteEmail('');
     } catch (err) {
@@ -749,7 +762,13 @@ function SettingsInner() {
                       Skicka inbjudan
                     </button>
                   </form>
-                  {inviteStatus === 'success' && inviteLink && (
+                  {inviteStatus === 'success' && inviteGrantedExisting && (
+                    <div className="mt-3 flex items-center gap-2 text-emerald-700 text-sm">
+                      <CheckCircle2 className="w-4 h-4" />
+                      {invitedEmailAddress} har redan ett konto och har fått tillgång till den här organisationen — personen kan växla hit via bolagsväljaren nästa gång de loggar in.
+                    </div>
+                  )}
+                  {inviteStatus === 'success' && !inviteGrantedExisting && inviteLink && (
                     <div className="mt-3 space-y-2">
                       <div className="flex items-center gap-2 text-emerald-700 text-sm">
                         <CheckCircle2 className="w-4 h-4" />

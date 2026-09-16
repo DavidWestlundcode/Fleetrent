@@ -8,6 +8,7 @@ import {
 import { Logo } from '@/components/ui/Logo';
 import { createClient } from '@/lib/supabase/client';
 import { useMobileNav } from '@/components/layout/MobileNav';
+import OrgSwitcher from '@/components/layout/OrgSwitcher';
 import type { User } from '@supabase/supabase-js';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -30,7 +31,7 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<{ full_name: string | null; role: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ full_name: string | null; role: string | null; organization_id: string | null } | null>(null);
   const { isOpen, close } = useMobileNav();
 
   useEffect(() => {
@@ -38,7 +39,7 @@ export default function Sidebar() {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
       if (data.user) {
-        supabase.from('profiles').select('full_name, role').eq('id', data.user.id).single()
+        supabase.from('profiles').select('full_name, role, organization_id').eq('id', data.user.id).single()
           .then(({ data: p }) => setProfile(p));
       }
     });
@@ -112,15 +113,15 @@ export default function Sidebar() {
 
       {/* User footer */}
       <div className="border-t border-white/[0.06] p-2.5">
-        <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg mb-0.5">
-          <div className="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white text-[11px] font-bold shrink-0">
-            {initials}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[12.5px] font-medium text-white truncate leading-[1.3]">{displayName}</p>
-            <p className="text-[11px] text-[#4B5568] leading-[1.3]">{roleLabel}</p>
-          </div>
-        </div>
+        {user && (
+          <OrgSwitcher
+            userId={user.id}
+            activeOrgId={profile?.organization_id ?? null}
+            displayName={displayName}
+            initials={initials}
+            roleLabel={roleLabel}
+          />
+        )}
         <button
           onClick={handleLogout}
           className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] text-[#4B5568] hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer"

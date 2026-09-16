@@ -31,42 +31,64 @@ export async function POST(request: NextRequest) {
     const origin = request.nextUrl.origin;
 
     // Create user if not exists
-    const { data: { users: existingUsers } } = await admin.auth.admin.listUsers();
+    const { data: { users: existingUsers } } = await admin.auth.admin.listUsers({ perPage: 1000 });
     const alreadyExists = existingUsers?.some((u) => u.email === email);
 
-    let userId: string | null = null;
+    if (alreadyExists) {
+      // Existing account — grant access to this org WITHOUT touching profiles
+      // at all. Their active org, role, and full_name stay exactly as-is;
+      // upserting profiles here (the old behavior) used to silently steal
+      // their active org and blank their name. They pick up this org later
+      // via the "byt bolag" switcher. No password-reset link/email makes
+      // sense for someone who already has a password, so skip that too.
+      const userId = existingUsers?.find((u) => u.email === email)?.id ?? null;
+      if (!userId) return NextResponse.json({ error: 'Kunde inte hitta användaren' }, { status: 500 });
 
-    if (!alreadyExists) {
-      const { data: created, error: createErr } = await admin.auth.admin.createUser({
-        email,
-        email_confirm: true,
-        // Include role in metadata so the DB trigger sets it correctly on profile creation
-        user_metadata: { organization_id: profile.organization_id, role: 'saljare' },
-      });
-      if (createErr) throw createErr;
-      userId = created.user.id;
-    } else {
-      userId = existingUsers?.find((u) => u.email === email)?.id ?? null;
-    }
-
-    if (userId) {
-      const { error: upsertErr } = await admin.from('profiles').upsert({
-        id: userId,
-        organization_id: profile.organization_id,
-        full_name: '',
-        role: 'saljare',
-      });
-      if (upsertErr) throw new Error(`Kunde inte sätta roll på inbjuden användare: ${upsertErr.message}`);
+      const { error: memberErr } = await admin.from('organization_members').upsert(
+        { user_id: userId, organization_id: profile.organization_id },
+        { onConflict: 'user_id,organization_id', ignoreDuplicates: true }
+      );
+      if (memberErr) throw new Error(`Kunde inte ge åtkomst till organisationen: ${memberErr.message}`);
 
       logAuditEvent(admin, {
         organizationId: profile.organization_id,
         actorUserId: user.id,
-        action: alreadyExists ? 'user.invite_existing' : 'user.invite_new',
-        targetTable: 'profiles',
+        action: 'user.invite_existing',
+        targetTable: 'organization_members',
         targetId: userId,
         metadata: { email },
       });
+
+      return NextResponse.json({ success: true, grantedExisting: true });
     }
+
+    const { data: created, error: createErr } = await admin.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      // Include role in metadata so the DB trigger sets it correctly on profile creation
+      user_metadata: { organization_id: profile.organization_id, role: 'saljare' },
+    });
+    if (createErr) throw createErr;
+    const userId = created.user.id;
+
+    const { error: upsertErr } = await admin.from('profiles').upsert({
+      id: userId,
+      organization_id: profile.organization_id,
+      full_name: '',
+      role: 'saljare',
+    });
+    if (upsertErr) throw new Error(`Kunde inte sätta roll på inbjuden användare: ${upsertErr.message}`);
+
+    // organization_members row for this org is granted by the handle_new_user
+    // trigger (it reads organization_id from the metadata set above).
+    logAuditEvent(admin, {
+      organizationId: profile.organization_id,
+      actorUserId: user.id,
+      action: 'user.invite_new',
+      targetTable: 'profiles',
+      targetId: userId,
+      metadata: { email },
+    });
 
     // Generate recovery link — get the hashed_token directly
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({

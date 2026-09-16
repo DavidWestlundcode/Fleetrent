@@ -32,16 +32,28 @@ export async function POST(request: NextRequest) {
 
     const admin = createAdminClient();
 
-    // Only allow editing someone within your own organization.
+    // Only allow editing someone who has ACCESS to your organization — not
+    // just someone whose org happens to be currently active there, since a
+    // member can now belong to more than one org and be "away" in another
+    // when you go to edit them.
+    const { data: targetMembership } = await admin
+      .from('organization_members')
+      .select('user_id')
+      .eq('user_id', userId)
+      .eq('organization_id', profile.organization_id)
+      .maybeSingle();
+
+    if (!targetMembership) {
+      return NextResponse.json({ error: 'Användaren hittades inte i din organisation' }, { status: 404 });
+    }
+
     const { data: target } = await admin
       .from('profiles')
-      .select('organization_id, role, full_name')
+      .select('role, full_name')
       .eq('id', userId)
       .single();
 
-    if (!target || target.organization_id !== profile.organization_id) {
-      return NextResponse.json({ error: 'Användaren hittades inte i din organisation' }, { status: 404 });
-    }
+    if (!target) return NextResponse.json({ error: 'Användaren hittades inte' }, { status: 404 });
 
     const { error: updateError } = await admin
       .from('profiles')

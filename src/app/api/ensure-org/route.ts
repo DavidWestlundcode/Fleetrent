@@ -28,6 +28,8 @@ export async function POST(_request: NextRequest) {
       .single();
 
     if (profile?.organization_id) {
+      await admin.from('organization_members')
+        .upsert({ user_id: user.id, organization_id: profile.organization_id }, { onConflict: 'user_id,organization_id', ignoreDuplicates: true });
       return NextResponse.json({ organization_id: profile.organization_id });
     }
 
@@ -62,6 +64,9 @@ export async function POST(_request: NextRequest) {
       console.error('Failed to upsert profile:', profileError);
       return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
     }
+
+    await admin.from('organization_members')
+      .upsert({ user_id: user.id, organization_id: org.id }, { onConflict: 'user_id,organization_id', ignoreDuplicates: true });
 
     return NextResponse.json({ organization_id: org.id });
   } catch (e) {

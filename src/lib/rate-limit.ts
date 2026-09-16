@@ -63,6 +63,8 @@ export const LIMITS = {
   pdf: (userId: string) => rateLimit(`pdf:${userId}`, 5, 60_000),
   // User admin actions (create/invite user) — 10 per minute per user
   userAdmin: (userId: string) => rateLimit(`userAdmin:${userId}`, 10, 60_000),
+  // Switch active organization — 15 per minute per user
+  switchOrg: (userId: string) => rateLimit(`switchOrg:${userId}`, 15, 60_000),
   // Sync operations — 5 per 5 minutes per user
   sync: (userId: string) => rateLimit(`sync:${userId}`, 5, 300_000),
   // Generic authenticated mutation — 60 per minute per user

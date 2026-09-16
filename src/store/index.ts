@@ -633,7 +633,21 @@ export const useStore = create<AppStore>()((set, get) => ({
         return;
       }
 
-      const [machinesRes, customersRes, ordersRes, templatesRes, articlesRes, serviceRes, membersRes, orgRes] =
+      // organization_members and profiles don't share a direct FK (both point
+      // to auth.users independently), so this can't be embedded in one query —
+      // fetch member ids for this org, then look up their profiles. This also
+      // means someone who has since switched their active org elsewhere still
+      // resolves correctly here, since membership (not "currently active org")
+      // is what determines who belongs to this org's member list.
+      const membersPromise = (async () => {
+        const { data: rows } = await sb().from('organization_members').select('user_id').eq('organization_id', orgId);
+        const ids = (rows ?? []).map((r) => r.user_id as string);
+        if (!ids.length) return [];
+        const { data } = await sb().from('profiles').select('id, full_name').in('id', ids);
+        return data ?? [];
+      })();
+
+      const [machinesRes, customersRes, ordersRes, templatesRes, articlesRes, serviceRes, memberRows, orgRes] =
         await Promise.all([
           sb().from('machines').select('*').eq('organization_id', orgId).limit(5000).order('created_at', { ascending: false }),
           sb().from('customers').select('*').eq('organization_id', orgId).limit(5000).order('created_at', { ascending: false }),
@@ -641,11 +655,11 @@ export const useStore = create<AppStore>()((set, get) => ({
           sb().from('templates').select('*').eq('organization_id', orgId).limit(500),
           sb().from('articles').select('*').eq('organization_id', orgId).limit(500),
           sb().from('service_records').select('*').eq('organization_id', orgId).limit(5000).order('created_at', { ascending: false }),
-          sb().from('profiles').select('id, full_name').eq('organization_id', orgId),
+          membersPromise,
           sb().from('organizations').select('plan, max_machines, max_users').eq('id', orgId).single(),
         ]);
 
-      const members = (membersRes.data ?? []).map((r) => ({
+      const members = memberRows.map((r) => ({
         id: r.id as string,
         fullName: (r.full_name as string) || 'Okänd användare',
       }));

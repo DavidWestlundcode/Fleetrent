@@ -52,6 +52,12 @@ export async function POST(request: NextRequest) {
       role: 'saljare',
     });
 
+    // Defensive — the handle_new_user trigger already grants membership from
+    // the metadata above, this just makes the route correct on its own too.
+    const { error: memberErr } = await admin.from('organization_members')
+      .upsert({ user_id: newUser.user.id, organization_id: profile.organization_id }, { onConflict: 'user_id,organization_id', ignoreDuplicates: true });
+    if (memberErr) console.error('[create-user] Failed to insert organization_members row:', memberErr.message);
+
     logAuditEvent(admin, {
       organizationId: profile.organization_id,
       actorUserId: user.id,
