@@ -715,26 +715,22 @@ export default function LandingPage() {
       <FAQSection />
 
       {/* ── Customers ── */}
-      <section className="py-20 px-6 bg-white border-t border-slate-100">
-        <div className="max-w-3xl mx-auto text-center">
+      <section className="py-14 px-6 bg-white border-t border-slate-100">
+        <div className="max-w-5xl mx-auto">
           <AnimateIn>
-            <div className="flex items-center gap-6 max-w-sm mx-auto mb-12">
-              <div className="flex-1 h-px bg-slate-200" />
-              <span className="shrink-0 font-serif-accent italic text-[24px] sm:text-[28px] text-slate-500">Betrodd av</span>
-              <div className="flex-1 h-px bg-slate-200" />
+            <div className="flex items-center gap-6">
+              <div className="flex-1 h-px bg-slate-300" />
+              <span className="shrink-0 font-serif-accent italic text-[22px] sm:text-[26px] text-slate-600">Betrodd av</span>
+              <div className="flex-1 h-px bg-slate-300" />
             </div>
-            <Link
-              href="/kunder/wts-machinery-solutions"
-              className="group inline-flex flex-col items-center gap-5 px-8 py-10 bg-slate-50/80 hover:bg-slate-50 border border-slate-200/80 hover:border-blue-200 rounded-2xl transition-all"
-            >
-              <img src="/wts-logo.png" alt="WTS Machinery Solutions" className="h-9 object-contain" />
-              <p className="text-[15px] text-slate-500 max-w-lg leading-relaxed">
-                WTS Machinery Solutions använder FleetOS för att hantera hela sin uthyrningsverksamhet — från maskinregister och order till avtal och fakturering.
-              </p>
-              <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-blue-600 group-hover:gap-2.5 transition-all">
-                Läs kundcaset <ArrowRight className="w-3.5 h-3.5" />
-              </span>
+            <Link href="/kunder/wts-machinery-solutions" className="group flex items-center justify-center py-8">
+              <img
+                src="/wts-logo.png"
+                alt="WTS Machinery Solutions"
+                className="h-7 object-contain opacity-70 grayscale group-hover:opacity-100 group-hover:grayscale-0 transition-all"
+              />
             </Link>
+            <div className="h-px bg-slate-300" />
           </AnimateIn>
         </div>
       </section>
