@@ -427,7 +427,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Problem → Solution ── */}
-      <section className="py-16 sm:py-28 px-4 sm:px-6 bg-slate-50 border-b border-slate-200 overflow-hidden">
+      <section className="pt-0 pb-16 sm:pb-28 px-4 sm:px-6 bg-slate-50 border-b border-slate-200 overflow-hidden">
         <div className="max-w-6xl mx-auto">
           <AnimateIn className="text-center mb-16">
             <p className="text-[12px] font-semibold text-red-500 uppercase tracking-widest mb-3">Problemet</p>
