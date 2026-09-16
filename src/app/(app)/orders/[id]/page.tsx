@@ -369,12 +369,6 @@ export default function OrderDetailPage() {
                 {checkingZignedStatus ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                 Kontrollera status
               </button>
-              {order.signingUrl && (
-                <a href={order.signingUrl} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors">
-                  <ExternalLink className="w-3.5 h-3.5" /> Öppna signeringsrum
-                </a>
-              )}
             </div>
           </div>
         )}

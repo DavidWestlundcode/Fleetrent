@@ -201,26 +201,23 @@ export async function POST(request: NextRequest) {
     let lifecycleData: Record<string, unknown> = {};
     try { lifecycleData = JSON.parse(lifecycleRaw); } catch { /* ignore */ }
 
-    // 6. Fetch signing URL after pending (only available then)
-    let signingUrl: string | null = null;
-    if (participantId) {
-      const fetchPart = await fetch(`${ZIGNED_API}/agreements/${agreementId}/participants/${participantId}`, { headers });
-      if (fetchPart.ok) {
-        const pd = await fetchPart.json();
-        signingUrl = pd.data?.signing_room_url ?? null;
-      }
-    }
+    // participantId's signing_room_url (if fetched here) would be the CUSTOMER's own
+    // identity-bound signing link — showing or using that link as the sender would let
+    // the sender enter the room authenticated AS the customer, defeating the point of
+    // requiring the customer's own signature. There's no separate room link appropriate
+    // for the sender/issuer, so none is stored; "Kontrollera status" covers checking
+    // progress instead.
 
     // 6. Update order in DB
     await admin.from('orders').update({
       zigned_agreement_id: agreementId,
       signing_status: 'pending',
-      signing_url: signingUrl,
+      signing_url: null,
     }).eq('id', orderId);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const ld = lifecycleData as any;
-    return NextResponse.json({ success: true, agreementId, signingUrl, _debug: { lifecycleStatus: ld?.data?.lifecycle_state ?? ld?.data?.status ?? 'unknown' } });
+    return NextResponse.json({ success: true, agreementId, signingUrl: null, _debug: { lifecycleStatus: ld?.data?.lifecycle_state ?? ld?.data?.status ?? 'unknown' } });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Okänt fel';
     return NextResponse.json({ error: msg }, { status: 500 });
