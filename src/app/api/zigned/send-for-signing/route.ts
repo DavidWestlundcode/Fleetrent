@@ -154,13 +154,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Zigned dokument: ${err?.error?.message ?? docRes.status}` }, { status: 500 });
     }
 
-    // 4. Add customer as signer
+    // 4. Add customer as signer — prefer the order's chosen "beställare" (orderer)
+    // contact, since that's specifically who should receive and sign this
+    // particular order's agreement. Fall back to the customer's general email
+    // only when no orderer was picked on the order.
+    const signerEmail = (orderRow.orderer_email as string) || (customer.email as string);
+    const signerName = (orderRow.orderer_name as string) || (customer.company_name as string);
     const participantRes = await fetch(`${ZIGNED_API}/agreements/${agreementId}/participants`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        email: customer.email as string,
-        name: customer.company_name as string,
+        email: signerEmail,
+        name: signerName,
         role: 'signer',
         locale: 'sv-SE',
       }),
