@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { Building2, Check, ChevronsUpDown, Loader2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 
 type Org = { id: string; name: string };
 
@@ -25,15 +24,15 @@ export default function OrgSwitcher({
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from('organization_members')
-      .select('organization_id, organizations(name)')
-      .eq('user_id', userId)
-      .then(({ data }) => {
-        const rows = (data ?? []) as unknown as { organization_id: string; organizations: { name: string } | null }[];
-        setOrgs(rows.map((r) => ({ id: r.organization_id, name: r.organizations?.name ?? 'Okänd organisation' })));
-      });
+    // organizations' RLS only allows reading the caller's currently active
+    // org, so the other org(s) a member belongs to can't be embedded/joined
+    // from the browser — this route resolves names via service-role, scoped
+    // to exactly the org ids the caller's own membership rows already prove
+    // they belong to.
+    fetch('/api/my-organizations')
+      .then((res) => res.json())
+      .then((data) => setOrgs((data.organizations ?? []) as Org[]))
+      .catch(() => {});
   }, [userId]);
 
   useEffect(() => {

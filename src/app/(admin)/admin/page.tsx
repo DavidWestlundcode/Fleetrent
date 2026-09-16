@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import Link from 'next/link';
 import { Building2, Users, Truck, FileText, ChevronRight } from 'lucide-react';
+import { CreateOrgForm } from './CreateOrgForm';
 
 export default async function AdminPage() {
   const admin = createAdminClient();
@@ -22,10 +23,14 @@ export default async function AdminPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Organisationer</h1>
-        <p className="text-slate-500 text-sm mt-1">{orgs?.length ?? 0} totalt</p>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Organisationer</h1>
+          <p className="text-slate-500 text-sm mt-1">{orgs?.length ?? 0} totalt</p>
+        </div>
       </div>
+
+      <CreateOrgForm />
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <table className="w-full text-sm">
