@@ -405,6 +405,26 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Customers ── */}
+      <section className="py-14 px-6 bg-slate-50">
+        <div className="max-w-5xl mx-auto">
+          <AnimateIn>
+            <div className="flex items-center gap-6">
+              <div className="flex-1 h-px bg-slate-300" />
+              <span className="shrink-0 font-serif-accent italic text-[22px] sm:text-[26px] text-slate-600">Betrodd av</span>
+              <div className="flex-1 h-px bg-slate-300" />
+            </div>
+            <Link href="/kunder/wts-machinery-solutions" className="group flex items-center justify-center py-8">
+              <img
+                src="/wts-logo.png"
+                alt="WTS Machinery Solutions"
+                className="h-7 object-contain opacity-70 grayscale group-hover:opacity-100 group-hover:grayscale-0 transition-all"
+              />
+            </Link>
+            <div className="h-px bg-slate-300" />
+          </AnimateIn>
+        </div>
+      </section>
 
       {/* ── Problem → Solution ── */}
       <section className="py-16 sm:py-28 px-4 sm:px-6 bg-slate-50 border-b border-slate-200 overflow-hidden">
@@ -713,27 +733,6 @@ export default function LandingPage() {
       <LatestEventsSection />
 
       <FAQSection />
-
-      {/* ── Customers ── */}
-      <section className="py-14 px-6 bg-white border-t border-slate-100">
-        <div className="max-w-5xl mx-auto">
-          <AnimateIn>
-            <div className="flex items-center gap-6">
-              <div className="flex-1 h-px bg-slate-300" />
-              <span className="shrink-0 font-serif-accent italic text-[22px] sm:text-[26px] text-slate-600">Betrodd av</span>
-              <div className="flex-1 h-px bg-slate-300" />
-            </div>
-            <Link href="/kunder/wts-machinery-solutions" className="group flex items-center justify-center py-8">
-              <img
-                src="/wts-logo.png"
-                alt="WTS Machinery Solutions"
-                className="h-7 object-contain opacity-70 grayscale group-hover:opacity-100 group-hover:grayscale-0 transition-all"
-              />
-            </Link>
-            <div className="h-px bg-slate-300" />
-          </AnimateIn>
-        </div>
-      </section>
 
       {/* ── Final CTA ── */}
       <section className="py-28 px-6 bg-[#060D1A] relative overflow-hidden">
