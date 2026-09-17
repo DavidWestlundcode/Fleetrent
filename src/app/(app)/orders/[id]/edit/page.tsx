@@ -107,6 +107,8 @@ export default function EditOrderPage() {
   const [weeklyDiscount, setWeeklyDiscount] = useState(0);
   const [monthlyDiscount, setMonthlyDiscount] = useState(0);
   const [customOrderer, setCustomOrderer] = useState(false);
+  const [machineSearch, setMachineSearch] = useState('');
+  const [showMachineDropdown, setShowMachineDropdown] = useState(false);
 
   // Pre-populate from existing order
   useEffect(() => {
@@ -151,8 +153,10 @@ export default function EditOrderPage() {
     const fac = order.facilityName ? cust?.facilities?.find((f) => f.name === order.facilityName) : undefined;
     const contacts = order.facilityName ? (fac?.contacts ?? []) : (cust?.contacts ?? []);
     setCustomOrderer(!!order.ordererName && !contacts.some((c) => c.name === order.ordererName));
+    const currentMachine = machines.find((m) => m.id === order.machineId);
+    if (currentMachine) setMachineSearch(`${currentMachine.name}${currentMachine.internalCode ? ` (${currentMachine.internalCode})` : ''}`);
     setInitialized(true);
-  }, [order, initialized]);
+  }, [order, initialized, customers, machines]);
 
   if (!order) {
     return (
@@ -418,15 +422,57 @@ export default function EditOrderPage() {
 
                 <div className="md:col-span-2">
                   <Field label="Maskin" required>
-                    <select required value={form.machineId} onChange={(e) => set('machineId', e.target.value)} className={inputClass}>
-                      <option value="">Välj maskin...</option>
-                      {availableMachines.map((m) => (
-                        <option key={m.id} value={m.id}>{m.name} – {m.brand} {m.model} ({m.internalCode})</option>
-                      ))}
-                      {availableMachines.length === 0 && (
-                        <option disabled>Inga maskiner matchar prismallens krav</option>
-                      )}
-                    </select>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={machineSearch}
+                        onChange={(e) => {
+                          setMachineSearch(e.target.value);
+                          setShowMachineDropdown(true);
+                          if (!e.target.value) set('machineId', '');
+                        }}
+                        onFocus={() => setShowMachineDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowMachineDropdown(false), 150)}
+                        placeholder="Sök maskin, kod, serienr..."
+                        className={`${inputClass} pl-8`}
+                      />
+                      {showMachineDropdown && (() => {
+                        const q = machineSearch.toLowerCase();
+                        const filtered = availableMachines.filter((m) => !q ||
+                          m.name.toLowerCase().includes(q) ||
+                          (m.internalCode ?? '').toLowerCase().includes(q) ||
+                          (m.serialNumber ?? '').toLowerCase().includes(q) ||
+                          (m.brand ?? '').toLowerCase().includes(q) ||
+                          (m.model ?? '').toLowerCase().includes(q)
+                        );
+                        return (
+                          <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                            {filtered.map((m) => (
+                              <button
+                                key={m.id}
+                                type="button"
+                                onMouseDown={() => {
+                                  set('machineId', m.id);
+                                  setMachineSearch(`${m.name}${m.internalCode ? ` (${m.internalCode})` : ''}`);
+                                  setShowMachineDropdown(false);
+                                }}
+                                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 text-left border-b border-slate-100 last:border-0 cursor-pointer"
+                              >
+                                <div>
+                                  <span className="text-[13px] font-medium text-slate-800">{m.name}</span>
+                                  <span className="ml-2 text-[11px] text-slate-400">{m.brand} {m.model}</span>
+                                </div>
+                                <span className="text-[11px] text-slate-400 font-mono shrink-0 ml-2">{m.internalCode}</span>
+                              </button>
+                            ))}
+                            {filtered.length === 0 && (
+                              <p className="px-3 py-3 text-[12px] text-slate-400">{availableMachines.length === 0 ? 'Inga maskiner matchar prismallens krav' : 'Inga maskiner hittades'}</p>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </Field>
                   {selectedTemplate && (selectedTemplate.capacityMin > 0 || selectedTemplate.capacityMax > 0) && (
                     <p className="mt-1.5 text-[11px] text-slate-400">
