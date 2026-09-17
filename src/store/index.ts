@@ -1,5 +1,6 @@
 'use client';
 import { create } from 'zustand';
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 import type {
   Machine, Customer, Order, PriceTemplate, ServiceRecord, Article,
@@ -468,6 +469,21 @@ function sb() {
   return _client;
 }
 
+// Idempotent apply helpers for realtime echoes — every store write is
+// optimistic-first with a client-generated id, so the acting user's own
+// write always echoes back through their own realtime subscription a
+// moment later. Replacing/removing by id makes re-applying that echo safe.
+function upsertById<T extends { id: string }>(list: T[], item: T): T[] {
+  const idx = list.findIndex((x) => x.id === item.id);
+  if (idx === -1) return [...list, item];
+  const next = list.slice();
+  next[idx] = item;
+  return next;
+}
+function removeById<T extends { id: string }>(list: T[], id: string): T[] {
+  return list.filter((x) => x.id !== id);
+}
+
 // ---- STORE INTERFACE ----
 
 interface AppStore {
@@ -684,6 +700,7 @@ export const useStore = create<AppStore>()((set, get) => ({
         initialized: true,
       });
       get().activateReservedOrders();
+      subscribeRealtime(orgId);
     } catch (e) {
       console.error('Store initialization failed:', e);
       set({ loading: false, initialized: true });
@@ -1532,3 +1549,97 @@ export const useStore = create<AppStore>()((set, get) => ({
     }
   },
 }));
+
+// ---- REALTIME ----
+// One channel per browser session, opened once organizationId is known and never
+// torn down — same philosophy as org-switching/logout, which reset everything via
+// a full page reload rather than a soft in-place teardown. A page reload gives us
+// a fresh module instance (including this guard flag), which is the only "cleanup"
+// this needs. RLS (org_isolation) already restricts which rows any connection can
+// receive — the filter below is a bandwidth optimization, not the safety boundary.
+let _realtimeSubscribed = false;
+
+function subscribeRealtime(orgId: string) {
+  if (_realtimeSubscribed) return;
+  _realtimeSubscribed = true;
+
+  type EntityKey = 'machines' | 'customers' | 'templates' | 'articles' | 'serviceRecords';
+
+  function onEntity<T extends { id: string }>(key: EntityKey, mapper: (r: DbRow) => T) {
+    return (payload: RealtimePostgresChangesPayload<DbRow>) => {
+      if (payload.eventType === 'DELETE') {
+        const oldId = (payload.old as DbRow | undefined)?.id as string | undefined;
+        if (!oldId) return;
+        useStore.setState((s) => ({ [key]: removeById(s[key] as unknown as T[], oldId) }) as Partial<AppStore>);
+        return;
+      }
+      const row = payload.new as DbRow;
+      if (!row?.id) return;
+      const mapped = mapper(row);
+      useStore.setState((s) => ({ [key]: upsertById(s[key] as unknown as T[], mapped) }) as Partial<AppStore>);
+    };
+  }
+
+  sb()
+    .channel(`org-changes-${orgId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'machines', filter: `organization_id=eq.${orgId}` },
+      onEntity('machines', fromDbMachine))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'customers', filter: `organization_id=eq.${orgId}` },
+      onEntity('customers', fromDbCustomer))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'templates', filter: `organization_id=eq.${orgId}` },
+      onEntity('templates', fromDbTemplate))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'articles', filter: `organization_id=eq.${orgId}` },
+      onEntity('articles', fromDbArticle))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'service_records', filter: `organization_id=eq.${orgId}` },
+      onEntity('serviceRecords', fromDbServiceRecord))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `organization_id=eq.${orgId}` },
+      (payload: RealtimePostgresChangesPayload<DbRow>) => {
+        if (payload.eventType === 'DELETE') {
+          const oldId = (payload.old as DbRow | undefined)?.id as string | undefined;
+          if (!oldId) return;
+          useStore.setState((s) => ({ orders: removeById(s.orders, oldId) }));
+          return;
+        }
+        const row = payload.new as DbRow;
+        if (!row?.id) return;
+        // A raw postgres_changes payload on `orders` never includes the embedded
+        // order_events relation (that only exists in initialize()'s
+        // select('*, order_events(*)') join) — fromDbOrder would otherwise null
+        // the events array out on every live update. Preserve what's already local.
+        useStore.setState((s) => {
+          const existing = s.orders.find((o) => o.id === row.id);
+          const mapped = fromDbOrder(row);
+          return {
+            orders: upsertById(s.orders, {
+              ...mapped,
+              events: existing ? existing.events : mapped.events,
+            }),
+          };
+        });
+      })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_events', filter: `organization_id=eq.${orgId}` },
+      (payload: RealtimePostgresChangesPayload<DbRow>) => {
+        const row = payload.new as DbRow;
+        if (!row?.id || !row?.order_id) return;
+        const event = {
+          id: row.id as string,
+          type: row.type as string,
+          description: (row.description as string) ?? '',
+          timestamp: row.timestamp as string,
+          userId: (row.user_id as string) ?? '',
+        };
+        useStore.setState((s) => ({
+          orders: s.orders.map((o) =>
+            o.id === row.order_id
+              ? (o.events.some((e) => e.id === event.id) ? o : { ...o, events: [...o.events, event] })
+              : o
+          ),
+        }));
+      })
+    .subscribe((status) => {
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.error('Realtime subscribe failed:', status);
+        _realtimeSubscribed = false; // allow a retry on the next full page load
+      }
+    });
+}
