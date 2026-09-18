@@ -35,7 +35,7 @@ function PriceWithDiscount({ label, price, discount, onPriceChange, onDiscountCh
       <div className="flex gap-1.5">
         <div className="flex-1 relative">
           <input
-            type="number" min={0} value={price}
+            type="number" min={0} value={price || ''}
             onChange={(e) => onPriceChange(Number(e.target.value))}
             className={`${inputClass} pr-7`} placeholder="0"
           />
