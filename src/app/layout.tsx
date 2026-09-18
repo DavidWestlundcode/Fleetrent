@@ -1,5 +1,6 @@
 ﻿import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
+import { ChunkErrorReload } from '@/components/ChunkErrorReload';
 import './globals.css';
 
 const GOOGLE_ADS_ID = 'AW-18424604044';
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="sv" className="h-full">
       <body className="h-full bg-slate-50">
+        <ChunkErrorReload />
         <Script src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_ID}`} strategy="afterInteractive" />
         <Script id="google-ads-gtag" strategy="afterInteractive">
           {`
