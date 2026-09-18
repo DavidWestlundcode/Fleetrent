@@ -36,9 +36,9 @@ const jsonLd = {
   offers: {
     '@type': 'AggregateOffer',
     priceCurrency: 'SEK',
-    lowPrice: '2499',
+    lowPrice: '1495',
     highPrice: '3999',
-    offerCount: '2',
+    offerCount: '3',
     availability: 'https://schema.org/InStock',
   },
   publisher: { '@type': 'Organization', name: 'FleetOS', url: 'https://fleetos.se' },

@@ -1,6 +1,6 @@
 ﻿'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Save, User, Building2, Globe, Mail, Loader2, CheckCircle2, XCircle, Link2, Link2Off, Shield, Phone, Pencil } from 'lucide-react';
+import { Save, User, Building2, Globe, Mail, Loader2, CheckCircle2, XCircle, Link2, Link2Off, Shield, Phone, Pencil, Lock } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { createClient } from '@/lib/supabase/client';
@@ -187,8 +187,9 @@ function SettingsInner() {
   const [spSyncError, setSpSyncError] = useState('');
   const [spOrgId, setSpOrgId] = useState<string | null>(null);
 
-  const { userId } = useStore();
+  const { userId, maxUsers } = useStore();
   const isAdmin = currentUserRole === 'admin';
+  const atUserLimit = members.length >= maxUsers;
 
   const [org, setOrg] = useState<OrgForm>({
     name: '',
@@ -646,7 +647,12 @@ function SettingsInner() {
             {activeTab === 'users' && (
               <div className="space-y-4">
                 <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
-                  <h2 className="font-semibold text-slate-900 mb-4">Teammedlemmar</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-semibold text-slate-900">Teammedlemmar</h2>
+                    <span className={`text-xs px-2.5 py-1 rounded-full border ${atUserLimit ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                      {members.length}/{maxUsers} användare
+                    </span>
+                  </div>
                   {members.length === 0 ? (
                     <p className="text-sm text-slate-400">Inga medlemmar hittades.</p>
                   ) : (
@@ -748,7 +754,13 @@ function SettingsInner() {
                 <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
                   <h2 className="font-semibold text-slate-900 mb-1">Bjud in medarbetare</h2>
                   <p className="text-sm text-slate-500 mb-4">De får ett e-postmeddelande med en länk för att skapa sitt konto och ansluta till ditt företag.</p>
-                  <form onSubmit={handleInvite} className="flex gap-2">
+                  {atUserLimit && (
+                    <div className="mb-4 flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
+                      <Lock className="w-4 h-4 shrink-0" />
+                      Ni har nått gränsen på {maxUsers} användare för er plan. Kontakta oss för att utöka er plan.
+                    </div>
+                  )}
+                  <form onSubmit={handleInvite} className={`flex gap-2 ${atUserLimit ? 'opacity-50 pointer-events-none' : ''}`}>
                     <div className="relative flex-1">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input
@@ -762,7 +774,7 @@ function SettingsInner() {
                     </div>
                     <button
                       type="submit"
-                      disabled={inviteStatus === 'loading'}
+                      disabled={inviteStatus === 'loading' || atUserLimit}
                       className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors cursor-pointer"
                     >
                       {inviteStatus === 'loading' ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
@@ -814,7 +826,13 @@ function SettingsInner() {
                 <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
                   <h2 className="font-semibold text-slate-900 mb-1">Skapa användare manuellt</h2>
                   <p className="text-sm text-slate-500 mb-4">Skapa ett konto direkt utan e-postinbjudan. Dela inloggningsuppgifterna med medarbetaren.</p>
-                  <form onSubmit={handleCreateUser} className="space-y-3">
+                  {atUserLimit && (
+                    <div className="mb-4 flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
+                      <Lock className="w-4 h-4 shrink-0" />
+                      Ni har nått gränsen på {maxUsers} användare för er plan. Kontakta oss för att utöka er plan.
+                    </div>
+                  )}
+                  <form onSubmit={handleCreateUser} className={`space-y-3 ${atUserLimit ? 'opacity-50 pointer-events-none' : ''}`}>
                     <input
                       type="text"
                       value={createName}
@@ -850,7 +868,7 @@ function SettingsInner() {
                     </div>
                     <button
                       type="submit"
-                      disabled={createStatus === 'loading'}
+                      disabled={createStatus === 'loading' || atUserLimit}
                       className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors cursor-pointer"
                     >
                       {createStatus === 'loading' ? <Loader2 className="w-4 h-4 animate-spin" /> : null}

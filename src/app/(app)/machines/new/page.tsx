@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Sparkles, Camera, X, Loader2, CheckCircle2, PenLine } from 'lucide-react';
+import { ArrowLeft, Save, Sparkles, Camera, X, Loader2, CheckCircle2, PenLine, Lock } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
 import { CATEGORY_LABELS, FUEL_LABELS, type MachineCategory, type FuelType } from '@/lib/types';
@@ -103,7 +103,8 @@ function dataUrlToFile(dataUrl: string, filename: string): File {
 
 export default function NewMachinePage() {
   const router = useRouter();
-  const { addMachine, organizationId } = useStore();
+  const { addMachine, organizationId, machines, maxMachines } = useStore();
+  const atMachineLimit = machines.length >= maxMachines;
 
   const [mode, setMode] = useState<Mode>('choose');
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -222,6 +223,29 @@ export default function NewMachinePage() {
 
   const specFields = SPEC_FIELDS[form.category] ?? [];
   const textSpecFields = TEXT_SPEC_FIELDS[form.category] ?? [];
+
+  if (atMachineLimit) {
+    return (
+      <div className="flex flex-col flex-1 overflow-auto">
+        <Header title="Lägg till maskin" />
+        <div className="flex-1 p-6 max-w-4xl mx-auto w-full">
+          <Link href="/machines" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-6">
+            <ArrowLeft className="w-4 h-4" />
+            Tillbaka
+          </Link>
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-8 flex flex-col items-center text-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+              <Lock className="w-5 h-5 text-slate-400" />
+            </div>
+            <h2 className="font-semibold text-slate-900">Maskingränsen är nådd</h2>
+            <p className="text-sm text-slate-500 max-w-sm">
+              Din plan tillåter {maxMachines} maskiner och ni har redan {machines.length} registrerade. Kontakta oss för att utöka er plan.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col flex-1 overflow-auto">

@@ -29,6 +29,16 @@ export async function POST(request: NextRequest) {
 
     const admin = createAdminClient();
 
+    const { data: org } = await admin.from('organizations').select('max_users').eq('id', profile.organization_id).single();
+    const maxUsers = (org?.max_users as number | null) ?? 5;
+    const { count: memberCount } = await admin
+      .from('organization_members')
+      .select('user_id', { count: 'exact', head: true })
+      .eq('organization_id', profile.organization_id);
+    if ((memberCount ?? 0) >= maxUsers) {
+      return NextResponse.json({ error: `Ni har nått gränsen på ${maxUsers} användare för er plan. Kontakta oss för att utöka er plan.` }, { status: 403 });
+    }
+
     // Create user with confirmed email — no invite mail needed
     const { data: newUser, error: createError } = await admin.auth.admin.createUser({
       email,

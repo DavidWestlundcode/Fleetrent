@@ -3,9 +3,9 @@ import { useState } from 'react';
 import { Save, CheckCircle2 } from 'lucide-react';
 
 const PLANS = [
-  { value: 'basic',   label: 'Basic',   color: 'bg-slate-100 text-slate-700' },
-  { value: 'premium', label: 'Premium', color: 'bg-blue-100 text-blue-700' },
-  { value: 'enterprise', label: 'Enterprise', color: 'bg-purple-100 text-purple-700' },
+  { value: 'start',   label: 'Start',   color: 'bg-slate-100 text-slate-700', maxUsers: 2,  maxMachines: 100 },
+  { value: 'basic',   label: 'Basic',   color: 'bg-blue-100 text-blue-700',   maxUsers: 5,  maxMachines: 100 },
+  { value: 'premium', label: 'Premium', color: 'bg-purple-100 text-purple-700', maxUsers: 10, maxMachines: 9999 },
 ];
 
 type Props = {
@@ -57,7 +57,18 @@ export function PlanEditor({ orgId, currentPlan, currentMaxUsers, currentMaxMach
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label className="block text-[12px] font-medium text-slate-500 mb-1.5">Plan</label>
-          <select value={plan} onChange={e => setPlan(e.target.value)} className={inputClass}>
+          <select
+            value={plan}
+            onChange={e => {
+              setPlan(e.target.value);
+              const defaults = PLANS.find(p => p.value === e.target.value);
+              if (defaults) {
+                setMaxUsers(defaults.maxUsers);
+                setMaxMachines(defaults.maxMachines);
+              }
+            }}
+            className={inputClass}
+          >
             {PLANS.map(p => (
               <option key={p.value} value={p.value}>{p.label}</option>
             ))}
