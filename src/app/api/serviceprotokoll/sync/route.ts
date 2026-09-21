@@ -384,6 +384,7 @@ export async function POST(request: NextRequest) {
           .select('id, sp_id')
           .eq('organization_id', orgId)
           .not('sp_id', 'is', null)
+          .order('id')
           .range(exSkip, exSkip + 999);
         if (!batch || batch.length === 0) break;
         existingAll.push(...batch as { id: string; sp_id: string }[]);
@@ -763,6 +764,7 @@ export async function GET(request: NextRequest) {
       while (true) {
         const { data: batch } = await admin.from('customers')
           .select('id, sp_id').eq('organization_id', org.id).not('sp_id', 'is', null)
+          .order('id')
           .range(cronSkip, cronSkip + 999);
         if (!batch || batch.length === 0) break;
         cronExistingAll.push(...batch as { id: string; sp_id: string }[]);
@@ -780,6 +782,7 @@ export async function GET(request: NextRequest) {
       for (let i = 0; i < cronToInsert.length; i += CBATCH) {
         const { error } = await admin.from('customers').insert(cronToInsert.slice(i, i + CBATCH));
         if (!error) total.customers += cronToInsert.slice(i, i + CBATCH).length;
+        else console.error(`[SP-sync] ${orgName}: customer insert batch ${i} failed: ${error.message}`);
       }
       for (let i = 0; i < cronToUpdate.length; i += CBATCH) {
         const batch = cronToUpdate.slice(i, i + CBATCH).map(r => ({
@@ -792,6 +795,7 @@ export async function GET(request: NextRequest) {
         }));
         const { error } = await admin.from('customers').upsert(batch, { onConflict: 'id' });
         if (!error) total.customers += batch.length;
+        else console.error(`[SP-sync] ${orgName}: customer update batch ${i} failed: ${error.message}`);
       }
       console.log(`[SP-sync] ${orgName}: ${cronToInsert.length} new + ${cronToUpdate.length} updated customers`);
 
