@@ -58,16 +58,35 @@ export async function POST(request: NextRequest) {
 
     if (!orderRow) return NextResponse.json({ error: 'Order hittades inte' }, { status: 404 });
 
-    const { data: orgRow } = await admin.from('organizations').select('name, email').eq('id', orgId).single();
+    const { data: orgRow } = await admin.from('organizations').select('name, email, standard_terms').eq('id', orgId).single();
 
     const customer = orderRow.customers as Record<string, unknown>;
     const machine = orderRow.machines as Record<string, unknown> | null;
 
-    // Fetch template for standard terms if applicable
+    // Fetch template for standard terms if applicable — falls back to the org's own
+    // standard terms (Inställningar → Företag) when the order has no template, or the
+    // template's terms field is empty, so a contract never goes out with no terms at all.
     let standardTerms = '';
     if (orderRow.template_id) {
       const { data: tmpl } = await admin.from('templates').select('standard_terms').eq('id', orderRow.template_id).single();
       standardTerms = (tmpl?.standard_terms as string) ?? '';
+    }
+    if (!standardTerms) standardTerms = (orgRow?.standard_terms as string) ?? '';
+
+    // Resolve extra order articles (accessories/extras added on top of the machine rental,
+    // e.g. förlängningsgafflar) to their article names for display on the contract.
+    const orderArticleRows = (orderRow.order_articles as { articleId: string; quantity: number; unitPrice: number; discountPercent?: number; description?: string }[]) ?? [];
+    let orderArticles: { name: string; quantity: number; unitPrice: number; discountPercent?: number }[] = [];
+    if (orderArticleRows.length > 0) {
+      const articleIds = [...new Set(orderArticleRows.map((r) => r.articleId))];
+      const { data: articleRows } = await admin.from('articles').select('id, name').in('id', articleIds);
+      const nameById = new Map((articleRows ?? []).map((a) => [a.id as string, a.name as string]));
+      orderArticles = orderArticleRows.map((r) => ({
+        name: r.description || nameById.get(r.articleId) || 'Artikel',
+        quantity: r.quantity,
+        unitPrice: r.unitPrice,
+        discountPercent: r.discountPercent,
+      }));
     }
 
     // Generate PDF
@@ -96,6 +115,7 @@ export async function POST(request: NextRequest) {
         deposit: (orderRow.deposit as number) ?? 0,
         organizationName: (orgRow?.name as string) ?? 'Uthyraren',
         standardTerms,
+        orderArticles,
         accessories: (orderRow.accessories as string[]) ?? [],
         orderReference: (orderRow.order_reference as string) ?? '',
         createdAt: new Date().toLocaleDateString('sv-SE'),

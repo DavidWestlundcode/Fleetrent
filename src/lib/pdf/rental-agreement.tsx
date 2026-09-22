@@ -54,6 +54,7 @@ interface Props {
   organizationName: string;
   standardTerms?: string;
   accessories?: string[];
+  orderArticles?: { name: string; quantity: number; unitPrice: number; discountPercent?: number }[];
   orderReference?: string;
   createdAt: string;
 }
@@ -126,6 +127,23 @@ export default function RentalAgreementPDF(props: Props) {
             )}
           </View>
         </View>
+
+        {/* Other articles */}
+        {props.orderArticles && props.orderArticles.length > 0 ? (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>Övriga artiklar</Text>
+            {props.orderArticles.map((a, i) => {
+              const disc = a.discountPercent ?? 0;
+              const lineTotal = a.quantity * a.unitPrice * (1 - disc / 100);
+              return (
+                <View key={i} style={s.totalRow}>
+                  <Text style={s.totalLabel}>{a.name} ({a.quantity} × {fmt(a.unitPrice)}{disc > 0 ? `, -${disc}%` : ''})</Text>
+                  <Text style={s.totalValue}>{fmt(lineTotal)}</Text>
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
 
         {/* Terms */}
         {props.standardTerms ? (
