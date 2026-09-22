@@ -1071,6 +1071,15 @@ export default function OrderDetailPage() {
                     order.rentalDiscount, order.weeklyDiscount, order.monthlyDiscount
                   )
                 : 0;
+              const insuranceNet = (order.insuranceCost ?? 0) * (1 - insDisc / 100);
+              const articlesNet = (order.orderArticles ?? []).reduce(
+                (sum, row) => sum + row.quantity * row.unitPrice * (1 - (row.discountPercent ?? 0) / 100),
+                0
+              );
+              // "Totalt" mirrors exactly what's listed above it in the Ekonomi box — not the
+              // totalPrice snapshot saved at creation/return, which can go stale once billingEndDate
+              // is set/changed after the fact (see order detail page history for why).
+              const ekonomiTotal = rentalNet + insuranceNet + articlesNet;
 
               return (
                 <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
@@ -1204,7 +1213,7 @@ export default function OrderDetailPage() {
                           )}
                           <div className="flex justify-between text-sm font-semibold pt-1 border-t border-slate-100">
                             <span className="text-slate-700">Försäkring totalt</span>
-                            <span>{formatCurrency((order.insuranceCost ?? 0) * (1 - insDisc / 100))}</span>
+                            <span>{formatCurrency(insuranceNet)}</span>
                           </div>
                         </div>
                       </div>
@@ -1236,7 +1245,7 @@ export default function OrderDetailPage() {
 
                     <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline">
                       <span className="font-semibold text-slate-800">Totalt</span>
-                      <span className="font-bold text-blue-600 text-lg">{formatCurrency(order.totalPrice)}</span>
+                      <span className="font-bold text-blue-600 text-lg">{formatCurrency(ekonomiTotal)}</span>
                     </div>
                   </div>
                 </div>
