@@ -710,10 +710,10 @@ export async function GET(request: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const orgLastSync = (orgLastSyncRow as any)?.sp_last_sync as string | null;
       const [customers, facilities] = await Promise.all([
-        fetchAllPages(`${SP_API}/Customer/Get`, token, 200),
+        fetchAllPages(`${SP_API}/Customer/Get`, token, 200, orgLastSync ?? undefined),
         fetchAllPages(`${SP_API}/Facility/Get`, token, 50).catch(() => []),
       ]);
-      console.log(`[SP-sync] ${orgName}: fetched ${customers.length} customers, ${facilities.length} facilities`);
+      console.log(`[SP-sync] ${orgName}: fetched ${customers.length} customers (since ${orgLastSync ?? 'ever'}), ${facilities.length} facilities`);
 
       const facilityByCustomer: Record<string, unknown[]> = {};
       for (const f of facilities) {

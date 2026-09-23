@@ -1559,6 +1559,31 @@ export const useStore = create<AppStore>()((set, get) => ({
 // receive — the filter below is a bandwidth optimization, not the safety boundary.
 let _realtimeSubscribed = false;
 
+// A burst of DB writes (e.g. the SP-sync cron upserting hundreds of customers/machines
+// every 30 min) arrives as one postgres_changes message per row — applying each with its
+// own setState/re-render in quick succession can overwhelm a tab. Instead, queue the patch
+// each event produces and flush them all as a single setState once things go quiet for a
+// moment, so a burst of any size costs one re-render instead of one per row.
+const REALTIME_FLUSH_DELAY_MS = 300;
+let realtimeFlushTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingRealtimeUpdates: ((s: AppStore) => Partial<AppStore>)[] = [];
+
+function enqueueRealtimeUpdate(update: (s: AppStore) => Partial<AppStore>) {
+  pendingRealtimeUpdates.push(update);
+  if (realtimeFlushTimer) return;
+  realtimeFlushTimer = setTimeout(() => {
+    realtimeFlushTimer = null;
+    const updates = pendingRealtimeUpdates;
+    pendingRealtimeUpdates = [];
+    if (updates.length === 0) return;
+    useStore.setState((s) => {
+      let next: AppStore = s;
+      for (const applyUpdate of updates) next = { ...next, ...applyUpdate(next) };
+      return next;
+    });
+  }, REALTIME_FLUSH_DELAY_MS);
+}
+
 function subscribeRealtime(orgId: string) {
   if (_realtimeSubscribed) return;
   _realtimeSubscribed = true;
@@ -1570,13 +1595,13 @@ function subscribeRealtime(orgId: string) {
       if (payload.eventType === 'DELETE') {
         const oldId = (payload.old as DbRow | undefined)?.id as string | undefined;
         if (!oldId) return;
-        useStore.setState((s) => ({ [key]: removeById(s[key] as unknown as T[], oldId) }) as Partial<AppStore>);
+        enqueueRealtimeUpdate((s) => ({ [key]: removeById(s[key] as unknown as T[], oldId) }) as Partial<AppStore>);
         return;
       }
       const row = payload.new as DbRow;
       if (!row?.id) return;
       const mapped = mapper(row);
-      useStore.setState((s) => ({ [key]: upsertById(s[key] as unknown as T[], mapped) }) as Partial<AppStore>);
+      enqueueRealtimeUpdate((s) => ({ [key]: upsertById(s[key] as unknown as T[], mapped) }) as Partial<AppStore>);
     };
   }
 
@@ -1597,7 +1622,7 @@ function subscribeRealtime(orgId: string) {
         if (payload.eventType === 'DELETE') {
           const oldId = (payload.old as DbRow | undefined)?.id as string | undefined;
           if (!oldId) return;
-          useStore.setState((s) => ({ orders: removeById(s.orders, oldId) }));
+          enqueueRealtimeUpdate((s) => ({ orders: removeById(s.orders, oldId) }));
           return;
         }
         const row = payload.new as DbRow;
@@ -1606,7 +1631,7 @@ function subscribeRealtime(orgId: string) {
         // order_events relation (that only exists in initialize()'s
         // select('*, order_events(*)') join) — fromDbOrder would otherwise null
         // the events array out on every live update. Preserve what's already local.
-        useStore.setState((s) => {
+        enqueueRealtimeUpdate((s) => {
           const existing = s.orders.find((o) => o.id === row.id);
           const mapped = fromDbOrder(row);
           return {
@@ -1628,7 +1653,7 @@ function subscribeRealtime(orgId: string) {
           timestamp: row.timestamp as string,
           userId: (row.user_id as string) ?? '',
         };
-        useStore.setState((s) => ({
+        enqueueRealtimeUpdate((s) => ({
           orders: s.orders.map((o) =>
             o.id === row.order_id
               ? (o.events.some((e) => e.id === event.id) ? o : { ...o, events: [...o.events, event] })
