@@ -2,6 +2,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { LIMITS } from '@/lib/rate-limit';
+import type { FuelType } from '@/lib/types';
 
 export const maxDuration = 300;
 
@@ -112,6 +113,7 @@ function parseSpSpecs(obj: any): {
   power_unit?: string;
   cabin?: string;
   category?: string;
+  fuel_type?: FuelType;
 } {
   // CustomInfo is an array of { Name, Value } when SP flag includeCustomInfo=true is used.
   // Track whether SP actually sent this structure at all — as opposed to it being genuinely
@@ -162,6 +164,7 @@ function parseSpSpecs(obj: any): {
   const categoryRaw = customFields.find((f) =>
     f.Name?.toLowerCase() === 'kategori' || f.Name?.toLowerCase() === 'category'
   )?.Value;
+  const fuelTypeRaw = getTextField('Drivmedel', 'drivmedel', 'Bränsle', 'bränsle', 'fuel_type');
 
   return {
     year,
@@ -175,7 +178,27 @@ function parseSpSpecs(obj: any): {
     power_unit: getTextField('Aggregat', 'aggregat', 'power_unit'),
     cabin: getTextField('Hytt', 'hytt', 'cabin'),
     category: mapSpCategory(categoryRaw),
+    fuel_type: mapSpFuelType(fuelTypeRaw),
   };
+}
+
+// Map an SP "Drivmedel"/"Bränsle" custom-field value to a FleetRent FuelType code
+function mapSpFuelType(value: string | null | undefined): FuelType | undefined {
+  if (!value) return undefined;
+  const v = value.trim().toLowerCase().replace(/[åä]/g, 'a').replace(/ö/g, 'o');
+  const map: Record<string, FuelType> = {
+    diesel: 'diesel',
+    el: 'el',
+    elektrisk: 'el',
+    elektricitet: 'el',
+    gas: 'gas',
+    gasol: 'gas',
+    litium: 'lithium',
+    lithium: 'lithium',
+    li_ion: 'lithium',
+    bensin: 'bensin',
+  };
+  return map[v];
 }
 
 // Map an SP category string to a FleetRent MachineCategory code
@@ -705,15 +728,18 @@ export async function GET(request: NextRequest) {
       }
       console.log(`[SP-sync] ${orgName}: ${newMachines} new machines inserted, ${updatedRentable} existing machines' specs updated`);
 
-      // customers — use lastSync for incremental fetch, bulk insert/update to avoid N+1 timeout
-      const { data: orgLastSyncRow } = await admin.from('organizations').select('sp_last_sync').eq('id', org.id).single();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const orgLastSync = (orgLastSyncRow as any)?.sp_last_sync as string | null;
+      // customers — full fetch every run. lastSync looked like the right lever to cut write
+      // volume, but confirmed 2026-09-23: at least one newly-created SP customer never came
+      // back from Customer/Get when filtered by lastSync, while a full ("Synka om allt") fetch
+      // picked it up immediately — so SP's lastSync filter can't be trusted to surface every
+      // change. Missing customers is worse than the realtime-burst problem this was meant to
+      // reduce, and that problem now has its own fix (the debounce in store/index.ts), so this
+      // reverts to always fetching everyone.
       const [customers, facilities] = await Promise.all([
-        fetchAllPages(`${SP_API}/Customer/Get`, token, 200, orgLastSync ?? undefined),
+        fetchAllPages(`${SP_API}/Customer/Get`, token, 200),
         fetchAllPages(`${SP_API}/Facility/Get`, token, 50).catch(() => []),
       ]);
-      console.log(`[SP-sync] ${orgName}: fetched ${customers.length} customers (since ${orgLastSync ?? 'ever'}), ${facilities.length} facilities`);
+      console.log(`[SP-sync] ${orgName}: fetched ${customers.length} customers, ${facilities.length} facilities`);
 
       const facilityByCustomer: Record<string, unknown[]> = {};
       for (const f of facilities) {
