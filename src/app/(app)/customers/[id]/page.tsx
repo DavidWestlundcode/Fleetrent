@@ -7,7 +7,7 @@ import Header from '@/components/layout/Header';
 import { OrderStatusBadge } from '@/components/ui/StatusBadge';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useStore } from '@/store';
-import { formatCurrency, formatDate, getCustomerTotalSpent } from '@/lib/utils';
+import { formatCurrency, formatDate, getCustomerTotalSpent, calcOrderTotal } from '@/lib/utils';
 import type { SpMachine } from '@/lib/types';
 
 export default function CustomerDetailPage() {
@@ -354,7 +354,7 @@ export default function CustomerDetailPage() {
                       <td className="px-4 py-3 text-slate-600 text-xs">
                         {formatDate(order.startDate)} – {formatDate(order.plannedReturnDate)}
                       </td>
-                      <td className="px-4 py-3 font-medium">{formatCurrency(order.totalPrice)}</td>
+                      <td className="px-4 py-3 font-medium">{formatCurrency(calcOrderTotal(order))}</td>
                       <td className="px-4 py-3"><OrderStatusBadge status={order.status} /></td>
                     </tr>
                   );

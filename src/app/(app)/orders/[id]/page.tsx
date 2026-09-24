@@ -1244,7 +1244,9 @@ export default function OrderDetailPage() {
                     )}
 
                     <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline">
-                      <span className="font-semibold text-slate-800">Totalt</span>
+                      <span className="font-semibold text-slate-800">
+                        {order.openEnded && !order.actualReturnDate ? 'Bokat hittills (exkl. hyra)' : 'Totalt'}
+                      </span>
                       <span className="font-bold text-blue-600 text-lg">{formatCurrency(ekonomiTotal)}</span>
                     </div>
                   </div>

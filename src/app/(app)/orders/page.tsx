@@ -9,7 +9,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import EmptyState from '@/components/ui/EmptyState';
 import { exportToCsv } from '@/lib/csv';
 import { useStore } from '@/store';
-import { formatCurrency, formatDate, daysUntil, needsPartialInvoice, isOrderOverdue } from '@/lib/utils';
+import { formatCurrency, formatDate, daysUntil, needsPartialInvoice, isOrderOverdue, calcOrderTotal } from '@/lib/utils';
 import type { Order, OrderStatus, Machine, Customer, InvoicePeriod } from '@/lib/types';
 import Pagination from '@/components/ui/Pagination';
 
@@ -49,7 +49,7 @@ function ordersToCsvRows(list: Order[], machines: Machine[], customers: Customer
     Maskin: machines.find((m) => m.id === o.machineId)?.name ?? '',
     Startdatum: o.startDate,
     'Planerad retur': o.plannedReturnDate,
-    Belopp: o.totalPrice,
+    Belopp: calcOrderTotal(o),
     Status: o.status,
   }));
 }
@@ -116,6 +116,7 @@ function OrdersPageInner() {
     if (!sortKey) return filtered;
     const dir = sortDir === 'asc' ? 1 : -1;
     return [...filtered].sort((a, b) => {
+      if (sortKey === 'totalPrice') return (calcOrderTotal(a) - calcOrderTotal(b)) * dir;
       const av = a[sortKey];
       const bv = b[sortKey];
       if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
@@ -600,7 +601,7 @@ function OrdersPageInner() {
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3.5 text-[13px] font-medium text-slate-700">{formatCurrency(order.totalPrice)}</td>
+                    <td className="px-4 py-3.5 text-[13px] font-medium text-slate-700">{formatCurrency(calcOrderTotal(order))}</td>
                     <td className="px-4 py-3.5"><OrderStatusBadge status={order.status} /></td>
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -676,7 +677,7 @@ function OrdersPageInner() {
                       </p>
                     )}
                   </div>
-                  <span className="text-[13px] font-semibold text-slate-700">{formatCurrency(order.totalPrice)}</span>
+                  <span className="text-[13px] font-semibold text-slate-700">{formatCurrency(calcOrderTotal(order))}</span>
                 </div>
               </Link>
             );

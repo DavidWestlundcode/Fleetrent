@@ -15,7 +15,7 @@ import { OrderStatusBadge } from '@/components/ui/StatusBadge';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useStore } from '@/store';
 import {
-  formatCurrency, formatDate, calculateRecoveryPercent, calculateROI, getRealizedRevenueEvents, getMachineStats,
+  formatCurrency, formatDate, calculateRecoveryPercent, calculateROI, getRealizedRevenueEvents, getMachineStats, calcOrderTotal,
 } from '@/lib/utils';
 import { CATEGORY_LABELS, FUEL_LABELS } from '@/lib/types';
 
@@ -57,9 +57,10 @@ export default function MachineDetailPage() {
         periodStart: order.startDate,
         // Open-ended avtalshyra orders have no plannedReturnDate — nothing to show as an end date yet.
         periodEnd: order.actualReturnDate ?? order.plannedReturnDate ?? null,
-        // Once closed, order.totalPrice is the accurate final total (set at return); while still
-        // running, it's just the estimate from creation — show what's actually been invoiced instead.
-        amount: isClosed ? order.totalPrice : invoicedAmount,
+        // Once closed, calcOrderTotal is the accurate final total (order.totalPrice is a snapshot
+        // that can go stale once billingEndDate is set/changed after return); while still running,
+        // it's just the estimate from creation — show what's actually been invoiced instead.
+        amount: isClosed ? calcOrderTotal(order) : invoicedAmount,
         swapped: false as const,
       };
     });

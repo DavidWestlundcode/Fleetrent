@@ -1,4 +1,5 @@
 import { type ClassValue, clsx } from 'clsx';
+import type { Order } from './types';
 
 export function cn(...inputs: ClassValue[]) {
   return inputs.filter(Boolean).join(' ');
@@ -138,6 +139,37 @@ export function calcDiscountedTotal(
   );
 }
 
+// Just the machine-rental portion (no insurance, no extra articles like transport or
+// förlängningsgaffel) — what machine ROI/revenue should be measured against, since those are
+// ancillary services, not the machine earning its keep.
+export function calcOrderRentalTotal(order: {
+  startDate: string; billingEndDate?: string; actualReturnDate?: string; plannedReturnDate?: string;
+  chargeWeekends?: boolean; dailyPrice: number; weeklyPrice: number; monthlyPrice: number;
+  rentalDiscount?: number; weeklyDiscount?: number; monthlyDiscount?: number;
+}): number {
+  const endDate = order.billingEndDate || order.actualReturnDate || order.plannedReturnDate || null;
+  if (!endDate) return 0;
+  const breakdown = calcRentalBreakdown(order.startDate, endDate, order.chargeWeekends ?? false, order.dailyPrice, order.weeklyPrice, order.monthlyPrice);
+  return calcDiscountedTotal(
+    breakdown, order.dailyPrice, order.weeklyPrice, order.monthlyPrice,
+    order.rentalDiscount, order.weeklyDiscount, order.monthlyDiscount
+  );
+}
+
+// The order's real total: hyra + försäkring + artiklar, computed the same way regardless of
+// where it's shown (order detail's Ekonomi box, the orders list, CSV export, …) — replaces
+// order.totalPrice, a snapshot saved at creation/return that goes stale once billingEndDate is
+// set/changed afterward.
+export function calcOrderTotal(order: Order): number {
+  const insDisc = order.insuranceDiscount ?? 0;
+  const insuranceNet = (order.insuranceCost ?? 0) * (1 - insDisc / 100);
+  const articlesNet = (order.orderArticles ?? []).reduce(
+    (sum, row) => sum + row.quantity * row.unitPrice * (1 - (row.discountPercent ?? 0) / 100),
+    0
+  );
+  return calcOrderRentalTotal(order) + insuranceNet + articlesNet;
+}
+
 function getEasterSunday(year: number): Date {
   const a = year % 19, b = Math.floor(year / 100), c = year % 100;
   const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
@@ -251,9 +283,17 @@ export function getMatchingTemplate<T extends { category: string; capacityMin: n
 
 type RevenueOrder = {
   status: string;
-  totalPrice: number;
   startDate: string;
   actualReturnDate?: string;
+  plannedReturnDate?: string;
+  billingEndDate?: string;
+  chargeWeekends?: boolean;
+  dailyPrice: number;
+  weeklyPrice: number;
+  monthlyPrice: number;
+  rentalDiscount?: number;
+  weeklyDiscount?: number;
+  monthlyDiscount?: number;
   invoicePeriods?: { amount: number; endDate: string }[];
 };
 
@@ -261,7 +301,8 @@ type RevenueOrder = {
 // machine.totalRevenue: each delfaktura books its amount on its period end date, and the remaining
 // balance books on the order's actual return date once the machine is returned. Active orders with
 // no invoicing yet, and cancelled orders, contribute nothing — matching accounting-accurate revenue
-// rather than pipeline/projected revenue.
+// rather than pipeline/projected revenue. Rental only — insurance/extra articles (transport,
+// förlängningsgaffel, …) are ancillary revenue, not the machine's own rental earnings.
 export function getRealizedRevenueEvents(orders: RevenueOrder[]): { date: string; amount: number }[] {
   const events: { date: string; amount: number }[] = [];
   orders.forEach((order) => {
@@ -273,7 +314,7 @@ export function getRealizedRevenueEvents(orders: RevenueOrder[]): { date: string
       invoiced += p.amount;
     });
     if (order.status === 'avslutad' || order.status === 'klar_for_fakturering') {
-      const remaining = Math.max(0, order.totalPrice - invoiced);
+      const remaining = Math.max(0, calcOrderRentalTotal(order) - invoiced);
       if (remaining > 0 && order.actualReturnDate) {
         events.push({ date: order.actualReturnDate, amount: remaining });
       }
@@ -287,6 +328,15 @@ type StatsOrder = {
   totalPrice: number;
   startDate: string;
   actualReturnDate?: string;
+  plannedReturnDate?: string;
+  billingEndDate?: string;
+  chargeWeekends?: boolean;
+  dailyPrice: number;
+  weeklyPrice: number;
+  monthlyPrice: number;
+  rentalDiscount?: number;
+  weeklyDiscount?: number;
+  monthlyDiscount?: number;
   machineId: string;
   customerId: string;
   invoicePeriods?: { id: string; amount: number; days: number }[];
@@ -296,8 +346,10 @@ type StatsOrder = {
 // Computed live from orders/invoicePeriods instead of a stored running counter, so it's always
 // correct regardless of which code path created a given delfaktura (manual "Ny delfaktura", the
 // avtalshyra cron, or a Fortnox send) — there's no separate counter that a code path can forget
-// to update. "Realized" = invoiced periods, plus the remaining un-invoiced balance once an order
-// actually closes (avslutad/klar_for_fakturering) — matches getRealizedRevenueEvents above.
+// to update. "Realized" = invoiced periods, plus the remaining un-invoiced rental balance once an
+// order actually closes (avslutad/klar_for_fakturering) — matches getRealizedRevenueEvents above.
+// Rental only — a machine's ROI is about its own earning power, not ancillary services like
+// insurance or a transport/förlängningsgaffel article riding along on the same order.
 export function getMachineStats(orders: StatsOrder[], machineId: string) {
   let totalRevenue = 0;
   let totalRentalDays = 0;
@@ -324,7 +376,7 @@ export function getMachineStats(orders: StatsOrder[], machineId: string) {
 
     const isClosed = order.status === 'avslutad' || order.status === 'klar_for_fakturering';
     if (order.machineId === machineId && isClosed) {
-      totalRevenue += Math.max(0, order.totalPrice - invoicedAmount);
+      totalRevenue += Math.max(0, calcOrderRentalTotal(order) - invoicedAmount);
       if (order.actualReturnDate) {
         const totalDays = daysBetween(order.startDate, order.actualReturnDate);
         totalRentalDays += Math.max(0, totalDays - invoicedDays);

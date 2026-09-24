@@ -13,7 +13,7 @@ import Header from '@/components/layout/Header';
 import StatCard from '@/components/ui/StatCard';
 import { MachineStatusBadge, OrderStatusBadge } from '@/components/ui/StatusBadge';
 import { useStore } from '@/store';
-import { formatCurrency, formatDate, getMonthlyRevenueData, getRealizedRevenueEvents, getMachineStats, daysUntil, isOrderOverdue } from '@/lib/utils';
+import { formatCurrency, formatDate, getMonthlyRevenueData, getRealizedRevenueEvents, getMachineStats, daysUntil, isOrderOverdue, calcOrderTotal } from '@/lib/utils';
 
 const MACHINE_STATUS_COLORS: Record<string, string> = {
   'I lager': '#10B981',
@@ -232,7 +232,7 @@ export default function DashboardPage() {
                       <p className="text-[11px] text-slate-400 mt-0.5">{customer?.companyName} · {machine?.name}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-[13px] font-semibold text-slate-700">{formatCurrency(order.totalPrice)}</span>
+                      <span className="text-[13px] font-semibold text-slate-700">{formatCurrency(calcOrderTotal(order))}</span>
                       <OrderStatusBadge status={order.status} />
                     </div>
                   </Link>
