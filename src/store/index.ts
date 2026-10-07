@@ -1182,6 +1182,14 @@ export const useStore = create<AppStore>()((set, get) => ({
     const machineChanged = data.machineId !== oldOrder.machineId;
     const customerChanged = data.customerId !== oldOrder.customerId;
 
+    // Changing the customer shouldn't retroactively move already-invoiced revenue to the new
+    // customer — snapshot the old customer onto every existing period that doesn't already carry
+    // one, so getCustomerTotalSpent keeps attributing past delfakturor to whoever was actually
+    // billed at the time (mirrors how machineSwaps preserves attribution across a machine swap).
+    const invoicePeriodsAfterSwap = customerChanged && (oldOrder.invoicePeriods?.length ?? 0) > 0
+      ? oldOrder.invoicePeriods!.map((p) => p.customerId ? p : { ...p, customerId: oldOrder.customerId })
+      : undefined;
+
     set((s) => {
       let machines = s.machines;
       if (machineChanged) {
@@ -1203,6 +1211,7 @@ export const useStore = create<AppStore>()((set, get) => ({
         o.id === orderId
           ? {
               ...o, ...data,
+              ...(invoicePeriodsAfterSwap ? { invoicePeriods: invoicePeriodsAfterSwap } : {}),
               events: [
                 ...o.events,
                 { id: eventId, type: 'redigerad', description: 'Order redigerad', timestamp: now, userId: userId ?? '' },

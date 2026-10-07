@@ -168,6 +168,11 @@ export interface InvoicePeriod {
   // `amount` as a single flat line instead of recomputing it from the daily/weekly/monthly
   // breakdown — a manual correction should never get silently overwritten by auto-pricing.
   manualAmount?: boolean;
+  // Snapshots which customer this period was actually billed to. Undefined = the order's
+  // current customer (the common case). Set automatically when the order's customer changes
+  // and this period already existed, so already-invoiced revenue stays attributed to whoever
+  // was actually billed at the time instead of silently moving to the new customer.
+  customerId?: string;
 }
 
 export interface MachineSwap {

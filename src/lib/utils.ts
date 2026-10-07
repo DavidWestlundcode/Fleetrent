@@ -390,15 +390,23 @@ export function getMachineStats(orders: StatsOrder[], machineId: string) {
   return { totalRevenue, totalRentalDays, totalRentals };
 }
 
-export function getCustomerTotalSpent(orders: StatsOrder[], customerId: string): number {
+// Per period, not per order — a period keeps whichever customer it was actually billed to
+// (period.customerId, snapshotted by editOrder when the order's customer changes), so moving an
+// order to a new customer never retroactively moves already-invoiced revenue along with it. Only
+// the still-open remaining balance follows the order's current customer, since that hasn't been
+// billed to anyone yet.
+export function getCustomerTotalSpent(orders: Order[], customerId: string): number {
   let total = 0;
   for (const order of orders) {
-    if (order.status === 'annullerad' || order.customerId !== customerId) continue;
+    if (order.status === 'annullerad') continue;
     const periods = order.invoicePeriods ?? [];
-    const invoicedAmount = periods.reduce((s, p) => s + p.amount, 0);
-    total += invoicedAmount;
-    if (order.status === 'avslutad' || order.status === 'klar_for_fakturering') {
-      total += Math.max(0, order.totalPrice - invoicedAmount);
+    let invoicedAmountForThisOrder = 0;
+    for (const p of periods) {
+      invoicedAmountForThisOrder += p.amount;
+      if ((p.customerId ?? order.customerId) === customerId) total += p.amount;
+    }
+    if (order.customerId === customerId && (order.status === 'avslutad' || order.status === 'klar_for_fakturering')) {
+      total += Math.max(0, calcOrderTotal(order) - invoicedAmountForThisOrder);
     }
   }
   return total;
