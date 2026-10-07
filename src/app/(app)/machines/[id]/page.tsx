@@ -482,7 +482,7 @@ export default function MachineDetailPage() {
             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-2">
               <h3 className="font-semibold text-slate-900 mb-3">Åtgärder</h3>
               <Link
-                href="/orders/new"
+                href={`/orders/new?machine=${machine.id}`}
                 className="flex items-center gap-2 w-full px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors justify-center"
               >
                 Skapa uthyrningsorder
