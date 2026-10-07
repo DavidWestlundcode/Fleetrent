@@ -109,6 +109,8 @@ export default function EditOrderPage() {
   const [customOrderer, setCustomOrderer] = useState(false);
   const [machineSearch, setMachineSearch] = useState('');
   const [showMachineDropdown, setShowMachineDropdown] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
 
   // Pre-populate from existing order
   useEffect(() => {
@@ -155,6 +157,7 @@ export default function EditOrderPage() {
     setCustomOrderer(!!order.ordererName && !contacts.some((c) => c.name === order.ordererName));
     const currentMachine = machines.find((m) => m.id === order.machineId);
     if (currentMachine) setMachineSearch(`${currentMachine.name}${currentMachine.internalCode ? ` (${currentMachine.internalCode})` : ''}`);
+    if (cust) setCustomerSearch(cust.companyName);
     setInitialized(true);
   }, [order, initialized, customers, machines]);
 
@@ -320,24 +323,62 @@ export default function EditOrderPage() {
               <h2 className="text-[14px] font-semibold text-slate-900 mb-4">Kund och maskin</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="Kund" required>
-                  <select
-                    required
-                    value={form.customerId}
-                    onChange={(e) => {
-                      set('customerId', e.target.value);
-                      set('facilityName', '');
-                      set('ordererName', '');
-                      set('ordererPhone', '');
-                      set('ordererEmail', '');
-                      setCustomOrderer(false);
-                    }}
-                    className={inputClass}
-                  >
-                    <option value="">Välj kund...</option>
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>{c.companyName}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={customerSearch}
+                      onChange={(e) => {
+                        setCustomerSearch(e.target.value);
+                        setShowCustomerDropdown(true);
+                        if (!e.target.value) {
+                          set('customerId', '');
+                          set('facilityName', '');
+                          set('ordererName', '');
+                          set('ordererPhone', '');
+                          set('ordererEmail', '');
+                          setCustomOrderer(false);
+                        }
+                      }}
+                      onFocus={() => setShowCustomerDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowCustomerDropdown(false), 150)}
+                      placeholder="Sök kund..."
+                      className={`${inputClass} pl-8`}
+                    />
+                    {showCustomerDropdown && (() => {
+                      const q = customerSearch.toLowerCase();
+                      const filtered = customers.filter((c) => c.isActive !== false && (
+                        !q || c.companyName.toLowerCase().includes(q) || (c.orgNumber ?? '').includes(customerSearch)
+                      ));
+                      return (
+                        <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                          {filtered.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onMouseDown={() => {
+                                set('customerId', c.id);
+                                set('facilityName', '');
+                                set('ordererName', '');
+                                set('ordererPhone', '');
+                                set('ordererEmail', '');
+                                setCustomOrderer(false);
+                                setCustomerSearch(c.companyName);
+                                setShowCustomerDropdown(false);
+                              }}
+                              className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 text-left border-b border-slate-100 last:border-0 cursor-pointer"
+                            >
+                              <span className="text-[13px] text-slate-800">{c.companyName}</span>
+                              {c.orgNumber && <span className="text-[11px] text-slate-400 ml-2 shrink-0">{c.orgNumber}</span>}
+                            </button>
+                          ))}
+                          {filtered.length === 0 && (
+                            <p className="px-3 py-3 text-[12px] text-slate-400">Inga kunder hittades</p>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </Field>
 
                 <Field label="Prismall">
