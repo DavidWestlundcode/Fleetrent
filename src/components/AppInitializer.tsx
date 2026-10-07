@@ -1,14 +1,25 @@
 ﻿'use client';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { useStore } from '@/store';
 
 export function AppInitializer() {
-  const { initialize, loading, initialized } = useStore();
+  const { initialize, refreshData, loading, initialized } = useStore();
+  const pathname = usePathname();
+  const isFirstPath = useRef(true);
 
   useEffect(() => {
     initialize();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Baseline freshness for plain in-app navigation, under whatever the realtime feed already
+  // caught — skips the very first path (initialize() just handled that).
+  useEffect(() => {
+    if (isFirstPath.current) { isFirstPath.current = false; return; }
+    refreshData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   if (initialized && !loading) return null;
 

@@ -469,6 +469,30 @@ function sb() {
   return _client;
 }
 
+// Shared by initialize() and refreshData() — the full set of per-org entity tables the store
+// holds. Kept as one function so a plain in-app page navigation (which doesn't refetch on its
+// own — the store persists across client-side route changes) can cheaply pull fresh data as a
+// baseline under the realtime feed, without duplicating the query list in two places.
+async function fetchOrgEntities(orgId: string) {
+  const [machinesRes, customersRes, ordersRes, templatesRes, articlesRes, serviceRes] = await Promise.all([
+    sb().from('machines').select('*').eq('organization_id', orgId).limit(5000).order('created_at', { ascending: false }),
+    sb().from('customers').select('*').eq('organization_id', orgId).limit(5000).order('created_at', { ascending: false }),
+    sb().from('orders').select('*, order_events(*)').eq('organization_id', orgId).limit(5000).order('created_at', { ascending: false }),
+    sb().from('templates').select('*').eq('organization_id', orgId).limit(500),
+    sb().from('articles').select('*').eq('organization_id', orgId).limit(500),
+    sb().from('service_records').select('*').eq('organization_id', orgId).limit(5000).order('created_at', { ascending: false }),
+  ]);
+  return {
+    machines: (machinesRes.data ?? []).map((r) => fromDbMachine(r as DbRow)),
+    customers: (customersRes.data ?? []).map((r) => fromDbCustomer(r as DbRow)),
+    orders: (ordersRes.data ?? []).map((r) => fromDbOrder(r as DbRow)),
+    templates: (templatesRes.data ?? []).map((r) => fromDbTemplate(r as DbRow)),
+    articles: (articlesRes.data ?? []).map((r) => fromDbArticle(r as DbRow)),
+    serviceRecords: (serviceRes.data ?? []).map((r) => fromDbServiceRecord(r as DbRow)),
+  };
+}
+let _refreshing = false;
+
 // Idempotent apply helpers for realtime echoes — every store write is
 // optimistic-first with a client-generated id, so the acting user's own
 // write always echoes back through their own realtime subscription a
@@ -504,6 +528,7 @@ interface AppStore {
   initialized: boolean;
 
   initialize: () => Promise<void>;
+  refreshData: () => Promise<void>;
   reset: () => void;
 
   addMachine: (machine: Omit<Machine, 'id' | 'createdAt' | 'updatedAt'>) => string;
@@ -663,17 +688,11 @@ export const useStore = create<AppStore>()((set, get) => ({
         return data ?? [];
       })();
 
-      const [machinesRes, customersRes, ordersRes, templatesRes, articlesRes, serviceRes, memberRows, orgRes] =
-        await Promise.all([
-          sb().from('machines').select('*').eq('organization_id', orgId).limit(5000).order('created_at', { ascending: false }),
-          sb().from('customers').select('*').eq('organization_id', orgId).limit(5000).order('created_at', { ascending: false }),
-          sb().from('orders').select('*, order_events(*)').eq('organization_id', orgId).limit(5000).order('created_at', { ascending: false }),
-          sb().from('templates').select('*').eq('organization_id', orgId).limit(500),
-          sb().from('articles').select('*').eq('organization_id', orgId).limit(500),
-          sb().from('service_records').select('*').eq('organization_id', orgId).limit(5000).order('created_at', { ascending: false }),
-          membersPromise,
-          sb().from('organizations').select('plan, max_machines, max_users').eq('id', orgId).single(),
-        ]);
+      const [entities, memberRows, orgRes] = await Promise.all([
+        fetchOrgEntities(orgId),
+        membersPromise,
+        sb().from('organizations').select('plan, max_machines, max_users').eq('id', orgId).single(),
+      ]);
 
       const members = memberRows.map((r) => ({
         id: r.id as string,
@@ -690,12 +709,7 @@ export const useStore = create<AppStore>()((set, get) => ({
         maxMachines: (orgRes.data?.max_machines as number) ?? 15,
         maxUsers: (orgRes.data?.max_users as number) ?? 5,
         members,
-        machines: (machinesRes.data ?? []).map((r) => fromDbMachine(r as DbRow)),
-        customers: (customersRes.data ?? []).map((r) => fromDbCustomer(r as DbRow)),
-        orders: (ordersRes.data ?? []).map((r) => fromDbOrder(r as DbRow)),
-        templates: (templatesRes.data ?? []).map((r) => fromDbTemplate(r as DbRow)),
-        articles: (articlesRes.data ?? []).map((r) => fromDbArticle(r as DbRow)),
-        serviceRecords: (serviceRes.data ?? []).map((r) => fromDbServiceRecord(r as DbRow)),
+        ...entities,
         loading: false,
         initialized: true,
       });
@@ -704,6 +718,25 @@ export const useStore = create<AppStore>()((set, get) => ({
     } catch (e) {
       console.error('Store initialization failed:', e);
       set({ loading: false, initialized: true });
+    }
+  },
+
+  // Baseline freshness under the realtime feed: a plain in-app navigation between pages doesn't
+  // refetch on its own (the store persists across client-side route changes, initialize() only
+  // ever runs once), so if the realtime socket ever misses something, data could sit stale
+  // indefinitely with no other way to notice. Called on every pathname change (see
+  // AppInitializer) so switching e.g. dashboard → orders always shows the latest.
+  refreshData: async () => {
+    const { organizationId, initialized } = get();
+    if (!organizationId || !initialized || _refreshing) return;
+    _refreshing = true;
+    try {
+      const entities = await fetchOrgEntities(organizationId);
+      set(entities);
+    } catch (e) {
+      console.error('refreshData failed:', e);
+    } finally {
+      _refreshing = false;
     }
   },
 
@@ -1551,13 +1584,24 @@ export const useStore = create<AppStore>()((set, get) => ({
 }));
 
 // ---- REALTIME ----
-// One channel per browser session, opened once organizationId is known and never
-// torn down — same philosophy as org-switching/logout, which reset everything via
-// a full page reload rather than a soft in-place teardown. A page reload gives us
-// a fresh module instance (including this guard flag), which is the only "cleanup"
-// this needs. RLS (org_isolation) already restricts which rows any connection can
-// receive — the filter below is a bandwidth optimization, not the safety boundary.
+// One channel per browser session, opened once organizationId is known. RLS (org_isolation)
+// already restricts which rows any connection can receive — the filter below is a bandwidth
+// optimization, not the safety boundary.
+//
+// The channel itself DOES get torn down and reopened in place when it drops — a laptop sleeping
+// or a tab sitting backgrounded for a while can kill the underlying socket outright, sometimes
+// without ever firing CHANNEL_ERROR/TIMED_OUT (the browser just silently stops delivering). A
+// user who leaves a dashboard tab open across one of those gaps would otherwise see no live
+// updates ever again in that tab until they thought to reload — which is exactly what happened
+// (a workshop return didn't appear until an unrelated org switch forced a reload). So on top of
+// retrying on an explicit error, re-verify the channel whenever the tab becomes visible again —
+// that moment is the most reliable signal a stale connection needs recovering.
 let _realtimeSubscribed = false;
+let _realtimeOrgId: string | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _realtimeChannel: any = null;
+let _realtimeRetryTimer: ReturnType<typeof setTimeout> | null = null;
+let _realtimeVisibilityListenerAttached = false;
 
 // A burst of DB writes (e.g. the SP-sync cron upserting hundreds of customers/machines
 // every 30 min) arrives as one postgres_changes message per row — applying each with its
@@ -1587,7 +1631,34 @@ function enqueueRealtimeUpdate(update: (s: AppStore) => Partial<AppStore>) {
 function subscribeRealtime(orgId: string) {
   if (_realtimeSubscribed) return;
   _realtimeSubscribed = true;
+  _realtimeOrgId = orgId;
+  openRealtimeChannel(orgId);
 
+  if (!_realtimeVisibilityListenerAttached && typeof document !== 'undefined') {
+    _realtimeVisibilityListenerAttached = true;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && _realtimeOrgId && _realtimeChannel?.state !== 'joined') {
+        reopenRealtimeChannel(_realtimeOrgId);
+      }
+    });
+  }
+}
+
+function reopenRealtimeChannel(orgId: string) {
+  if (_realtimeRetryTimer) { clearTimeout(_realtimeRetryTimer); _realtimeRetryTimer = null; }
+  if (_realtimeChannel) { sb().removeChannel(_realtimeChannel); _realtimeChannel = null; }
+  openRealtimeChannel(orgId);
+}
+
+function scheduleRealtimeRetry(orgId: string) {
+  if (_realtimeRetryTimer) return;
+  _realtimeRetryTimer = setTimeout(() => {
+    _realtimeRetryTimer = null;
+    reopenRealtimeChannel(orgId);
+  }, 3000);
+}
+
+function openRealtimeChannel(orgId: string) {
   type EntityKey = 'machines' | 'customers' | 'templates' | 'articles' | 'serviceRecords';
 
   function onEntity<T extends { id: string }>(key: EntityKey, mapper: (r: DbRow) => T) {
@@ -1605,7 +1676,7 @@ function subscribeRealtime(orgId: string) {
     };
   }
 
-  sb()
+  const channel = sb()
     .channel(`org-changes-${orgId}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'machines', filter: `organization_id=eq.${orgId}` },
       onEntity('machines', fromDbMachine))
@@ -1662,9 +1733,11 @@ function subscribeRealtime(orgId: string) {
         }));
       })
     .subscribe((status) => {
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
         console.error('Realtime subscribe failed:', status);
-        _realtimeSubscribed = false; // allow a retry on the next full page load
+        scheduleRealtimeRetry(orgId);
       }
     });
+
+  _realtimeChannel = channel;
 }
