@@ -1,18 +1,14 @@
 ﻿import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
 import PublicLayoutWithTOC from '@/components/layout/PublicLayoutWithTOC';
 
 export const revalidate = 86400;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
+  path: '/villkor',
   title: 'Användarvillkor',
   description: 'Användarvillkor för FleetOS, uthyrningssystemet från DSE ENTERPRISE AB.',
-  alternates: { canonical: 'https://fleetos.se/villkor' },
-  openGraph: {
-    title: 'Användarvillkor – FleetOS',
-    description: 'Användarvillkor för FleetOS, uthyrningssystemet från DSE ENTERPRISE AB.',
-    url: 'https://fleetos.se/villkor',
-  },
-};
+});
 
 const sections = [
   { id: 'tjansten', label: '1. Tjänsten' },

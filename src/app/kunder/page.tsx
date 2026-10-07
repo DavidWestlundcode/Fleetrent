@@ -5,18 +5,13 @@ import PublicHeader from '@/components/public/PublicHeader';
 import PublicFooter from '@/components/public/PublicFooter';
 import { AnimateIn } from '@/components/ui/AnimateIn';
 import { CUSTOMER_CASES } from '@/lib/customer-cases';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Kunder – så använder företag FleetOS',
-  description: 'Se hur maskinuthyrningsföretag som WTS Machinery Solutions använder FleetOS för att hantera flotta, order och fakturering.',
-  keywords: ['FleetOS kunder', 'kundcase maskinuthyrning', 'referenser maskinuthyrningssystem'],
-  alternates: { canonical: 'https://fleetos.se/kunder' },
-  openGraph: {
-    title: 'Kunder – så använder företag FleetOS',
-    description: 'Se hur maskinuthyrningsföretag använder FleetOS för att hantera flotta, order och fakturering.',
-    url: 'https://fleetos.se/kunder',
-  },
-};
+export const metadata: Metadata = pageMetadata({
+  path: '/kunder',
+  title: 'Kundcase – så används FleetOS av maskinuthyrare',
+  description: 'Läs hur maskinuthyrare som WTS Machinery Solutions använder FleetOS för maskinregister, order, avtalshyra och fakturaunderlag till Fortnox.',
+});
 
 export default function KunderPage() {
   return (
@@ -29,7 +24,7 @@ export default function KunderPage() {
           {/* Header */}
           <div className="text-center mb-16">
             <p className="text-[12px] font-semibold text-blue-600 uppercase tracking-widest mb-3">Kunder</p>
-            <h1 className="text-[48px] font-bold text-slate-900 tracking-tight leading-tight mb-4">
+            <h1 className="text-[36px] sm:text-[48px] font-bold text-slate-900 tracking-tight leading-tight mb-4">
               Så använder företag FleetOS
             </h1>
             <p className="text-[17px] text-slate-500 max-w-lg mx-auto leading-relaxed">

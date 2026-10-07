@@ -1,16 +1,19 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 import PublicLayout from '@/components/layout/PublicLayout';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Senaste händelserna – FleetOS',
-  description: 'Nyheter och händelser från FleetOS – nya kunder, funktioner och milstolpar.',
-  alternates: { canonical: 'https://fleetos.se/handelser' },
-};
+export const revalidate = 300;
+
+export const metadata: Metadata = pageMetadata({
+  path: '/handelser',
+  title: 'Senaste händelserna',
+  description: 'Nyheter och händelser från FleetOS: nya kunder, funktioner och milstolpar i uthyrningssystemet.',
+});
 
 export default async function HandelserPage() {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data: events } = await supabase
     .from('landing_events')
     .select('id, title, description, category, event_date, image_url')
@@ -31,7 +34,7 @@ export default async function HandelserPage() {
             <div className="flex-1 border-l border-slate-200 pl-6 pb-6 flex gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                  <h3 className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{event.title}</h3>
+                  <h2 className="text-base font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{event.title}</h2>
                   {event.category && (
                     <span className="text-[11px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">{event.category}</span>
                   )}
@@ -39,7 +42,7 @@ export default async function HandelserPage() {
                 <p className="text-sm text-slate-600 leading-relaxed">{event.description}</p>
               </div>
               {event.image_url && (
-                <img src={event.image_url} alt="" className="w-24 h-16 rounded-lg object-cover border border-slate-200 shrink-0" />
+                <img src={event.image_url} alt="" loading="lazy" decoding="async" className="w-24 h-16 rounded-lg object-cover border border-slate-200 shrink-0" />
               )}
             </div>
           </Link>

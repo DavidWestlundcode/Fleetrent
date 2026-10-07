@@ -1,22 +1,18 @@
-﻿import type { Metadata } from 'next';
+import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
 import PublicLayout from '@/components/layout/PublicLayout';
 
 export const revalidate = 86400;
 
-export const metadata: Metadata = {
-  title: 'Kontakt',
-  description: 'Kontakta FleetOS för frågor om support, försäljning eller press. Vi svarar normalt inom en arbetsdag.',
-  alternates: { canonical: 'https://fleetos.se/kontakt' },
-  openGraph: {
-    title: 'Kontakt – FleetOS',
-    description: 'Kontakta FleetOS för frågor om support, försäljning eller press.',
-    url: 'https://fleetos.se/kontakt',
-  },
-};
+export const metadata: Metadata = pageMetadata({
+  path: '/kontakt',
+  title: 'Kontakta oss',
+  description: 'Kontakta FleetOS om demo, priser, support eller press. Vi svarar normalt inom en arbetsdag. DSE ENTERPRISE AB, org.nr 559510-0248.',
+});
 
 export default function KontaktPage() {
   return (
-    <PublicLayout title="Kontakt">
+    <PublicLayout title="Kontakt" breadcrumbs={[{ name: 'Kontakt', path: '/kontakt' }]}>
       <p className="text-lg text-slate-500 mb-10">
         Vi svarar normalt inom en arbetsdag.
       </p>
@@ -37,6 +33,9 @@ export default function KontaktPage() {
       <div className="not-prose mt-8 p-5 bg-slate-50 rounded-xl border border-slate-200">
         <p className="text-sm font-semibold text-slate-900 mb-1">DSE ENTERPRISE AB</p>
         <p className="text-sm text-slate-500">Sverige · Org.nr 559510-0248</p>
+        <p className="text-sm text-slate-500 mt-3">
+          Vill du se systemet? <a href="/kom-igang" className="text-blue-600 hover:underline">Boka en demo</a> så återkommer vi inom 24 timmar. Läs mer <a href="/om-oss" className="text-blue-600 hover:underline">om oss</a>.
+        </p>
       </div>
     </PublicLayout>
   );

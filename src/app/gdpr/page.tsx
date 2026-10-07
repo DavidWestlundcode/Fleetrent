@@ -1,18 +1,14 @@
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
 import PublicLayoutWithTOC from '@/components/layout/PublicLayoutWithTOC';
 
 export const revalidate = 86400;
 
-export const metadata: Metadata = {
-  title: 'GDPR',
+export const metadata: Metadata = pageMetadata({
+  path: '/gdpr',
+  title: 'GDPR och dataskydd',
   description: 'Hur FleetOS behandlar personuppgifter enligt GDPR: vad vi samlar in, varför, hur länge vi sparar det och vilka rättigheter du har.',
-  alternates: { canonical: 'https://fleetos.se/gdpr' },
-  openGraph: {
-    title: 'GDPR – FleetOS',
-    description: 'Hur FleetOS behandlar personuppgifter enligt EU:s dataskyddsförordning.',
-    url: 'https://fleetos.se/gdpr',
-  },
-};
+});
 
 const rights = [
   { title: 'Rätt till tillgång (art. 15)', desc: 'Du kan begära ut en kopia av de personuppgifter vi behandlar om dig, inklusive information om ändamål, kategorier och mottagare.' },

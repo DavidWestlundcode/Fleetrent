@@ -3,6 +3,7 @@ import {
   TrendingUp, Target, Database, Tag, Activity, Shield,
   Camera, Sparkles, CheckCircle, FileSignature, Mail, RefreshCw, Truck, Check,
 } from 'lucide-react';
+import Link from 'next/link';
 import { AnimateIn } from '@/components/ui/AnimateIn';
 
 /* ─── Mockups (moved from page.tsx — used only here) ──────────────── */
@@ -387,6 +388,10 @@ export default function FeaturesSection() {
               <p className="text-[15px] text-slate-500 leading-relaxed">
                 FleetOS samlar hela uthyrningsflödet i ett system – från maskiner och order till avtal, returer, fakturering och lönsamhet.
               </p>
+              <Link href="/funktioner" className="inline-flex items-center gap-1.5 mt-5 text-[14px] font-semibold text-blue-600 hover:text-blue-700">
+                Se alla funktioner <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+              <p className="text-[11px] text-slate-400 mt-6">Vyerna är illustrationer med exempeldata.</p>
             </AnimateIn>
           </div>
 

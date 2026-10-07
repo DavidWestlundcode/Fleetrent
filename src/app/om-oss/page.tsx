@@ -1,23 +1,22 @@
-﻿import Image from 'next/image';
+import Image from 'next/image';
 import type { Metadata } from 'next';
+import Link from 'next/link';
+import JsonLd from '@/components/public/JsonLd';
+import { organizationJsonLd, pageMetadata } from '@/lib/seo';
 import PublicLayout from '@/components/layout/PublicLayout';
 
 export const revalidate = 86400;
 
-export const metadata: Metadata = {
-  title: 'Om oss',
-  description: 'FleetOS är en produkt från DSE ENTERPRISE AB, ett svenskt teknikbolag som bygger ett modernt uthyrningssystem för maskinuthyrningsbranschen.',
-  alternates: { canonical: 'https://fleetos.se/om-oss' },
-  openGraph: {
-    title: 'Om oss – FleetOS',
-    description: 'Ett svenskt teknikbolag som bygger ett modernt uthyrningssystem för maskinuthyrningsbranschen.',
-    url: 'https://fleetos.se/om-oss',
-  },
-};
+export const metadata: Metadata = pageMetadata({
+  path: '/om-oss',
+  title: 'Om oss – företaget bakom FleetOS',
+  description: 'FleetOS utvecklas av DSE ENTERPRISE AB (org.nr 559510-0248), ett svenskt teknikbolag som bygger uthyrningssystem för maskiner, truckar och liftar.',
+});
 
 export default function OmOssPage() {
   return (
-    <PublicLayout title="Om oss">
+    <PublicLayout title="Om oss" breadcrumbs={[{ name: 'Om oss', path: '/om-oss' }]}>
+      <JsonLd data={organizationJsonLd()} />
       <p className="text-lg text-slate-500 mb-8">
         FleetOS är en produkt från DSE ENTERPRISE AB — ett svenskt teknikbolag med fokus på smarta verktyg för maskinuthyrningsbranschen.
       </p>
@@ -75,6 +74,10 @@ export default function OmOssPage() {
         <p className="text-sm text-slate-500 mt-3">
           Frågor?{' '}
           <a href="mailto:david@fleetos.se,elias@fleetos.se" className="text-blue-600 hover:underline">david@fleetos.se & elias@fleetos.se</a>
+          {' '}eller via <Link href="/kontakt" className="text-blue-600 hover:underline">kontaktsidan</Link>.
+        </p>
+        <p className="text-sm text-slate-500 mt-3">
+          Se hur FleetOS används i praktiken i <Link href="/kunder/wts-machinery-solutions" className="text-blue-600 hover:underline">kundcaset med WTS Machinery Solutions</Link>, eller <Link href="/kom-igang" className="text-blue-600 hover:underline">boka en demo</Link>.
         </p>
       </div>
     </PublicLayout>

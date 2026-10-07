@@ -1,141 +1,114 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import PublicLayout from '@/components/layout/PublicLayout';
+import JsonLd from '@/components/public/JsonLd';
+import PageCta, { FaqList, LinkCards } from '@/components/public/PageCta';
+import { faqJsonLd, pageMetadata } from '@/lib/seo';
 
 export const revalidate = 86400;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
+  path: '/funktioner',
   title: 'Funktioner – affärssystem för maskinuthyrning',
-  description: 'FleetOS är affärssystemet byggt specifikt för maskinuthyrning: maskinregister, AI-igenkänning, orderhantering, prismallar, servicehistorik och Fortnox-integration i en plattform.',
-  keywords: ['affärssystem för maskinuthyrning', 'maskinuthyrningssystem funktioner', 'system maskinuthyrning', 'uthyrningsprogram maskiner'],
-  alternates: { canonical: 'https://fleetos.se/funktioner' },
-  openGraph: {
-    title: 'Funktioner – affärssystem för maskinuthyrning | FleetOS',
-    description: 'Maskinregister, AI-igenkänning, orderhantering, prismallar och Fortnox-integration i en plattform byggd för maskinuthyrning.',
-    url: 'https://fleetos.se/funktioner',
-  },
-};
+  description: 'Maskinregister, prismallar, hyresavtal med e-signering, QR-utlämning och retur, avtalshyra, service och lönsamhet per maskin – Fortnox och Serviceprotokoll.',
+});
 
-const features = [
-  { title: 'AI-igenkänning', desc: 'Fotografera typskylten och låt AI fylla i maskinkortet automatiskt — fabrikat, modell, serienummer och kapacitet.' },
-  { title: 'AI-sökning', desc: 'Sök i maskinflottan på naturligt språk — "diesel motviktstruck över 3 ton med lyfthöjd 5 m" — och få rätt maskin direkt.' },
-  { title: 'Orderhantering', desc: 'Skapa, följ upp och avsluta uthyrningsordrar med automatisk prissättning baserat på hyresperiod.' },
-  { title: 'Prismallar', desc: 'Definiera prismallar per kategori och kapacitetsintervall som appliceras automatiskt på nya ordrar.' },
-  { title: 'Servicehistorik', desc: 'Registrera och följ upp service, reparationer och besiktningar per maskin, med automatiska påminnelser.' },
-  { title: 'Lönsamhetsanalys', desc: 'Se ROI, återbetalningstakt och intäktsutveckling per maskin — fatta beslut baserade på data.' },
-  { title: 'QR-koder', desc: 'Varje maskin får en unik QR-kod för snabb åtkomst till maskinkort, utlämning och retur i fält.' },
-  { title: 'Fortnox-integration', desc: 'Fakturaunderlag förs automatiskt över till Fortnox när en order avslutas — ingen dubbelinmatning.' },
-  { title: 'Serviceprotokoll-integration', desc: 'Maskiner och kunder synkroniseras automatiskt mellan FleetOS och Serviceprotokoll — utan manuell dubbelregistrering.' },
-  { title: 'Mobilanpassat', desc: 'Fungerar i webbläsaren på alla enheter — ingen app att installera för dig eller dina kunder.' },
+const groups = [
+  {
+    heading: 'Maskiner och flotta',
+    items: [
+      { title: 'Maskinregister', desc: 'Varje maskin har ett maskinkort med status, tekniska data, bilder, anteckningar, hyreshistorik och servicehistorik.' },
+      { title: 'AI-registrering från foto', desc: 'Fotografera typskylten så fyller AI i fabrikat, modell, serienummer och kapacitet. Uppgifterna kan alltid ändras innan de sparas.' },
+      { title: 'AI-sökning', desc: 'Sök i flottan med vanlig text, till exempel "eldriven motviktstruck 2,5 ton", och få matchande maskiner.' },
+      { title: 'QR-kod per maskin', desc: 'Skanna maskinens QR-kod för att se aktiv uthyrning och registrera utlämning eller retur direkt i mobilen. Kräver inloggning.' },
+    ],
+  },
+  {
+    heading: 'Order, avtal och retur',
+    items: [
+      { title: 'Uthyrningsordrar', desc: 'Kund, anläggning, beställare, maskin, period och tillägg på samma order. Ordrar kan reserveras i förväg eller vara öppna utan fast returdatum.' },
+      { title: 'Prismallar och artiklar', desc: 'Dag-, vecko- och månadspris per kategori och kapacitetsintervall. Transport, försäkring, deposition och andra tillägg hanteras som artiklar.' },
+      { title: 'Hyresavtal med e-signering', desc: 'Hyresavtalet skapas från ordern och kan skickas till kunden för digital signering. Det signerade avtalet sparas på ordern.' },
+      { title: 'Retur med kontroll', desc: 'Registrera skick, drifttimmar, foton, kommentar och vilka tillbehör som kom tillbaka. Skadade maskiner går direkt till service.' },
+    ],
+  },
+  {
+    heading: 'Fakturering och uppföljning',
+    items: [
+      { title: 'Fakturaunderlag till Fortnox', desc: 'Skicka en klar order till Fortnox med ett klick, med kund, hyresrader, artikelnummer och kostnadsställe.' },
+      { title: 'Avtalshyra', desc: 'Långtidshyror får automatiskt en delfaktura i slutet av varje månad, som ni granskar och skickar till Fortnox.' },
+      { title: 'Lönsamhet per maskin', desc: 'Intäkter, beläggning och avkastning per maskin, beräknat mot inköp, leasing, finansiering, försäkring och service.' },
+      { title: 'Service och besiktning', desc: 'Planera och följ upp periodisk service, reparationer, besiktningar och kontroller per maskin.' },
+    ],
+  },
 ];
 
 const faqs = [
   {
     q: 'Vad är ett affärssystem för maskinuthyrning?',
-    a: 'Ett affärssystem för maskinuthyrning är en programvara byggd specifikt för att hantera hela flödet i ett uthyrningsföretag: maskinregister, bokningar, hyresavtal, prissättning per hyresperiod, service och fakturering. Till skillnad från ett generellt bokföringsprogram förstår det begrepp som beläggningsgrad, hyrestid och maskinstatus.',
+    a: 'Ett system som är byggt för hela flödet i ett uthyrningsföretag: maskinregister, bokningar, hyresavtal, prissättning per hyresperiod, utlämning och retur, service och fakturaunderlag. Till skillnad från ett bokföringsprogram håller det reda på vilken maskin som är uthyrd, till vem och när den ska tillbaka.',
   },
   {
-    q: 'Vad är skillnaden mellan ett maskinuthyrningssystem och ett vanligt bokföringsprogram?',
-    a: 'Ett bokföringsprogram hanterar fakturor och redovisning, men saknar stöd för att hantera en rörlig maskinpark — vilken maskin som är uthyrd, till vem, vilket skick den är i och när den ska returneras. FleetOS är byggt för just detta och synkroniserar sedan automatiskt med Fortnox för själva bokföringen.',
+    q: 'Ersätter FleetOS vårt ekonomisystem?',
+    a: 'Nej. FleetOS hanterar uthyrningen och skickar fakturaunderlaget till Fortnox, där fakturering och bokföring sker som vanligt.',
   },
   {
-    q: 'Vilka typer av maskiner passar FleetOS för?',
-    a: 'FleetOS används av företag som hyr ut truckar och gaffeltruckar, byggmaskiner och grävmaskiner samt liftar och skyliftar. Plattformen är kategori-agnostisk — du kan hantera flera maskintyper i samma system.',
+    q: 'Vilka maskintyper passar FleetOS för?',
+    a: 'FleetOS används för truckar, byggmaskiner och liftar. Truckar och byggmaskiner har egna kategorier med tekniska fält. Övrig utrustning läggs upp under övrigt med egen benämning.',
   },
   {
-    q: 'Kan jag testa FleetOS innan jag bestämmer mig?',
-    a: 'Ja, kontakta oss via formuläret på kom igång-sidan så bokar vi en genomgång eller sätter upp ett konto åt dig.',
+    q: 'Behöver vi installera något?',
+    a: 'Nej. FleetOS körs i webbläsaren på dator, surfplatta och mobil.',
   },
   {
-    q: 'Fungerar FleetOS ihop med Fortnox?',
-    a: 'Ja. När en order avslutas och ett fakturaunderlag skapas förs det automatiskt över till Fortnox med rätt artikelnummer och kundnummer — ingen manuell inmatning.',
+    q: 'Kan vi testa FleetOS innan vi bestämmer oss?',
+    a: 'Ja. Boka en demo via formuläret, så går vi igenom systemet med er och berättar hur ni kommer igång. Ni kan också klicka runt i den interaktiva demon med exempeldata.',
   },
 ];
 
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'WebPage',
-  name: 'Funktioner – affärssystem för maskinuthyrning',
-  url: 'https://fleetos.se/funktioner',
-  description: 'FleetOS är affärssystemet byggt specifikt för maskinuthyrning: maskinregister, orderhantering, prismallar och Fortnox-integration.',
-  mainEntity: {
-    '@type': 'FAQPage',
-    mainEntity: faqs.map(({ q, a }) => ({
-      '@type': 'Question',
-      name: q,
-      acceptedAnswer: { '@type': 'Answer', text: a },
-    })),
-  },
-};
-
 export default function FunktionerPage() {
   return (
-    <PublicLayout title="Funktioner">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+    <PublicLayout
+      title="Funktioner i affärssystemet för maskinuthyrning"
+      breadcrumbs={[{ name: 'Funktioner', path: '/funktioner' }]}
+    >
+      <JsonLd data={faqJsonLd(faqs)} />
 
       <p className="text-lg text-slate-500 mb-10">
-        FleetOS är ett komplett affärssystem för maskinuthyrning — från registrering av maskinen till att fakturaunderlaget landar i Fortnox. Byggt specifikt för uthyrningsföretag, inte anpassat i efterhand från ett generellt system.
+        FleetOS följer en maskin från registrering till uthyrning, retur och fakturaunderlag. Här är funktionerna, grupperade efter var i flödet de används.
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 not-prose mb-14">
-        {features.map(({ title, desc }) => (
-          <div key={title} className="p-5 bg-slate-50 rounded-xl border border-slate-200">
-            <h3 className="font-semibold text-slate-900 mb-1">{title}</h3>
-            <p className="text-sm text-slate-500">{desc}</p>
+      {groups.map(({ heading, items }) => (
+        <section key={heading}>
+          <h2>{heading}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 not-prose mb-10">
+            {items.map(({ title, desc }) => (
+              <div key={title} className="p-5 bg-slate-50 rounded-xl border border-slate-200">
+                <h3 className="font-semibold text-slate-900 mb-1">{title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{desc}</p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </section>
+      ))}
 
-      <h2>Vad skiljer FleetOS från ett generellt affärssystem?</h2>
-      <p className="mb-4">
-        Traditionella affärssystem och bokföringsprogram är byggda för redovisning — inte för att hantera en rörlig maskinpark. De saknar begrepp som beläggningsgrad, hyresperiod, returstatus, serviceintervall och QR-koder i fält.
-      </p>
+      <h2>Integrationer</h2>
       <p className="mb-10">
-        FleetOS är byggt specifikt för maskinuthyrning. Istället för att du anpassar ett generellt system till din verksamhet är det tvärtom — FleetOS pratar samma språk som din verksamhet, och med Fortnox-integrationen synkroniseras bokföringen automatiskt i bakgrunden.
-      </p>
-
-      <h2>Byggt för hela uthyrningsflödet</h2>
-      <p className="mb-4">
-        Många maskinuthyrare hanterar idag flottan i en kombination av Excel, e-post och handskrivna lappar. Det fungerar när flottan är liten, men skalar inte — en maskin på fel plats, ett missat servicedatum eller en glömd faktura kostar snabbt mer än en systemkostnad.
-      </p>
-      <p className="mb-10">
-        Med FleetOS har du hela flottan i realtid: vilka maskiner är uthyrda, till vem, vilket skick de är i och när de ska tillbaka. Nytt hyresavtal tar minuter, inte timmar.
+        FleetOS skickar ordrar och delfakturor till <Link href="/integrationer/fortnox">Fortnox</Link> och hämtar maskiner och kunder från <Link href="/integrationer/serviceprotokoll">Serviceprotokoll</Link>. Se <Link href="/integrationer">alla integrationer</Link>, inklusive det som är planerat.
       </p>
 
       <h2>Vanliga frågor om affärssystem för maskinuthyrning</h2>
-      <div className="not-prose space-y-4 mb-14">
-        {faqs.map(({ q, a }) => (
-          <div key={q} className="p-5 bg-slate-50 border border-slate-200 rounded-xl">
-            <p className="text-sm font-semibold text-slate-900 mb-2">{q}</p>
-            <p className="text-sm text-slate-500 leading-relaxed">{a}</p>
-          </div>
-        ))}
-      </div>
+      <FaqList faqs={faqs} />
 
-      <h2>Se FleetOS för din typ av flotta</h2>
-      <div className="not-prose grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-        <Link href="/uthyrning/truckar" className="p-4 border border-slate-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/40 transition-colors group">
-          <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-700">Truckar och gaffeltruckar →</p>
-          <p className="text-xs text-slate-500 mt-1">Motviktstruckar, skjutstativtruckar, ledstaplare</p>
-        </Link>
-        <Link href="/uthyrning/byggmaskiner" className="p-4 border border-slate-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/40 transition-colors group">
-          <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-700">Byggmaskiner och grävmaskiner →</p>
-          <p className="text-xs text-slate-500 mt-1">Grävmaskiner, hjullastare, kompaktlastare</p>
-        </Link>
-        <Link href="/uthyrning/liftar" className="p-4 border border-slate-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/40 transition-colors group">
-          <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-700">Liftar och skylift →</p>
-          <p className="text-xs text-slate-500 mt-1">Skylift, saxlift, bomlift, teleskoplift</p>
-        </Link>
-      </div>
+      <h2>FleetOS för din typ av flotta</h2>
+      <LinkCards links={[
+        { href: '/uthyrning/truckar', title: 'Truckar och gaffeltruckar', desc: 'Tekniska data, avtalshyra och tillbehörskontroll' },
+        { href: '/uthyrning/byggmaskiner', title: 'Byggmaskiner och grävmaskiner', desc: 'Reservationer, transport och skaderegistrering' },
+        { href: '/uthyrning/liftar', title: 'Liftar och skylift', desc: 'Besiktning, kontroll vid retur och service' },
+        { href: '/kunder/wts-machinery-solutions', title: 'Kundcase: WTS Machinery Solutions', desc: 'Så används FleetOS i praktiken' },
+      ]} />
 
-      <div className="not-prose flex flex-col sm:flex-row gap-3">
-        <Link href="/kom-igang" className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors text-sm">
-          Boka demo
-        </Link>
-        <Link href="/priser" className="inline-flex items-center justify-center px-6 py-3 border border-slate-200 hover:border-slate-300 text-slate-700 font-medium rounded-xl transition-colors text-sm">
-          Se priser
-        </Link>
-      </div>
+      <PageCta />
     </PublicLayout>
   );
 }

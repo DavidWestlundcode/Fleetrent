@@ -1,20 +1,15 @@
 import type { Metadata } from 'next';
+import { SITE_URL, pageMetadata } from '@/lib/seo';
 import Link from 'next/link';
 import { Check, ArrowRight, PenLine } from 'lucide-react';
 import PublicHeader from '@/components/public/PublicHeader';
 import PublicFooter from '@/components/public/PublicFooter';
 
-export const metadata: Metadata = {
-  title: 'Priser – maskinuthyrningssystem från 1 495 kr/mån',
-  description: 'Se priser för FleetOS, affärssystemet för maskinuthyrning. Start från 1 495 kr/mån, Basic från 2 499 kr/mån och Premium från 3 999 kr/mån, exkl. moms. Ingen bindningstid, hela plattformen inkluderad.',
-  keywords: ['pris maskinuthyrningssystem', 'kostnad affärssystem maskinuthyrning', 'FleetOS pris', 'uthyrningssystem pris'],
-  alternates: { canonical: 'https://fleetos.se/priser' },
-  openGraph: {
-    title: 'Priser – maskinuthyrningssystem från 1 495 kr/mån',
-    description: 'Enkla, transparenta priser för FleetOS. Ingen bindningstid, hela plattformen inkluderad.',
-    url: 'https://fleetos.se/priser',
-  },
-};
+export const metadata: Metadata = pageMetadata({
+  path: '/priser',
+  title: 'Priser för uthyrningssystemet – från 1 495 kr/mån',
+  description: 'FleetOS kostar från 1 495 kr/mån exkl. moms. Tre planer – Start, Basic och Premium – utan bindningstid. Se vad som ingår och vad extra användare kostar.',
+});
 
 const FAQS = [
   {
@@ -52,7 +47,7 @@ const jsonLd = {
       price: '1495',
       priceValidUntil: `${new Date().getFullYear() + 1}-12-31`,
       availability: 'https://schema.org/InStock',
-      url: 'https://fleetos.se/priser',
+      url: `${SITE_URL}/priser`,
     },
     {
       '@type': 'Offer',
@@ -61,7 +56,7 @@ const jsonLd = {
       price: '2499',
       priceValidUntil: `${new Date().getFullYear() + 1}-12-31`,
       availability: 'https://schema.org/InStock',
-      url: 'https://fleetos.se/priser',
+      url: `${SITE_URL}/priser`,
     },
     {
       '@type': 'Offer',
@@ -70,7 +65,7 @@ const jsonLd = {
       price: '3999',
       priceValidUntil: `${new Date().getFullYear() + 1}-12-31`,
       availability: 'https://schema.org/InStock',
-      url: 'https://fleetos.se/priser',
+      url: `${SITE_URL}/priser`,
     },
   ],
 };

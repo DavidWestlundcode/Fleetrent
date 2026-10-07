@@ -1,165 +1,112 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import PublicLayout from '@/components/layout/PublicLayout';
+import JsonLd from '@/components/public/JsonLd';
+import PageCta, { FaqList, LinkCards } from '@/components/public/PageCta';
+import { faqJsonLd, pageMetadata } from '@/lib/seo';
 
 export const revalidate = 86400;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
+  path: '/uthyrning/truckar',
   title: 'Uthyrningssystem för truckar och gaffeltruckar',
-  description: 'Digitalt uthyrningssystem för truckuthyrning. Hantera motviktstruckar, skjutstativtruckar och ledstaplare med hyresavtal, fakturering och Fortnox-integration.',
-  keywords: ['uthyrningssystem truckar', 'system gaffeltruckuthyrning', 'truckuthyrning program', 'motviktstruck uthyrning system', 'gaffeltrucks uthyrning mjukvara'],
-  alternates: { canonical: 'https://fleetos.se/uthyrning/truckar' },
-  openGraph: {
-    title: 'Uthyrningssystem för truckar och gaffeltruckar | FleetOS',
-    description: 'Digitalt system för truckuthyrning — hyresavtal, fakturering och Fortnox-integration i ett.',
-    url: 'https://fleetos.se/uthyrning/truckar',
-  },
-};
+  description: 'Uthyrningssystem för truckuthyrare: tekniska data per truck, prismallar per kapacitet, avtalshyra med månadsvisa delfakturor, QR-retur och Fortnox.',
+});
 
-const features = [
-  {
-    title: 'Maskinregister med fullständig historik',
-    desc: 'Varje truck har sin egen sida med hyreshistorik, serviceprotokoll, aktuell status och tekniska specifikationer. Kapacitet, lyfthöjd och bygghöjd lagras och visas direkt på maskinkortet.',
-  },
-  {
-    title: 'Besiktning och servicedatum',
-    desc: 'Håll koll på nästa besiktning, säkerhetsinspektioner och underhållsintervall per fordon. Systemet visar när service behövs — innan det bli ett akut problem.',
-  },
-  {
-    title: 'Hyresavtal på minuter',
-    desc: 'Välj truck, välj kund, välj period — avtalet är klart. Kunden kan signera digitalt och får en kopia direkt. Inga utskrifter, ingen posthantering.',
-  },
-  {
-    title: 'Kort- och långtidsuthyrning',
-    desc: 'Konfigurera dag-, vecko- och månadsavgifter per maskin eller kategori. Faktureringsunderlaget beräknas automatiskt baserat på faktisk hyresperiod.',
-  },
-  {
-    title: 'Integrerat med Fortnox',
-    desc: 'Order och belopp förs automatiskt över till Fortnox. Inga manuella beräkningar, ingen dubbelinmatning — fakturaunderlaget är klart direkt.',
-  },
-  {
-    title: 'Synkronisering med Serviceprotokoll',
-    desc: 'Importerar maskindata direkt från Serviceprotokoll. Flottans status, serienummer och tekniska data hålls uppdaterade automatiskt.',
-  },
-  {
-    title: 'QR-koder i fält',
-    desc: 'Märk truckarna med QR-koder. Starta och avsluta uthyrningar direkt från lagret eller kundstället — utan att behöva gå tillbaka till kontoret.',
-  },
-  {
-    title: 'Beläggningsstatistik och lönsamhet',
-    desc: 'Se vilka truckar som genererar mest intäkter, beläggningsgrad per maskin och kommande returer. Fatta beslut baserade på data, inte magkänsla.',
-  },
+const steps = [
+  { title: 'Hitta rätt truck', desc: 'Sök i flottan på det kunden frågar efter, till exempel en eldriven motviktstruck för 2,5 ton med en viss lyfthöjd. Kapacitet, lyfthöjd, bygghöjd, gaffellängd, frilyft, stativ och drivmedel finns på maskinkortet.' },
+  { title: 'Pris från prismallen', desc: 'Prismallar per kategori och kapacitetsintervall fyller i dag-, vecko- och månadspris på ordern. Rabatter sätts per prisnivå.' },
+  { title: 'Avtal och leveransställe', desc: 'Välj kundens anläggning och beställare. Hyresavtalet skapas från ordern och kan skickas för digital signering.' },
+  { title: 'Utlämning med QR-kod', desc: 'Skanna truckens QR-kod och registrera utlämningen med drifttimmar. Ordern och maskinens status uppdateras direkt.' },
+  { title: 'Retur och kontroll', desc: 'Vid retur registreras drifttimmar, skick, foton och vilka tillbehör som kom tillbaka. En skadad truck går direkt till service i stället för tillbaka i lager.' },
+  { title: 'Fakturaunderlag', desc: 'Korttidshyran skickas till Fortnox när ordern är klar. Långtidshyror faktureras månadsvis via avtalshyra.' },
 ];
 
 const faqs = [
   {
-    q: 'Passar FleetOS för alla typer av truckar?',
-    a: 'Ja. Systemet hanterar motviktstruckar, skjutstativtruckar, ledstaplare, reachtruckar, åktruckar och plocktruckar. Varje maskintyp kan konfigureras med egna prismallar och tekniska specifikationer som kapacitet, lyfthöjd och bygghöjd.',
+    q: 'Kan FleetOS hantera långtidshyra av truckar?',
+    a: 'Ja. En order kan markeras som avtalshyra utan fast slutdatum. FleetOS skapar då en delfaktura för varje månad, som ni granskar och skickar till Fortnox. När trucken lämnas tillbaka räknar slutfakturan bort redan fakturerade dagar.',
   },
   {
-    q: 'Kan jag importera mina befintliga maskiner?',
-    a: 'Om du använder Serviceprotokoll kan maskinerna importeras automatiskt via vår integration. Annars läggs maskiner till manuellt — det tar några minuter per maskin.',
+    q: 'Vilka trucktyper finns som kategorier?',
+    a: 'Motviktstruck, skjutstativtruck, ledstaplare och teleskoplastare finns som egna kategorier. Övriga typer, till exempel plocktruckar, kan läggas upp under övrigt med egen benämning.',
   },
   {
-    q: 'Fungerar systemet med Fortnox?',
-    a: 'Ja, vi har en direkt Fortnox-integration. När du avslutar en order och skapar ett fakturaunderlag förs det automatiskt över till Fortnox med rätt artikelnummer, kostnadsställe och kundnummer.',
+    q: 'Kan vi hyra ut med eller utan helgdebitering?',
+    a: 'Ja. Per order väljer ni om helger ska debiteras. Är helgdebitering avstängd räknas bara vardagar, och svenska helgdagar räknas bort automatiskt. Vecko- och månadspriset tillämpas när hyresperioden når de nivåerna.',
   },
   {
-    q: 'Vad kostar det?',
-    a: 'FleetOS prissätts per organisation. Kontakta oss för en offert anpassad efter din flotta och dina behov.',
+    q: 'Hur håller vi koll på laddare och andra tillbehör?',
+    a: 'Tillbehör läggs till som artiklar på ordern. Vid retur bockar ni av vilka som kom tillbaka och vilka som saknas, och det sparas på ordern.',
   },
   {
-    q: 'Kan flera användare jobba i systemet samtidigt?',
-    a: 'Ja, FleetOS är byggt för team. Du kan bjuda in kollegor med olika roller — administratör eller säljare.',
+    q: 'Vi har maskinerna i Serviceprotokoll. Måste vi lägga in dem igen?',
+    a: 'Nej. Med Serviceprotokoll-integrationen hämtas hyrestruckarna med tekniska data automatiskt, och de hålls uppdaterade var 30:e minut.',
   },
 ];
 
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'WebPage',
-  name: 'Uthyrningssystem för truckar och gaffeltruckar',
-  url: 'https://fleetos.se/uthyrning/truckar',
-  description: 'Digitalt uthyrningssystem för truckuthyrning i Sverige. Hantera motviktstruckar, skjutstativtruckar och ledstaplare.',
-  mainEntity: {
-    '@type': 'FAQPage',
-    mainEntity: faqs.map(({ q, a }) => ({
-      '@type': 'Question',
-      name: q,
-      acceptedAnswer: { '@type': 'Answer', text: a },
-    })),
-  },
-};
-
 export default function TruckarPage() {
   return (
-    <PublicLayout title="Uthyrningssystem för truckar och gaffeltruckar">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+    <PublicLayout
+      title="Uthyrningssystem för truckar och gaffeltruckar"
+      breadcrumbs={[{ name: 'Truckar', path: '/uthyrning/truckar' }]}
+    >
+      <JsonLd data={faqJsonLd(faqs)} />
 
       <p className="text-lg text-slate-500 mb-4">
-        Gaffeltruckar, motviktstruckar, skjutstativtruckar — oavsett typ av truck hanterar FleetOS uthyrningen från bokning och avtal till service och fakturering, utan manuellt arbete.
+        FleetOS är ett uthyrningssystem för företag som hyr ut motviktstruckar, skjutstativtruckar, ledstaplare och annan truckmateriel. Systemet följer varje truck från förfrågan och avtal till utlämning, retur och fakturaunderlag.
       </p>
-      <p className="mb-10 text-slate-500">
-        Passar för uthyrningsföretag som hyr ut motviktstruckar, skjutstativtruckar, ledstaplare, reachtruckar, plocktruckar och annan truckmateriel.
+      <p className="mb-10 text-slate-500 text-sm">
+        FleetOS är programvara för uthyrningsföretag. Vill du hyra en truck? Kontakta en truckuthyrare nära dig.
       </p>
 
-      <div className="not-prose grid grid-cols-1 sm:grid-cols-2 gap-4 mb-14">
-        {features.map(({ title, desc }) => (
-          <div key={title} className="p-5 bg-slate-50 border border-slate-200 rounded-xl">
-            <p className="text-sm font-semibold text-slate-900 mb-1.5">{title}</p>
-            <p className="text-sm text-slate-500 leading-relaxed">{desc}</p>
-          </div>
+      <h2>Det som gör truckuthyrning speciell</h2>
+      <p className="mb-4">
+        Truckar hyrs ofta ut på längre avtal, ibland i flera år, till kunder med flera anläggningar. Kunden frågar sällan efter en viss maskin utan efter en kapacitet, en lyfthöjd eller ett drivmedel. Och samma truck kan komma tillbaka med en laddare för lite eller med fler drifttimmar än avtalet räknade med.
+      </p>
+      <p className="mb-10">
+        I ett kalkylblad blir det svårt att se vilka truckar som passar en förfrågan, vilka avtal som ska faktureras den här månaden och vad som faktiskt kom tillbaka. FleetOS samlar de uppgifterna på maskinkortet och ordern.
+      </p>
+
+      <h2>Från förfrågan till faktura</h2>
+      <ol>
+        {steps.map(({ title, desc }) => (
+          <li key={title}><strong>{title}.</strong> {desc}</li>
         ))}
-      </div>
+      </ol>
 
-      <h2>Från manuell administration till digitalt flöde</h2>
-      <p className="mb-4">
-        Truckuthyrning innebär ofta löpande avtal, återkommande kunder och maskiner som rör sig mellan flera kundställen. Utan ett system tappar man lätt kontrollen — vad är uthyrt, till vem, till vilket pris och när ska det tillbaka?
-      </p>
-      <p className="mb-4">
-        Många truckuthyrare arbetar idag med en kombination av Excel-listor, e-post och handskrivna lappar. Det fungerar när flottan är liten, men skalar inte. En maskin på fel ställe, ett glömt servicedatum eller en missad faktura kan kosta mer än ett helt år av systemkostnad.
-      </p>
+      <h2>Funktioner som truckuthyrare använder mest</h2>
+      <ul>
+        <li><strong>Tekniska data per truck</strong>, inklusive stativ, aggregat och hytt, så att säljaren kan svara kunden direkt.</li>
+        <li><strong>Avtalshyra</strong> med automatiska månadsvisa delfakturor och tillägg som kan faktureras en gång eller varje månad.</li>
+        <li><strong>Lönsamhet per truck</strong> utifrån intäkter och kostnader som inköp, leasing, finansiering, försäkring och service.</li>
+        <li><strong>Servicehistorik</strong> med periodisk service, reparationer, besiktningar och kontroller på varje truck.</li>
+        <li><strong>Användarroller</strong> för admin, säljare och verkstad, så att kontor, säljare och verkstad arbetar i samma system.</li>
+      </ul>
       <p className="mb-10">
-        FleetOS ger dig en komplett bild av hela truckflottan i realtid. Ny order tar några minuter. Fakturaunderlaget är klart automatiskt. Och servicehistoriken finns alltid tillgänglig — oavsett om du är på kontoret eller ute hos kund.
+        Se hela listan på <Link href="/funktioner">funktionssidan</Link>.
       </p>
 
-      <h2>Vad skiljer FleetOS från ett generellt affärssystem?</h2>
-      <p className="mb-4">
-        Traditionella affärssystem och bokföringsprogram är byggda för redovisning — inte för att hantera en rörlig maskinpark. De saknar begrepp som beläggningsgrad, hyresperiod, returnstatus, serviceintervall och QR-koder.
-      </p>
+      <h2>Integrationer</h2>
       <p className="mb-10">
-        FleetOS är byggt specifikt för maskinuthyrning. Istället för att du anpassar ett generellt system till din verksamhet är det tvärtom — FleetOS pratar samma språk som din verksamhet. Och med Fortnox-integrationen behöver du inte välja: du får specialiserad uthyrningshantering <em>och</em> din bokföring synkroniseras automatiskt.
+        Med <Link href="/integrationer/fortnox">Fortnox-integrationen</Link> blir ordrar och delfakturor ordrar i Fortnox med rätt kund, artikelnummer och kostnadsställe. Med <Link href="/integrationer/serviceprotokoll">Serviceprotokoll-integrationen</Link> hämtas hyrestruckar, kunder och anläggningar automatiskt.
+      </p>
+
+      <h2>Kundcase: WTS Machinery Solutions</h2>
+      <p className="mb-10">
+        WTS Machinery Solutions är en totalleverantör inom materialhantering och använder FleetOS för sin truckuthyrning, med avtalshyra, Fortnox och Serviceprotokoll. <Link href="/kunder/wts-machinery-solutions">Läs hur WTS använder FleetOS</Link>.
       </p>
 
       <h2>Vanliga frågor om uthyrningssystem för truckar</h2>
-      <div className="not-prose space-y-4 mb-14">
-        {faqs.map(({ q, a }) => (
-          <div key={q} className="p-5 bg-slate-50 border border-slate-200 rounded-xl">
-            <p className="text-sm font-semibold text-slate-900 mb-2">{q}</p>
-            <p className="text-sm text-slate-500 leading-relaxed">{a}</p>
-          </div>
-        ))}
-      </div>
+      <FaqList faqs={faqs} />
 
-      <h2>Läs mer om FleetOS för andra maskintyper</h2>
-      <div className="not-prose grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-        <Link href="/uthyrning/byggmaskiner" className="p-4 border border-slate-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/40 transition-colors group">
-          <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-700">Byggmaskiner och grävmaskiner →</p>
-          <p className="text-xs text-slate-500 mt-1">Grävmaskiner, hjullastare, kompaktlastare</p>
-        </Link>
-        <Link href="/uthyrning/liftar" className="p-4 border border-slate-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/40 transition-colors group">
-          <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-700">Liftar och skylift →</p>
-          <p className="text-xs text-slate-500 mt-1">Skylift, saxlift, bomlift, teleskoplift</p>
-        </Link>
-      </div>
+      <h2>FleetOS för andra maskintyper</h2>
+      <LinkCards links={[
+        { href: '/uthyrning/byggmaskiner', title: 'Byggmaskiner och grävmaskiner', desc: 'Korta hyror, transporter och skaderegistrering' },
+        { href: '/uthyrning/liftar', title: 'Liftar och skylift', desc: 'Besiktning, kontroll vid retur och service' },
+      ]} />
 
-      <div className="not-prose flex flex-col sm:flex-row gap-3">
-        <Link href="/login" className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors text-sm">
-          Boka demo
-        </Link>
-        <Link href="/funktioner" className="inline-flex items-center justify-center px-6 py-3 border border-slate-200 hover:border-slate-300 text-slate-700 font-medium rounded-xl transition-colors text-sm">
-          Se alla funktioner
-        </Link>
-      </div>
+      <PageCta heading="Se hur FleetOS fungerar för er truckflotta" />
     </PublicLayout>
   );
 }

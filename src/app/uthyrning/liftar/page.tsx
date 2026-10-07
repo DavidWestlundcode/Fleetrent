@@ -1,165 +1,98 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import PublicLayout from '@/components/layout/PublicLayout';
+import JsonLd from '@/components/public/JsonLd';
+import PageCta, { FaqList, LinkCards } from '@/components/public/PageCta';
+import { faqJsonLd, pageMetadata } from '@/lib/seo';
 
 export const revalidate = 86400;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
+  path: '/uthyrning/liftar',
   title: 'Uthyrningssystem för liftar och skylift',
-  description: 'Digitalt uthyrningssystem för liftuthyrning. Hantera skylift, saxlift och bomlift med besiktningshistorik, hyresavtal och Fortnox-integration.',
-  keywords: ['uthyrningssystem skylift', 'system liftuthyrning', 'saxlift uthyrning program', 'bomlift uthyrning system', 'skylift uthyrning mjukvara'],
-  alternates: { canonical: 'https://fleetos.se/uthyrning/liftar' },
-  openGraph: {
-    title: 'Uthyrningssystem för liftar och skylift | FleetOS',
-    description: 'Digitalt system för liftuthyrning — besiktningshistorik, hyresavtal och Fortnox-integration i ett.',
-    url: 'https://fleetos.se/uthyrning/liftar',
-  },
-};
-
-const features = [
-  {
-    title: 'Besiktning och certifikat per lift',
-    desc: 'Registrera besiktningsdatum, certifikat och säkerhetsinspektioner direkt på varje lift. Systemet visar vad som behöver förnyas och när — innan giltigheten löper ut.',
-  },
-  {
-    title: 'Snabba hyresavtal',
-    desc: 'Skapa ett komplett hyresavtal på några minuter. Kunden kan signera digitalt — klart innan liften lämnar lagret. Inga utskrifter och ingen posthantering.',
-  },
-  {
-    title: 'Kort- och långtidsuthyrning',
-    desc: 'Hantera allt från dagshyra till fleråriga löpande avtal med samma system. Sätt individuella priser per lift, kategori och hyresform.',
-  },
-  {
-    title: 'Serviceprotokoll och underhåll',
-    desc: 'Koppla serviceåtgärder direkt till respektive lift. All historik finns samlad och sökbar — inget mer letande i pärmar eller e-postkorgar.',
-  },
-  {
-    title: 'QR-koder i fält',
-    desc: 'Märk liftarna med QR-koder. Personal och kunder kan skanna för att se aktuell status, avtal och säkerhetsinstruktioner direkt i mobilens webbläsare.',
-  },
-  {
-    title: 'Fakturaunderlag till Fortnox',
-    desc: 'Hyresperioder och belopp förs automatiskt till Fortnox. Inga manuella beräkningar, ingen dubbelinmatning — fakturaunderlaget är klart direkt.',
-  },
-  {
-    title: 'Skaderegistrering vid retur',
-    desc: 'Registrera skick, drifttimmar och eventuella skador direkt vid återlämning. Ta bilder och lägg till noteringar som sparas på ordern.',
-  },
-  {
-    title: 'Beläggning och lönsamhet',
-    desc: 'Se beläggningsgrad per lift, vilka kategorier som hyr mest och intäkter per period. Fatta rätt beslut om flottans sammansättning.',
-  },
-];
+  description: 'Uthyrningssystem för liftuthyrare: besiktningar och kontroller per lift, kontroll vid retur och avtal, service och fakturaunderlag i samma system.',
+});
 
 const faqs = [
   {
-    q: 'Vilka typer av liftar hanterar FleetOS?',
-    a: 'FleetOS hanterar skylift, saxlift, bomlift, teleskoplift, mastvagnslift och annan höjdarbetsutrustning. Varje lifttyp kan konfigureras med egna prismallar och besiktningskrav.',
+    q: 'Hur dokumenterar vi besiktningar och kontroller?',
+    a: 'Varje besiktning eller kontroll läggs in som en servicepost på liften, med datum, tekniker, status, kostnad, anteckningar och bilder. Planerade poster syns på liften tills de är avslutade, och historiken finns kvar på maskinkortet.',
   },
   {
-    q: 'Hur håller systemet koll på besiktningsdatum?',
-    a: 'Du registrerar besiktningsdatum och certifikat på varje lift. Systemet visar när nästa besiktning förfaller direkt på maskinkortet. Vi arbetar på automatiska påminnelser.',
+    q: 'Påminner FleetOS automatiskt när en besiktning närmar sig?',
+    a: 'Inte i dag. Ni planerar besiktningen som en servicepost med datum och följer upp den i serviceöversikten. Automatiska påminnelser finns inte ännu.',
   },
   {
-    q: 'Kan jag hantera uthyrning med och utan förare?',
-    a: 'Ja. Du kan konfigurera ordrar med eller utan förare, lägga till tillbehör och specificera villkor per uthyrning. Allt sparas på ordern.',
+    q: 'Vad händer om en lift kommer tillbaka med ett fel?',
+    a: 'Vid retur väljer ni skick. En lift som markeras som skadad eller i behov av service får status service och kan inte förväxlas med en lift som är redo att hyras ut. Kräver liften bara en kontroll registreras det på ordern.',
   },
   {
-    q: 'Fungerar FleetOS med Fortnox?',
-    a: 'Ja. Fakturaunderlag med rätt artiklar, kundnummer och kostnadsställen förs automatiskt över till Fortnox när en order avslutas.',
+    q: 'Finns det en färdig kategori för liftar?',
+    a: 'Liftar läggs i dag upp under kategorin övrigt, med egen benämning, fabrikat, modell, serienummer och internt nummer. Säg till om ni behöver fler liftspecifika fält, så tar vi med det i dialogen om era behov.',
   },
   {
-    q: 'Kan jag prova systemet utan att binda upp mig?',
-    a: 'Ja, du kan komma igång och testa FleetOS. Kontakta oss för att diskutera era behov och sätta upp ett konto.',
+    q: 'Kan vi hyra ut liften med förare eller transport?',
+    a: 'Ja. Förare, transport och andra tjänster läggs till som artiklar på ordern med eget pris, och kommer med som egna rader i fakturaunderlaget.',
   },
 ];
 
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'WebPage',
-  name: 'Uthyrningssystem för liftar och skylift',
-  url: 'https://fleetos.se/uthyrning/liftar',
-  description: 'Digitalt uthyrningssystem för liftuthyrning i Sverige. Hantera skylift, saxlift och bomlift med besiktningshistorik och Fortnox-integration.',
-  mainEntity: {
-    '@type': 'FAQPage',
-    mainEntity: faqs.map(({ q, a }) => ({
-      '@type': 'Question',
-      name: q,
-      acceptedAnswer: { '@type': 'Answer', text: a },
-    })),
-  },
-};
-
 export default function LiftarPage() {
   return (
-    <PublicLayout title="Uthyrningssystem för liftar och skylift">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+    <PublicLayout
+      title="Uthyrningssystem för liftar och skylift"
+      breadcrumbs={[{ name: 'Liftar', path: '/uthyrning/liftar' }]}
+    >
+      <JsonLd data={faqJsonLd(faqs)} />
 
       <p className="text-lg text-slate-500 mb-4">
-        Skyliftar, saxliftar och bomliftar kräver noggrann dokumentation — besiktningar, certifikat och servicehistorik. FleetOS hanterar det digitalt, tillsammans med hela uthyrningsflödet från bokning till faktura.
+        FleetOS är ett uthyrningssystem för företag som hyr ut saxliftar, bomliftar, skyliftar och annan utrustning för arbete på höjd. Avtal, utlämning, retur, besiktningar och fakturaunderlag hanteras i samma system.
       </p>
-      <p className="mb-10 text-slate-500">
-        Passar för uthyrning av skylift, saxlift, bomlift, teleskoplift, mastvagnslift och annan höjdarbetsutrustning.
+      <p className="mb-10 text-slate-500 text-sm">
+        FleetOS är programvara för uthyrningsföretag. Vill du hyra en lift? Kontakta en liftuthyrare nära dig.
       </p>
 
-      <div className="not-prose grid grid-cols-1 sm:grid-cols-2 gap-4 mb-14">
-        {features.map(({ title, desc }) => (
-          <div key={title} className="p-5 bg-slate-50 border border-slate-200 rounded-xl">
-            <p className="text-sm font-semibold text-slate-900 mb-1.5">{title}</p>
-            <p className="text-sm text-slate-500 leading-relaxed">{desc}</p>
-          </div>
-        ))}
-      </div>
-
-      <h2>Säkerhet och dokumentation på samma ställe</h2>
+      <h2>Där liftuthyrning skiljer sig</h2>
       <p className="mb-4">
-        Liftuthyrning ställer höga krav på dokumentation. Besiktningar måste vara aktuella, certifikat tillgängliga och servicehistorik spårbar. Idag hanteras det på många uthyrningsföretag med en blandning av Excel, e-post och papperspärmar.
-      </p>
-      <p className="mb-4">
-        FleetOS samlar allt digitalt. Varje lift har sin egen sida med komplett historik — besiktningar, serviceåtgärder, hyresperioder och skadenoteringar. Det gör det enkelt att hålla koll på vad som behöver åtgärdas, och att visa dokumentationen om det efterfrågas.
+        En lift som hyrs ut ska vara besiktigad och kontrollerad. Samtidigt är många hyror korta, ofta över en helg eller några dagar, och liften kan vara tillbaka och ute igen samma vecka. Det ställer krav på att den som lämnar ut liften ser om den är godkänd för uthyrning.
       </p>
       <p className="mb-10">
-        Med QR-koder kan dessutom personal och kunder skanna liften på plats och se aktuell status, säkerhetsinstruktioner och vem som har uthyrningsansvaret — direkt i mobilens webbläsare utan att installera någon app.
+        I FleetOS syns liftens status, servicehistorik och planerade besiktningar på maskinkortet, och returen avgör om liften går tillbaka i lager eller till service.
       </p>
 
-      <h2>Smidig fakturering med Fortnox</h2>
-      <p className="mb-4">
-        Varje avslutad uthyrning genererar automatiskt ett fakturaunderlag som förs över till Fortnox. Hyresperiod, pris, artikelnummer och kunduppgifter är redan ifyllda — du behöver bara granska och skicka.
-      </p>
+      <h2>Så används FleetOS för liftar</h2>
+      <ol>
+        <li><strong>Planera besiktningar och kontroller</strong> som serviceposter på varje lift, med datum och ansvarig tekniker.</li>
+        <li><strong>Skapa ordern</strong> med kund, anläggning, hyresperiod och tillägg som transport eller förare.</li>
+        <li><strong>Skicka hyresavtalet</strong> för digital signering direkt från ordern.</li>
+        <li><strong>Lämna ut liften</strong> genom att skanna QR-koden och registrera drifttimmar.</li>
+        <li><strong>Ta emot returen</strong> och välj skick: bra, skadad, kräver service eller kräver kontroll. Lägg till foton och en kommentar.</li>
+        <li><strong>Fakturera</strong> genom att skicka ordern till <Link href="/integrationer/fortnox">Fortnox</Link>.</li>
+      </ol>
+
+      <h2>Funktioner för liftuthyrare</h2>
+      <ul>
+        <li><strong>Servicehistorik per lift</strong> med typerna periodisk service, reparation, besiktning och kontroll.</li>
+        <li><strong>Maskinstatus</strong> som visar om liften är i lager, uthyrd, reserverad, på service, skadad eller utfasad.</li>
+        <li><strong>Användarroller</strong> för admin, säljare och verkstad, så att kontor och verkstad arbetar i samma system.</li>
+        <li><strong>Korta hyror</strong> med dag-, vecko- och månadspris och valbar helgdebitering.</li>
+        <li><strong>Beläggning och lönsamhet</strong> per lift, så att ni ser vilka liftar som hyrs ut mest.</li>
+      </ul>
       <p className="mb-10">
-        För löpande hyresavtal stöder FleetOS delfakturering — du kan fakturera var 30:e dag utan att avsluta ordern. Systemet håller koll på vad som redan fakturerats och vad som återstår.
+        Se alla <Link href="/funktioner">funktioner i FleetOS</Link>.
       </p>
 
       <h2>Vanliga frågor om uthyrningssystem för liftar</h2>
-      <div className="not-prose space-y-4 mb-14">
-        {faqs.map(({ q, a }) => (
-          <div key={q} className="p-5 bg-slate-50 border border-slate-200 rounded-xl">
-            <p className="text-sm font-semibold text-slate-900 mb-2">{q}</p>
-            <p className="text-sm text-slate-500 leading-relaxed">{a}</p>
-          </div>
-        ))}
-      </div>
+      <FaqList faqs={faqs} />
 
-      <h2>Läs mer om FleetOS för andra maskintyper</h2>
-      <div className="not-prose grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-        <Link href="/uthyrning/truckar" className="p-4 border border-slate-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/40 transition-colors group">
-          <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-700">Truckar och gaffeltruckar →</p>
-          <p className="text-xs text-slate-500 mt-1">Motviktstruckar, skjutstativtruckar, ledstaplare</p>
-        </Link>
-        <Link href="/uthyrning/byggmaskiner" className="p-4 border border-slate-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/40 transition-colors group">
-          <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-700">Byggmaskiner och grävmaskiner →</p>
-          <p className="text-xs text-slate-500 mt-1">Grävmaskiner, hjullastare, kompaktlastare</p>
-        </Link>
-      </div>
+      <h2>Läs mer</h2>
+      <LinkCards links={[
+        { href: '/integrationer/serviceprotokoll', title: 'Serviceprotokoll-integration', desc: 'Hämta maskiner och tekniska data automatiskt' },
+        { href: '/integrationer/fortnox', title: 'Fortnox-integration', desc: 'Från avslutad order till order i Fortnox' },
+        { href: '/uthyrning/truckar', title: 'Truckar och gaffeltruckar', desc: 'Långtidshyra och avtalsfakturering' },
+        { href: '/uthyrning/byggmaskiner', title: 'Byggmaskiner och grävmaskiner', desc: 'Korta hyror, transporter och skaderegistrering' },
+      ]} />
 
-      <div className="not-prose flex flex-col sm:flex-row gap-3">
-        <Link href="/login" className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors text-sm">
-          Boka demo
-        </Link>
-        <Link href="/funktioner" className="inline-flex items-center justify-center px-6 py-3 border border-slate-200 hover:border-slate-300 text-slate-700 font-medium rounded-xl transition-colors text-sm">
-          Se alla funktioner
-        </Link>
-      </div>
+      <PageCta heading="Se hur FleetOS fungerar för er liftflotta" />
     </PublicLayout>
   );
 }

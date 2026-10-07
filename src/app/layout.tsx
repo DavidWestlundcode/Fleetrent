@@ -1,29 +1,44 @@
 ﻿import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
+import { Plus_Jakarta_Sans, Instrument_Serif } from 'next/font/google';
 import { ChunkErrorReload } from '@/components/ChunkErrorReload';
+import { SITE_URL } from '@/lib/seo';
 import './globals.css';
 
 const GOOGLE_ADS_ID = 'AW-18424604044';
 
-const BASE_URL = 'https://fleetos.se';
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+  display: 'swap',
+  variable: '--font-jakarta',
+});
 
+// Only used for the small italic "Betrodd av" accent below the fold — not worth a preload.
+const instrument = Instrument_Serif({
+  subsets: ['latin'],
+  weight: '400',
+  style: 'italic',
+  display: 'swap',
+  preload: false,
+  variable: '--font-instrument',
+});
+
+// No `alternates.canonical` here on purpose: a canonical in the root layout is inherited by
+// every page that doesn't set its own, which pointed /demo, /press etc. at the home page.
+// Public pages set a self-referencing canonical via pageMetadata() in src/lib/seo.ts.
+// The social image comes from the opengraph-image.tsx file convention.
 export const metadata: Metadata = {
-  metadataBase: new URL(BASE_URL),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: 'FleetOS – Maskinuthyrningssystem för Sverige',
+    default: 'FleetOS – uthyrningssystem för maskiner, truckar och liftar',
     template: '%s | FleetOS',
   },
-  description: 'FleetOS är det moderna uthyrningssystemet för maskinföretag i Sverige. Hantera maskinflotta, uthyrningsordrar, kunder och fakturering – enkelt och effektivt. Integrerat med Fortnox.',
-  keywords: [
-    'maskinuthyrningssystem', 'affärssystem för maskinuthyrning', 'affärssystem maskinuthyrning',
-    'uthyrningssystem maskiner', 'system maskinuthyrning',
-    'hyresorderhantering', 'maskinflotta system', 'truckuthyrning system',
-    'uthyrningshantering Sverige', 'maskinuthyrning mjukvara', 'uthyrningsprogram',
-    'FleetOS', 'maskinregister', 'orderhantering maskiner',
-  ],
-  authors: [{ name: 'FleetOS', url: BASE_URL }],
+  description: 'FleetOS är ett svenskt uthyrningssystem för företag som hyr ut maskiner, truckar och liftar. Order, hyresavtal, QR-returer och fakturaunderlag till Fortnox.',
+  applicationName: 'FleetOS',
+  authors: [{ name: 'FleetOS', url: SITE_URL }],
   creator: 'FleetOS',
-  publisher: 'FleetOS',
+  publisher: 'DSE ENTERPRISE AB',
   robots: {
     index: true,
     follow: true,
@@ -32,20 +47,10 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'sv_SE',
-    url: BASE_URL,
     siteName: 'FleetOS',
-    title: 'FleetOS – Maskinuthyrningssystem för Sverige',
-    description: 'Det moderna uthyrningssystemet för maskinföretag. Hantera flotta, ordrar och fakturering – integrerat med Fortnox.',
-    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'FleetOS – Maskinuthyrningssystem' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'FleetOS – Maskinuthyrningssystem för Sverige',
-    description: 'Det moderna uthyrningssystemet för maskinföretag. Hantera flotta, ordrar och fakturering – integrerat med Fortnox.',
-    images: ['/og-image.png'],
-  },
-  alternates: {
-    canonical: BASE_URL,
   },
 };
 
@@ -57,7 +62,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="sv" className="h-full">
+    <html lang="sv" className={`h-full ${jakarta.variable} ${instrument.variable}`}>
       <body className="h-full bg-slate-50">
         <ChunkErrorReload />
         <Script src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_ID}`} strategy="afterInteractive" />

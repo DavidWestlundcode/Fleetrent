@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 import { AnimateIn } from '@/components/ui/AnimateIn';
 
 export default async function LatestEventsSection() {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data: events } = await supabase
     .from('landing_events')
     .select('id, title, category, event_date, image_url')
@@ -33,7 +33,8 @@ export default async function LatestEventsSection() {
                 className="block bg-white border border-slate-200 hover:border-blue-200 rounded-2xl overflow-hidden h-full flex flex-col transition-colors"
               >
                 {event.image_url && (
-                  <img src={event.image_url} alt="" className="w-full aspect-video object-cover" />
+                  // eslint-disable-next-line @next/next/no-img-element -- external Supabase storage URL
+                  <img src={event.image_url} alt={event.title} loading="lazy" decoding="async" width={640} height={360} className="w-full aspect-video object-cover" />
                 )}
                 <div className="p-6 flex flex-col flex-1">
                   <div className="flex items-center gap-2 flex-wrap mb-3">

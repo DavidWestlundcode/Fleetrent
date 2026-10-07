@@ -1,4 +1,12 @@
-﻿import PublicLayout from '@/components/layout/PublicLayout';
+import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
+import PublicLayout from '@/components/layout/PublicLayout';
+
+export const metadata: Metadata = pageMetadata({
+  path: '/press',
+  title: 'Press',
+  description: 'Presskontakt och fakta om FleetOS, uthyrningssystemet för maskinuthyrare som utvecklas av DSE ENTERPRISE AB.',
+});
 
 export const revalidate = 86400;
 

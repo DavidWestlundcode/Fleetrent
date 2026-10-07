@@ -1,6 +1,14 @@
 import { Logo } from '@/components/ui/Logo';
 
 const FOOTER_COLUMNS = [
+  { title: 'Produkt', links: [
+    { label: 'Funktioner', href: '/funktioner' },
+    { label: 'Priser', href: '/priser' },
+    { label: 'Fortnox-integration', href: '/integrationer/fortnox' },
+    { label: 'Serviceprotokoll-integration', href: '/integrationer/serviceprotokoll' },
+    { label: 'Kundcase', href: '/kunder' },
+    { label: 'Boka demo', href: '/kom-igang' },
+  ]},
   { title: 'Företag', links: [
     { label: 'Om oss', href: '/om-oss' },
     { label: 'Karriär', href: '/karriar' },
@@ -25,19 +33,23 @@ export default function PublicFooter() {
   return (
     <footer className="bg-[#030810] border-t border-white/[0.04]">
       <div className="max-w-6xl mx-auto px-6 py-14">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-10 mb-12">
           <div className="col-span-2">
             <div className="flex items-center gap-2 mb-4">
               <Logo size={28} />
               <span className="text-[14px] font-bold text-white tracking-tight">FleetOS</span>
             </div>
-            <p className="text-[13px] text-slate-500 leading-relaxed max-w-[220px]">
-              Det moderna uthyrningssystemet för maskinföretag i Sverige.
+            <p className="text-[13px] text-slate-500 leading-relaxed max-w-[240px]">
+              Uthyrningssystem för företag som hyr ut maskiner, truckar och liftar.
+            </p>
+            <p className="text-[12px] text-slate-600 leading-relaxed mt-4">
+              DSE ENTERPRISE AB · Org.nr 559510-0248<br />
+              <a href="mailto:david@fleetos.se" className="hover:text-slate-300 transition-colors">david@fleetos.se</a>
             </p>
           </div>
           {FOOTER_COLUMNS.map(({ title, links }) => (
             <div key={title}>
-              <h4 className="text-[12px] font-semibold text-white uppercase tracking-wider mb-4">{title}</h4>
+              <p className="text-[12px] font-semibold text-white uppercase tracking-wider mb-4">{title}</p>
               <ul className="space-y-2.5">
                 {links.map(({ label, href }) => (
                   <li key={label}>

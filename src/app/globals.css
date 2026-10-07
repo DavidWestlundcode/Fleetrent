@@ -1,5 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
+/* Fonts are self-hosted via next/font in app/layout.tsx (exposes --font-jakarta and
+   --font-instrument on <html>) — no render-blocking @import from Google Fonts. */
 @import "tailwindcss";
 
 @theme {
@@ -7,10 +7,10 @@
   --color-sidebar-hover: #1E293B;
   --color-brand: #2563EB;
   --color-brand-dark: #1D4ED8;
-  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: var(--font-jakarta), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   /* Small italic accent used for "trusted by"-style eyebrow labels — deliberately NOT the
      site-wide sans, to give those labels an editorial feel distinct from body/UI copy. */
-  --font-serif-accent: 'Instrument Serif', Georgia, serif;
+  --font-serif-accent: var(--font-instrument), Georgia, serif;
 }
 
 * {
@@ -39,6 +39,40 @@ body {
   color: #0F172A;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Minimal long-form styles for PublicLayout content. The `prose` class was used without the
+   typography plugin, so Tailwind's preflight rendered <h2> at body size. :where() keeps
+   specificity at zero so explicit utility classes on an element still win. */
+.prose :where(h2):not(:where(.not-prose, .not-prose *)) {
+  font-size: 1.5rem; line-height: 1.25; font-weight: 700; letter-spacing: -0.01em;
+  color: #0F172A; margin: 2.75rem 0 1rem;
+}
+.prose :where(h3):not(:where(.not-prose, .not-prose *)) {
+  font-size: 1.125rem; line-height: 1.4; font-weight: 600; color: #0F172A; margin: 1.75rem 0 0.5rem;
+}
+.prose :where(ul):not(:where(.not-prose, .not-prose *)) { list-style: disc; padding-left: 1.25rem; margin: 0 0 1.5rem; }
+.prose :where(ol):not(:where(.not-prose, .not-prose *)) { list-style: decimal; padding-left: 1.25rem; margin: 0 0 1.5rem; }
+.prose :where(li):not(:where(.not-prose, .not-prose *)) { margin: 0.375rem 0; }
+.prose :where(li::marker) { color: #94A3B8; }
+.prose :where(strong):not(:where(.not-prose, .not-prose *)) { color: #0F172A; font-weight: 600; }
+/* Underlined so in-text links aren't distinguished by colour alone (WCAG 1.4.1). */
+.prose :where(a):not(:where(.not-prose, .not-prose *)) {
+  color: #2563EB; text-decoration: underline; text-decoration-color: #93C5FD; text-underline-offset: 2px;
+}
+.prose :where(a):not(:where(.not-prose, .not-prose *)):hover { text-decoration-color: currentColor; }
+.prose > :where(h2:first-child) { margin-top: 0; }
+
+/* CSS-only entrance for above-the-fold page content. Unlike <AnimateIn> it doesn't wait for
+   hydration + IntersectionObserver, so the H1/intro paint on first frame (better LCP). */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-fade-up { animation: fade-up 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-fade-up-delayed { animation: fade-up 0.6s cubic-bezier(0.16,1,0.3,1) 80ms both; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up, .animate-fade-up-delayed { animation-name: none; }
 }
 
 @keyframes float {

@@ -2,12 +2,15 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 import PublicHeader from '@/components/public/PublicHeader';
 import PublicFooter from '@/components/public/PublicFooter';
+import { absoluteUrl } from '@/lib/seo';
+
+export const revalidate = 300;
 
 async function getEvent(id: string) {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data } = await supabase
     .from('landing_events')
     .select('id, title, description, category, event_date, image_url, meta_title, meta_description')
@@ -22,16 +25,19 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const event = await getEvent(id);
   if (!event) return {};
 
-  const title = `${event.meta_title || event.title} – FleetOS`;
+  const title = event.meta_title || event.title;
   const description = event.meta_description || event.description;
-  const url = `https://fleetos.se/handelser/${event.id}`;
+  const url = absoluteUrl(`/handelser/${event.id}`);
 
   return {
     title,
     description,
     alternates: { canonical: url },
     openGraph: {
-      title,
+      type: 'article',
+      locale: 'sv_SE',
+      siteName: 'FleetOS',
+      title: `${title} | FleetOS`,
       description,
       url,
       ...(event.image_url && { images: [{ url: event.image_url }] }),

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logAuditEvent } from '@/lib/audit-log';
+import { revalidateLandingEvents } from '@/lib/supabase/public';
 
 async function requireSuperAdmin() {
   const supabase = await createClient();
@@ -53,6 +54,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     metadata: { before, after: data },
   });
 
+  revalidateLandingEvents();
   return NextResponse.json({ event: data });
 }
 
@@ -77,5 +79,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     metadata: { before },
   });
 
+  revalidateLandingEvents();
   return NextResponse.json({ ok: true });
 }

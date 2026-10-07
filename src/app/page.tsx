@@ -1,5 +1,6 @@
 ﻿import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Zap, Truck, BarChart3, Wrench, Users, CheckCircle,
   ArrowRight, TrendingUp, Bell, Search,
@@ -13,38 +14,52 @@ import PublicFooter from '@/components/public/PublicFooter';
 import FAQSection from '@/components/public/FAQSection';
 import FeaturesSection from '@/components/public/FeaturesSection';
 import LatestEventsSection from '@/components/public/LatestEventsSection';
+import JsonLd from '@/components/public/JsonLd';
+import { SITE_URL, organizationJsonLd, pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'FleetOS – Maskinuthyrningssystem för Sverige',
-  description: 'FleetOS är det moderna uthyrningssystemet för maskinföretag i Sverige. Hantera maskinflotta, uthyrningsordrar, kunder och fakturering – enkelt och effektivt. Integrerat med Fortnox och Serviceprotokoll.',
-  alternates: { canonical: 'https://fleetos.se' },
-  openGraph: {
-    url: 'https://fleetos.se',
-    title: 'FleetOS – Maskinuthyrningssystem för Sverige',
-    description: 'Det moderna uthyrningssystemet för maskinföretag. Hantera flotta, ordrar och fakturering – integrerat med Fortnox.',
-  },
-};
+export const metadata: Metadata = pageMetadata({
+  path: '/',
+  absoluteTitle: true,
+  title: 'Uthyrningssystem för maskiner, truckar och liftar | FleetOS',
+  description: 'Samla bokningar, hyresavtal, QR-returer och fakturaunderlag till Fortnox i FleetOS. Uthyrningssystem för maskiner, truckar och liftar. Boka en demo.',
+});
 
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'SoftwareApplication',
-  name: 'FleetOS',
-  applicationCategory: 'BusinessApplication',
-  operatingSystem: 'Web',
-  url: 'https://fleetos.se',
-  description: 'Modernt uthyrningssystem för maskinföretag i Sverige. Hantera maskinflotta, uthyrningsordrar, kunder och fakturering.',
-  offers: {
-    '@type': 'AggregateOffer',
-    priceCurrency: 'SEK',
-    lowPrice: '1495',
-    highPrice: '3999',
-    offerCount: '3',
-    availability: 'https://schema.org/InStock',
+// Statically cached; the only dynamic content (LatestEventsSection) is revalidated on
+// admin writes and at most every 5 minutes.
+export const revalidate = 300;
+
+// Prices mirror the plans on /priser (visible on the site) — keep them in sync.
+const jsonLd = [
+  organizationJsonLd(),
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': `${SITE_URL}/#website`,
+    name: 'FleetOS',
+    url: SITE_URL,
+    inLanguage: 'sv-SE',
+    publisher: { '@id': `${SITE_URL}/#organization` },
   },
-  publisher: { '@type': 'Organization', name: 'FleetOS', url: 'https://fleetos.se' },
-  inLanguage: 'sv-SE',
-  keywords: 'maskinuthyrningssystem, affärssystem för maskinuthyrning, uthyrningssystem maskiner, maskinflotta, orderhantering, Fortnox integration',
-};
+  {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'FleetOS',
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web',
+    url: SITE_URL,
+    inLanguage: 'sv-SE',
+    description: 'Uthyrningssystem för företag som hyr ut maskiner, truckar och liftar: order, hyresavtal, utlämning och retur med QR-kod, service och fakturaunderlag till Fortnox.',
+    offers: {
+      '@type': 'AggregateOffer',
+      priceCurrency: 'SEK',
+      lowPrice: '1495',
+      highPrice: '3999',
+      offerCount: '3',
+      url: `${SITE_URL}/priser`,
+    },
+    publisher: { '@id': `${SITE_URL}/#organization` },
+  },
+];
 
 /* ─── Sub-components ─────────────────────────────────────────────── */
 function DashboardMockup() {
@@ -249,10 +264,7 @@ function DashboardPhoneMockup() {
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
 
       <PublicHeader />
 
@@ -276,13 +288,12 @@ export default function LandingPage() {
         <div className="relative max-w-5xl mx-auto px-6 text-center pb-16">
 
 
-          <h1 className="text-[34px] sm:text-[52px] md:text-[76px] font-bold text-white leading-[1.02] tracking-[-0.025em] mb-6">
-            Automatisera din{' '}
-            maskinuthyrning
+          <h1 className="text-[34px] sm:text-[52px] md:text-[68px] font-bold text-white leading-[1.04] tracking-[-0.025em] mb-6">
+            Uthyrningssystem för maskiner, truckar och liftar
           </h1>
 
           <p className="text-[15px] sm:text-[18px] text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-            FleetOS samlar maskiner, kunder, order, fakturering och lönsamhet i ett enda system – och ersätter Excel-filer, telefonsamtal och manuella rutiner med en digital och automatiserad uthyrningsprocess.
+            FleetOS är för företag som hyr ut maskiner. Ni samlar bokningar, hyresavtal, utlämning och retur med QR-kod, service och fakturaunderlag till Fortnox i ett system, i stället för i Excel-filer, mejl och telefonsamtal.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-12">
@@ -353,6 +364,9 @@ export default function LandingPage() {
             </div>
             <DashboardMockup />
           </div>
+          <p className="relative text-center text-[11px] text-slate-500 pt-8 pb-2">
+            Illustration med exempeldata. Siffrorna är inte verkliga kundresultat.
+          </p>
         </div>
 
         {/* Dashboard – mobil */}
@@ -402,6 +416,9 @@ export default function LandingPage() {
               ))}
             </div>
           </div>
+          <p className="text-center text-[11px] text-slate-500">
+            Illustration med exempeldata. Siffrorna är inte verkliga kundresultat.
+          </p>
         </div>
       </section>
 
@@ -415,10 +432,15 @@ export default function LandingPage() {
               <div className="flex-1 h-px bg-slate-300" />
             </div>
             <Link href="/kunder/wts-machinery-solutions" className="group flex items-center justify-center py-8">
+              {/* eslint-disable-next-line @next/next/no-img-element -- 4 KB PNG, not worth the optimizer */}
               <img
                 src="/wts-logo.png"
                 alt="WTS Machinery Solutions"
-                className="h-7 object-contain opacity-70 grayscale group-hover:opacity-100 group-hover:grayscale-0 transition-all"
+                width={200}
+                height={56}
+                loading="lazy"
+                decoding="async"
+                className="h-7 w-auto object-contain opacity-70 grayscale group-hover:opacity-100 group-hover:grayscale-0 transition-all"
               />
             </Link>
             <div className="h-px bg-slate-300" />
@@ -503,9 +525,14 @@ export default function LandingPage() {
 
       {/* ── Demo CTA ── */}
       <section className="relative py-10 border-b border-white/[0.05] overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('/Rental-truck-demo-picture.png')" }}
+        {/* next/image instead of a CSS background: the source PNG is ~2.5 MB, this serves a
+            resized AVIF/WebP and lazy-loads it (the section is below the fold). */}
+        <Image
+          src="/Rental-truck-demo-picture.png"
+          alt=""
+          fill
+          sizes="100vw"
+          className="object-cover object-center"
         />
         <div className="absolute inset-0 bg-[#060D1A]/70" />
         <div className="relative max-w-5xl mx-auto px-6">
@@ -534,6 +561,43 @@ export default function LandingPage() {
 
       {/* ── Features showcase ── */}
       <FeaturesSection />
+
+      {/* ── Industries ── */}
+      <section id="branscher" className="py-16 sm:py-24 px-4 sm:px-6 bg-slate-50 border-t border-slate-200">
+        <div className="max-w-5xl mx-auto">
+          <AnimateIn className="text-center max-w-2xl mx-auto mb-12">
+            <p className="text-[12px] font-semibold text-blue-600 uppercase tracking-widest mb-3">Branscher</p>
+            <h2 className="text-2xl sm:text-[40px] font-bold text-slate-900 tracking-tight mb-4">Byggt för er typ av flotta</h2>
+            <p className="text-[16px] text-slate-500 leading-relaxed">
+              Samma system, men olika vardag. Se hur FleetOS används av uthyrare med olika maskinparker.
+            </p>
+          </AnimateIn>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {[
+              { href: '/uthyrning/truckar', title: 'Uthyrningssystem för truckar', desc: 'Kapacitet och lyfthöjd på maskinkortet, långtidshyra med månadsvisa delfakturor och kontroll av laddare och tillbehör vid retur.' },
+              { href: '/uthyrning/byggmaskiner', title: 'Uthyrningssystem för byggmaskiner', desc: 'Reservationer, transport och deposition på ordern, drifttimmar och skador med foto när maskinen kommer tillbaka.' },
+              { href: '/uthyrning/liftar', title: 'Uthyrningssystem för liftar', desc: 'Besiktningar och kontroller per lift, korta hyror och returer som avgör om liften går till lager eller service.' },
+            ].map(({ href, title, desc }, i) => (
+              <AnimateIn key={href} delay={i * 80}>
+                <Link href={href} className="group block h-full bg-white border border-slate-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-md transition-all">
+                  <h3 className="text-[16px] font-semibold text-slate-900 group-hover:text-blue-700 mb-2">{title}</h3>
+                  <p className="text-[13px] text-slate-500 leading-relaxed mb-4">{desc}</p>
+                  <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-blue-600">Läs mer <ArrowRight className="w-3.5 h-3.5" /></span>
+                </Link>
+              </AnimateIn>
+            ))}
+          </div>
+          <AnimateIn>
+            <Link href="/kunder/wts-machinery-solutions" className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#060D1A] rounded-2xl px-6 py-5">
+              <div>
+                <p className="text-[12px] font-semibold text-blue-400 uppercase tracking-widest mb-1">Kundcase</p>
+                <p className="text-[15px] font-semibold text-white">Så använder WTS Machinery Solutions FleetOS med Fortnox och Serviceprotokoll</p>
+              </div>
+              <span className="shrink-0 inline-flex items-center gap-1 text-[13px] font-semibold text-white/80 group-hover:text-white">Läs kundcaset <ArrowRight className="w-3.5 h-3.5" /></span>
+            </Link>
+          </AnimateIn>
+        </div>
+      </section>
 
       {/* ── 6 reasons ── */}
       <section className="py-16 sm:py-28 px-4 sm:px-6 bg-[#060D1A] relative overflow-hidden border-t border-white/[0.04]">
@@ -574,6 +638,7 @@ export default function LandingPage() {
             {/* Phone */}
             <AnimateIn direction="scale" className="order-1 lg:order-2 mx-auto">
               <DashboardPhoneMockup />
+              <p className="text-center text-[11px] text-slate-500 mt-3">Illustration med exempeldata</p>
             </AnimateIn>
 
             {/* Right column */}
@@ -602,9 +667,9 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <AnimateIn className="text-center mb-16">
             <p className="text-[12px] font-semibold text-blue-600 uppercase tracking-widest mb-3">Integrationer</p>
-            <h2 className="text-2xl sm:text-[40px] font-bold text-slate-900 tracking-tight mb-4">Integrera dina system</h2>
+            <h2 className="text-2xl sm:text-[40px] font-bold text-slate-900 tracking-tight mb-4">Fungerar med Fortnox och Serviceprotokoll</h2>
             <p className="text-[16px] text-slate-500 max-w-xl mx-auto">
-              Koppla FleetOS till dina befintliga system. Fortnox och Serviceprotokoll är klara, Visma är på väg — behöver du något annat bygger vi det åt dig.
+              Fortnox och Serviceprotokoll är tillgängliga i dag. Visma är planerad men inte klar. Använder ni något annat system kan vi diskutera en anpassning.
             </p>
           </AnimateIn>
 
@@ -638,11 +703,11 @@ export default function LandingPage() {
                   </div>
                 ))}
 
-                {/* Outer orbit — counter-clockwise 28s — Visma + Zapier + Custom */}
+                {/* Outer orbit — counter-clockwise 28s — Visma (planned) + custom. Only list
+                    systems that are available or on the roadmap. */}
                 {[
                   { label: 'Visma', bg: '#1a3190', fontSize: 8.5, delay: 0 },
-                  { label: 'Zapier', bg: '#ff4a00', fontSize: 7.5, delay: -9.3 },
-                  { label: '+', bg: '#334155', fontSize: 24, delay: -18.7 },
+                  { label: '+', bg: '#334155', fontSize: 24, delay: -14 },
                 ].map(({ label, bg, fontSize, delay }) => (
                   <div key={label} style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0, animation: 'orbit-ccw 28s linear infinite', animationDelay: `${delay}s` }}>
                     <div style={{ position: 'absolute', left: 109, top: -26, animation: 'orbit-cw 28s linear infinite', animationDelay: `${delay}s` }}>
@@ -661,28 +726,40 @@ export default function LandingPage() {
                 {[
                   {
                     name: 'Fortnox',
+                    href: '/integrationer/fortnox',
                     badge: 'Tillgänglig nu',
                     badgeClass: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
-                    desc: 'Skicka order och fakturor direkt till Fortnox. Kundregister och kostnadsställen synkroniseras automatiskt.',
+                    desc: 'Skicka klara ordrar och delfakturor till Fortnox med kund, hyresrader, artikelnummer och kostnadsställe. Kunder som saknas skapas automatiskt.',
                   },
                   {
                     name: 'Serviceprotokoll',
+                    href: '/integrationer/serviceprotokoll',
                     badge: 'Tillgänglig nu',
                     badgeClass: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
-                    desc: 'Importera maskiner och kunder från Serviceprotokoll. Flottan synkroniseras automatiskt var 30:e minut.',
+                    desc: 'Hyresmaskiner med tekniska data samt kunder, anläggningar och kontakter hämtas automatiskt var 30:e minut.',
                   },
                   {
-                    name: 'Visma, GPS & andra system',
-                    badge: 'På begäran',
-                    badgeClass: 'bg-slate-100 text-slate-600 border border-slate-200',
-                    desc: 'Vi anpassar integrationer efter dina önskemål — bokföring, GPS-tracking, SMS-notiser eller något helt annat.',
+                    name: 'Visma',
+                    href: null,
+                    badge: 'Planerad',
+                    badgeClass: 'bg-amber-50 text-amber-700 border border-amber-100',
+                    desc: 'Finns på vår roadmap men är inte tillgänglig ännu.',
                   },
-                ].map(({ name, badge, badgeClass, desc }, i) => (
+                  {
+                    name: 'Andra system',
+                    href: null,
+                    badge: 'På förfrågan',
+                    badgeClass: 'bg-slate-100 text-slate-600 border border-slate-200',
+                    desc: 'Behöver ni koppla FleetOS till något annat, till exempel ett GPS-system? Berätta vad ni behöver så bedömer vi om det går att anpassa.',
+                  },
+                ].map(({ name, href, badge, badgeClass, desc }, i) => (
                   <AnimateIn key={name} delay={i * 80} className="flex items-start gap-4">
                     <div className="w-0.5 self-stretch bg-slate-200 rounded-full shrink-0" />
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-[14px] font-bold text-slate-900">{name}</span>
+                        {href
+                          ? <Link href={href} className="text-[14px] font-bold text-slate-900 hover:text-blue-700">{name}-integration</Link>
+                          : <span className="text-[14px] font-bold text-slate-900">{name}</span>}
                         <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${badgeClass}`}>{badge}</span>
                       </div>
                       <p className="text-[13px] text-slate-500 leading-relaxed">{desc}</p>
@@ -690,6 +767,9 @@ export default function LandingPage() {
                   </AnimateIn>
                 ))}
               </div>
+              <Link href="/integrationer" className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-blue-600 hover:text-blue-700">
+                Läs mer om integrationerna <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </AnimateIn>
 
           </div>
@@ -701,16 +781,16 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <AnimateIn className="text-center mb-20">
             <p className="text-[12px] font-semibold text-blue-600 uppercase tracking-widest mb-3">Hur det fungerar</p>
-            <h2 className="text-2xl sm:text-[40px] font-bold text-slate-900 tracking-tight mb-4">Från signup till full drift på en dag</h2>
-            <p className="text-[16px] text-slate-500 max-w-lg mx-auto">Fyra steg och du har kontroll över hela flottan.</p>
+            <h2 className="text-2xl sm:text-[40px] font-bold text-slate-900 tracking-tight mb-4">Så kommer ni igång</h2>
+            <p className="text-[16px] text-slate-500 max-w-lg mx-auto">Fyra steg från första genomgång till full koll på flottan.</p>
           </AnimateIn>
 
           <div className="relative">
             <div className="absolute top-10 left-[calc(12.5%+20px)] right-[calc(12.5%+20px)] h-px bg-gradient-to-r from-blue-200 via-blue-400 to-blue-200 hidden md:block" />
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
               {[
-                { step: 1, title: 'Skapa konto', desc: 'Registrera ditt företag och bjud in teammedlemmar. Klar på 2 minuter.', icon: Users },
-                { step: 2, title: 'Lägg upp flottan', desc: 'Fotografera typskylten så fyller AI i uppgifterna automatiskt — eller importera direkt från ert befintliga system.', icon: Truck },
+                { step: 1, title: 'Boka demo', desc: 'Vi går igenom era behov, sätter upp kontot och ni bjuder in kollegorna.', icon: Users },
+                { step: 2, title: 'Lägg upp flottan', desc: 'Fotografera typskylten så fyller AI i uppgifterna, eller hämta maskinerna från Serviceprotokoll.', icon: Truck },
                 { step: 3, title: 'Skapa order', desc: 'Välj kund, maskin och prismall. Systemet beräknar pris och genererar avtal.', icon: FileText },
                 { step: 4, title: 'Följ & analysera', desc: 'Realtidsdashboard med beläggning, försenade returer och lönsamhet.', icon: BarChart3 },
               ].map(({ step, title, desc, icon: Icon }, i) => (
@@ -758,9 +838,9 @@ export default function LandingPage() {
               Kom igång med FleetOS
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <a href="mailto:david@fleetos.se,elias@fleetos.se" className="flex items-center gap-2 px-7 py-4 bg-white/[0.06] hover:bg-white/[0.1] active:scale-[0.97] text-white font-medium rounded-xl border border-white/10 transition text-[15px]">
+            <Link href="/kontakt" className="flex items-center gap-2 px-7 py-4 bg-white/[0.06] hover:bg-white/[0.1] active:scale-[0.97] text-white font-medium rounded-xl border border-white/10 transition text-[15px]">
               Kontakta oss
-            </a>
+            </Link>
           </div>
           <p className="text-[12px] text-slate-600 mt-6">Ingen bindningstid · AI-drivet · Full kontroll på intäkterna</p>
         </AnimateIn>

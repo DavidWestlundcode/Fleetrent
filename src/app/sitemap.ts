@@ -1,122 +1,55 @@
 import type { MetadataRoute } from 'next';
+import { absoluteUrl } from '@/lib/seo';
+import { CUSTOMER_CASES } from '@/lib/customer-cases';
+import { createPublicClient } from '@/lib/supabase/public';
 
-const BASE_URL = 'https://fleetos.se';
+// Only public, indexable, canonical URLs that return 200. `lastModified` is the date the
+// page's content last changed in a meaningful way — update it by hand when you edit a page,
+// never `new Date()` (a lastmod that changes on every build is ignored by Google).
+// Excluded on purpose: /login and /demo (noindex), app routes (behind auth).
+const PAGES: { path: string; lastModified: string }[] = [
+  { path: '/', lastModified: '2026-10-07' },
+  { path: '/funktioner', lastModified: '2026-10-07' },
+  { path: '/uthyrning/truckar', lastModified: '2026-10-07' },
+  { path: '/uthyrning/byggmaskiner', lastModified: '2026-10-07' },
+  { path: '/uthyrning/liftar', lastModified: '2026-10-07' },
+  { path: '/integrationer', lastModified: '2026-10-07' },
+  { path: '/integrationer/fortnox', lastModified: '2026-10-07' },
+  { path: '/integrationer/serviceprotokoll', lastModified: '2026-10-07' },
+  { path: '/priser', lastModified: '2026-09-18' },
+  { path: '/kunder', lastModified: '2026-10-07' },
+  { path: '/kom-igang', lastModified: '2026-09-01' },
+  { path: '/om-oss', lastModified: '2026-10-07' },
+  { path: '/kontakt', lastModified: '2026-10-07' },
+  { path: '/sakerhet', lastModified: '2026-09-08' },
+  { path: '/handelser', lastModified: '2026-09-12' },
+  { path: '/changelog', lastModified: '2026-05-20' },
+  { path: '/roadmap', lastModified: '2026-10-07' },
+  { path: '/press', lastModified: '2026-08-15' },
+  { path: '/karriar', lastModified: '2026-08-15' },
+  { path: '/villkor', lastModified: '2026-09-15' },
+  { path: '/integritetspolicy', lastModified: '2026-09-08' },
+  { path: '/gdpr', lastModified: '2026-09-08' },
+];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export const revalidate = 3600;
+
+async function publishedEvents(): Promise<{ path: string; lastModified: string }[]> {
+  try {
+    const { data } = await createPublicClient()
+      .from('landing_events')
+      .select('id, event_date')
+      .eq('is_published', true);
+    return (data ?? []).map((e) => ({ path: `/handelser/${e.id}`, lastModified: e.event_date as string }));
+  } catch {
+    return [];
+  }
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
-    {
-      url: BASE_URL,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 1,
-    },
-    {
-      url: `${BASE_URL}/funktioner`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.9,
-    },
-    {
-      url: `${BASE_URL}/priser`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.9,
-    },
-    {
-      url: `${BASE_URL}/kom-igang`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.9,
-    },
-    {
-      url: `${BASE_URL}/uthyrning/truckar`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${BASE_URL}/uthyrning/byggmaskiner`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${BASE_URL}/uthyrning/liftar`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${BASE_URL}/demo`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${BASE_URL}/om-oss`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-    {
-      url: `${BASE_URL}/kontakt`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-    {
-      url: `${BASE_URL}/sakerhet`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.4,
-    },
-    {
-      url: `${BASE_URL}/changelog`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.4,
-    },
-    {
-      url: `${BASE_URL}/roadmap`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.3,
-    },
-    {
-      url: `${BASE_URL}/press`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.3,
-    },
-    {
-      url: `${BASE_URL}/karriar`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.3,
-    },
-    {
-      url: `${BASE_URL}/villkor`,
-      lastModified: new Date(),
-      changeFrequency: 'yearly',
-      priority: 0.2,
-    },
-    {
-      url: `${BASE_URL}/integritetspolicy`,
-      lastModified: new Date(),
-      changeFrequency: 'yearly',
-      priority: 0.2,
-    },
-    {
-      url: `${BASE_URL}/gdpr`,
-      lastModified: new Date(),
-      changeFrequency: 'yearly',
-      priority: 0.2,
-    },
-    {
-      url: `${BASE_URL}/login`,
-      lastModified: new Date(),
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
-  ];
+    ...PAGES,
+    ...CUSTOMER_CASES.map((c) => ({ path: `/kunder/${c.slug}`, lastModified: c.lastModified })),
+    ...(await publishedEvents()),
+  ].map(({ path, lastModified }) => ({ url: absoluteUrl(path), lastModified }));
 }

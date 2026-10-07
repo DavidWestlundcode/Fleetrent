@@ -1,18 +1,14 @@
 ﻿import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
 import PublicLayout from '@/components/layout/PublicLayout';
 
 export const revalidate = 86400;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
+  path: '/integritetspolicy',
   title: 'Integritetspolicy',
   description: 'FleetOS integritetspolicy: hur vi behandlar personuppgifter, dina rättigheter och hur du kontaktar oss om din data.',
-  alternates: { canonical: 'https://fleetos.se/integritetspolicy' },
-  openGraph: {
-    title: 'Integritetspolicy – FleetOS',
-    description: 'Hur FleetOS behandlar personuppgifter och dina rättigheter enligt GDPR.',
-    url: 'https://fleetos.se/integritetspolicy',
-  },
-};
+});
 
 export default function IntegritetspolicyPage() {
   return (

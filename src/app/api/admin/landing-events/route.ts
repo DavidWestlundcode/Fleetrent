@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logAuditEvent } from '@/lib/audit-log';
+import { revalidateLandingEvents } from '@/lib/supabase/public';
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -44,5 +45,6 @@ export async function POST(req: NextRequest) {
     metadata: { title, category, event_date, is_published },
   });
 
+  revalidateLandingEvents();
   return NextResponse.json({ event: data });
 }

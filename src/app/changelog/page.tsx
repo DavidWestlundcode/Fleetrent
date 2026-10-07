@@ -1,4 +1,12 @@
-﻿import PublicLayout from '@/components/layout/PublicLayout';
+import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
+import PublicLayout from '@/components/layout/PublicLayout';
+
+export const metadata: Metadata = pageMetadata({
+  path: '/changelog',
+  title: 'Changelog – nyheter i FleetOS',
+  description: 'Nya funktioner och förbättringar i FleetOS, uthyrningssystemet för maskiner, truckar och liftar, version för version.',
+});
 
 const entries = [
   {

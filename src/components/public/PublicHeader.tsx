@@ -8,7 +8,7 @@ import CustomersNavDropdown from '@/components/public/CustomersNavDropdown';
 const NAV_ITEMS = [
   { label: 'Funktioner', href: '/funktioner' },
   { label: 'Hur det fungerar', href: '/#how-it-works' },
-  { label: 'Integrationer', href: '/#integrations' },
+  { label: 'Integrationer', href: '/integrationer' },
   { label: 'Priser', href: '/priser' },
   { label: 'Kunder', href: '/kunder' },
 ];
@@ -20,7 +20,7 @@ export default function PublicHeader() {
         <div className="flex items-center gap-2">
           <PublicMobileNav items={NAV_ITEMS} />
           <Link href="/" className="flex items-center gap-2">
-            <Logo size={28} />
+            <Logo size={28} priority />
             <span className="font-bold text-slate-900 text-[15px] tracking-tight">FleetOS</span>
           </Link>
         </div>

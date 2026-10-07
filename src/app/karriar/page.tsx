@@ -1,4 +1,12 @@
-﻿import PublicLayout from '@/components/layout/PublicLayout';
+import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo';
+import PublicLayout from '@/components/layout/PublicLayout';
+
+export const metadata: Metadata = pageMetadata({
+  path: '/karriar',
+  title: 'Karriär',
+  description: 'Jobba med FleetOS. Vi har inga öppna tjänster just nu men tar gärna emot spontanansökningar från utvecklare, designers och säljare.',
+});
 
 export const revalidate = 86400;
 
