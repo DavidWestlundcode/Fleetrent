@@ -491,7 +491,6 @@ async function fetchOrgEntities(orgId: string) {
     serviceRecords: (serviceRes.data ?? []).map((r) => fromDbServiceRecord(r as DbRow)),
   };
 }
-let _refreshing = false;
 
 // Idempotent apply helpers for realtime echoes — every store write is
 // optimistic-first with a client-generated id, so the acting user's own
@@ -526,6 +525,7 @@ interface AppStore {
   maxUsers: number;
   loading: boolean;
   initialized: boolean;
+  refreshing: boolean;
 
   initialize: () => Promise<void>;
   refreshData: () => Promise<void>;
@@ -629,6 +629,7 @@ const EMPTY_STATE = {
   maxUsers: 5,
   loading: false,
   initialized: false,
+  refreshing: false,
 };
 
 // ---- STORE ----
@@ -727,16 +728,15 @@ export const useStore = create<AppStore>()((set, get) => ({
   // indefinitely with no other way to notice. Called on every pathname change (see
   // AppInitializer) so switching e.g. dashboard → orders always shows the latest.
   refreshData: async () => {
-    const { organizationId, initialized } = get();
-    if (!organizationId || !initialized || _refreshing) return;
-    _refreshing = true;
+    const { organizationId, initialized, refreshing } = get();
+    if (!organizationId || !initialized || refreshing) return;
+    set({ refreshing: true });
     try {
       const entities = await fetchOrgEntities(organizationId);
-      set(entities);
+      set({ ...entities, refreshing: false });
     } catch (e) {
       console.error('refreshData failed:', e);
-    } finally {
-      _refreshing = false;
+      set({ refreshing: false });
     }
   },
 
