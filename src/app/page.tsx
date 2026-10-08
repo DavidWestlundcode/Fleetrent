@@ -64,7 +64,14 @@ const jsonLd = [
  * - No em dashes, no eyebrow labels, no decorative glows or gradients.
  */
 
-const SCREEN = { width: 2880, height: 1740 };
+// Captured from /demo at 3x pixel density with a narrower viewport than a full desktop, so
+// the UI stays legible when it is scaled down into the landing page frames. Order and
+// statistik are cropped to the content area (no app sidebar) for the smaller bento cards.
+const SCREENS: Record<string, { width: number; height: number }> = {
+  '/screens/dashboard-v2.png': { width: 3840, height: 2400 },
+  '/screens/order-v2.png': { width: 3024, height: 2280 },
+  '/screens/statistik-v2.png': { width: 2904, height: 2340 },
+};
 
 /** Nested "double bezel" frame for product screenshots. */
 function Screenshot({
@@ -78,10 +85,11 @@ function Screenshot({
         <Image
           src={src}
           alt={alt}
-          width={SCREEN.width}
-          height={SCREEN.height}
+          width={SCREENS[src].width}
+          height={SCREENS[src].height}
           sizes={sizes}
           priority={priority}
+          quality={90}
           className={`w-full h-full object-cover object-left-top ${imgClassName}`}
         />
       </div>
@@ -221,7 +229,7 @@ export default function LandingPage() {
             <div className="relative lg:-mr-40 xl:-mr-56">
               <div aria-hidden="true" className="dot-field absolute -inset-x-16 -inset-y-20 -z-10" />
               <Screenshot
-                src="/screens/dashboard.png"
+                src="/screens/dashboard-v2.png"
                 alt="FleetOS dashboard med flottans status, intäkter per månad och varningar för försenade returer"
                 priority
                 sizes="(min-width: 1024px) 860px, 100vw"
@@ -334,7 +342,7 @@ export default function LandingPage() {
                     Välj kund, anläggning och maskin. Priset räknas fram från prismallen för dag, vecka eller månad, och maskinen kan reserveras i förväg.
                   </p>
                   <Screenshot
-                    src="/screens/order.png"
+                    src="/screens/order-v2.png"
                     alt="Lista över uthyrningsorder med kund, maskin, period, belopp och status"
                     sizes="(min-width: 1024px) 620px, 100vw"
                     className="mt-8 aspect-[16/10]"
@@ -414,7 +422,7 @@ export default function LandingPage() {
                     <CardArrow className="mt-8">Se alla funktioner</CardArrow>
                   </div>
                   <Screenshot
-                    src="/screens/statistik.png"
+                    src="/screens/statistik-v2.png"
                     alt="Statistik med intäkter per månad, intäkt per kategori och lönsamhet per maskin"
                     sizes="(min-width: 1024px) 700px, 100vw"
                     className="mt-8 lg:mt-0 aspect-[16/9]"

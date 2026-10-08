@@ -25,6 +25,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  images: {
+    // 90 is used for product screenshots on the landing page (text needs it); 75 is the default.
+    qualities: [75, 90],
+  },
   async headers() {
     return [
       {
