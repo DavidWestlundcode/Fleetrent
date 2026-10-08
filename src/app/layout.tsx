@@ -2,6 +2,7 @@
 import Script from 'next/script';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { ChunkErrorReload } from '@/components/ChunkErrorReload';
+import { MetaPixel } from '@/components/MetaPixel';
 import { SITE_URL } from '@/lib/seo';
 import './globals.css';
 
@@ -65,6 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             gtag('config', '${GOOGLE_ADS_ID}');
           `}
         </Script>
+        <MetaPixel />
         {children}
       </body>
     </html>
