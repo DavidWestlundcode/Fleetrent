@@ -162,8 +162,9 @@ export async function POST(request: NextRequest) {
       );
 
       if (breakdown.months > 0) {
+        const range = breakdown.monthsRange ?? `${period.startDate} - ${period.endDate}`;
         orderRows.push({
-          Description: `${machineParts} - ${period.startDate} - ${period.endDate} (${breakdown.months} mån)`,
+          Description: `${machineParts} - ${range} (${breakdown.months} mån)`,
           DeliveredQuantity: breakdown.months,
           Price: orderRow.monthly_price as number,
           Unit: 'mån',
@@ -171,8 +172,9 @@ export async function POST(request: NextRequest) {
         });
       }
       if (breakdown.weeks > 0) {
+        const range = breakdown.weeksRange ?? `${period.startDate} - ${period.endDate}`;
         orderRows.push({
-          Description: `${machineParts} - ${period.startDate} - ${period.endDate} (${breakdown.weeks} v)`,
+          Description: `${machineParts} - ${range} (${breakdown.weeks} v)`,
           DeliveredQuantity: breakdown.weeks,
           Price: orderRow.weekly_price as number,
           Unit: 'vecka',
@@ -186,10 +188,11 @@ export async function POST(request: NextRequest) {
       // so the order is never sent to Fortnox with zero rows.
       const dailyPrice = orderRow.daily_price as number;
       if ((breakdown.days > 0 && dailyPrice > 0) || orderRows.length === 0) {
+        const range = breakdown.daysRange ?? `${period.startDate} - ${period.endDate}`;
         orderRows.push({
           Description: orderRows.length === 0
             ? `Hyra - ${machineParts} - ${period.startDate} t.o.m. ${period.endDate}`
-            : `${machineParts} - ${period.startDate} - ${period.endDate} (${breakdown.days} dagar)`,
+            : `${machineParts} - ${range} (${breakdown.days} dagar)`,
           DeliveredQuantity: breakdown.days > 0 ? breakdown.days : 1,
           Price: dailyPrice,
           Unit: 'dag',

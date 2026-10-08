@@ -92,6 +92,7 @@ export function calcRentalBreakdown(
 ) {
   let months = 0;
   let cursor = startDate;
+  const monthsStart = startDate;
 
   if (monthly > 0) {
     while (true) {
@@ -103,7 +104,11 @@ export function calcRentalBreakdown(
       cursor = nextCursor;
     }
   }
+  // Last day actually covered by the month tier, for labeling that row's own date range below —
+  // distinct from `cursor`, which is already the (exclusive) start of the next tier.
+  const monthsEnd = isoDate(new Date(new Date(cursor).getTime() - 86400000));
 
+  const weeksStart = cursor;
   let weeks = 0;
   if (weekly > 0 && cursor <= endDate) {
     weeks = Math.floor(daysBetween(cursor, endDate) / 7);
@@ -111,7 +116,9 @@ export function calcRentalBreakdown(
       cursor = isoDate(new Date(new Date(cursor).getTime() + weeks * 7 * 86400000));
     }
   }
+  const weeksEnd = isoDate(new Date(new Date(cursor).getTime() - 86400000));
 
+  const daysStart = cursor;
   const days = cursor <= endDate
     ? (chargeWeekends ? daysBetween(cursor, endDate) : countBusinessDays(cursor, endDate))
     : 0;
@@ -121,6 +128,11 @@ export function calcRentalBreakdown(
     weeks,
     days,
     total: months * monthly + weeks * weekly + days * daily,
+    // Each tier's OWN date range — a weekly-priced tier and a leftover-days tier never cover the
+    // same days, so an invoice line for each should say so, not repeat the whole period's range.
+    monthsRange: months > 0 ? `${monthsStart} - ${monthsEnd}` : null,
+    weeksRange: weeks > 0 ? `${weeksStart} - ${weeksEnd}` : null,
+    daysRange: days > 0 ? `${daysStart} - ${endDate}` : null,
   };
 }
 

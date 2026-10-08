@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
 
     const breakdown = hasRemainingDays
       ? calcRentalBreakdown(startDate, endDate, chargeWeekends, orderRow.daily_price as number, orderRow.weekly_price as number, orderRow.monthly_price as number)
-      : { months: 0, weeks: 0, days: 0 };
+      : { months: 0, weeks: 0, days: 0, total: 0, monthsRange: null, weeksRange: null, daysRange: null };
     const monthlyDiscount = (orderRow.monthly_discount as number) ?? 0;
     const weeklyDiscount = (orderRow.weekly_discount as number) ?? 0;
     const dailyDiscount = (orderRow.rental_discount as number) ?? 0;
@@ -243,9 +243,10 @@ export async function POST(request: NextRequest) {
     // the rental itself — skip these rows entirely rather than falling back to a 0-day line.
     if (hasRemainingDays) {
       if (breakdown.months > 0) {
+        const range = breakdown.monthsRange ?? periodRange;
         orderRows.push({
           ...(rentalArt?.article_number ? { ArticleNumber: rentalArt.article_number } : {}),
-          Description: machineParts ? `Hyra – ${machineParts} – ${breakdown.months} mån (${periodRange})` : `Hyra – ${breakdown.months} mån (${periodRange})`,
+          Description: machineParts ? `Hyra – ${machineParts} – ${breakdown.months} mån (${range})` : `Hyra – ${breakdown.months} mån (${range})`,
           DeliveredQuantity: breakdown.months,
           Price: (orderRow.monthly_price as number) ?? 0,
           Unit: 'mån',
@@ -253,9 +254,10 @@ export async function POST(request: NextRequest) {
         });
       }
       if (breakdown.weeks > 0) {
+        const range = breakdown.weeksRange ?? periodRange;
         orderRows.push({
           ...(rentalArt?.article_number ? { ArticleNumber: rentalArt.article_number } : {}),
-          Description: machineParts ? `Hyra – ${machineParts} – ${breakdown.weeks} v (${periodRange})` : `Hyra – ${breakdown.weeks} v (${periodRange})`,
+          Description: machineParts ? `Hyra – ${machineParts} – ${breakdown.weeks} v (${range})` : `Hyra – ${breakdown.weeks} v (${range})`,
           DeliveredQuantity: breakdown.weeks,
           Price: (orderRow.weekly_price as number) ?? 0,
           Unit: 'vecka',
@@ -268,9 +270,10 @@ export async function POST(request: NextRequest) {
       const dailyPrice = (orderRow.daily_price as number) ?? 0;
       if ((breakdown.days > 0 && dailyPrice > 0) || orderRows.length === 0) {
         const dayQty = breakdown.days > 0 ? breakdown.days : days;
+        const range = breakdown.daysRange ?? periodRange;
         orderRows.push({
           ...(rentalArt?.article_number ? { ArticleNumber: rentalArt.article_number } : {}),
-          Description: machineParts ? `Hyra – ${machineParts} – ${dayQty} dagar (${periodRange})` : `Hyra – ${dayQty} dagar (${periodRange})`,
+          Description: machineParts ? `Hyra – ${machineParts} – ${dayQty} dagar (${range})` : `Hyra – ${dayQty} dagar (${range})`,
           DeliveredQuantity: dayQty,
           Price: dailyPrice,
           Unit: 'dag',
