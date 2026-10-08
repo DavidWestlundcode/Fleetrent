@@ -376,13 +376,13 @@ export default function LandingPage() {
                 <Link href="/funktioner" className={`${cardLink} bg-blue-50 ring-1 ring-blue-100 hover:ring-blue-200 p-7 sm:p-9`}>
                   <h3 className="text-[20px] font-semibold text-slate-950 tracking-tight">Hyresavtal med e-signering</h3>
                   <p className="mt-3 text-[15px] text-slate-600 leading-relaxed">
-                    Avtalet skapas från ordern och skickas till kunden för digital signering via e-post.
+                    Avtalet skapas från ordern och skickas till kunden via e-post. Kunden signerar med BankID.
                   </p>
                   <p className="mt-3 text-[15px] text-slate-600 leading-relaxed">
                     Det går till beställarens e-post, eller kundens om ingen beställare är angiven. Kunden behöver inget konto i FleetOS. En rörlig kostnad tillkommer per skickat avtal.
                   </p>
                   <ul className="mt-auto pt-10 space-y-3.5">
-                    {['Skapas direkt från ordern', 'Signeringsstatus följs upp i FleetOS', 'Det signerade avtalet sparas på ordern'].map((t) => (
+                    {['Skapas direkt från ordern', 'Kunden signerar med BankID', 'Signeringsstatus följs upp i FleetOS', 'Det signerade avtalet sparas på ordern'].map((t) => (
                       <li key={t} className="flex gap-3 text-[15px] text-slate-800 leading-snug">
                         <Check className="w-4 h-4 mt-0.5 shrink-0 text-blue-600" strokeWidth={2.25} />
                         {t}
