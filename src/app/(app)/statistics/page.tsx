@@ -1,5 +1,5 @@
 'use client';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -8,8 +8,10 @@ import {
 import { TrendingUp, TrendingDown, Truck, DollarSign, BarChart2, Activity, ArrowRight } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { useStore } from '@/store';
-import { formatCurrency, calculateROI, calculateRecoveryPercent, getMonthlyRevenueData, getRealizedRevenueByYear, getMachineStats, getCustomerTotalSpent } from '@/lib/utils';
+import { formatCurrency, calculateROI, calculateRecoveryPercent, getMonthlyRevenueData, getRealizedRevenueByYear, getMachineStats, getCustomerTotalSpent, getMachineCost } from '@/lib/utils';
 import { CATEGORY_LABELS } from '@/lib/types';
+
+const ROI_CHART_SIZE = 10;
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#F97316', '#06B6D4', '#84CC16'];
 
@@ -23,11 +25,18 @@ export default function StatisticsPage() {
   }, [machines, orders]);
   const revenueOf = (machineId: string) => machineStatsMap.get(machineId)?.totalRevenue ?? 0;
 
+  // Same cost model as the machine page (getMachineCost): purchase + service + monthly costs
+  // incl. leasing for the months since purchase. Previously leasing was missing here and
+  // monthly costs were always counted for exactly 12 months.
+  const costMap = useMemo(() => new Map(machines.map((m) => [m.id, getMachineCost(m)])), [machines]);
+  const costOf = (machineId: string) => costMap.get(machineId)?.total ?? 0;
+  const [roiView, setRoiView] = useState<'best' | 'worst'>('best');
+
   const stats = useMemo(() => {
     // Realized (fakturerat/avslutat) revenue only — computed live from invoicePeriods, same source
     // "Intäkt per kategori" and "Maskinlönsamhet" below use, so they always agree with each other.
     const totalRevenue = machines.reduce((s, m) => s + revenueOf(m.id), 0);
-    const totalMachineCosts = machines.reduce((s, m) => s + m.purchasePrice + m.totalServiceCost + (m.financingCost + m.insuranceCost + m.otherCosts) * 12, 0);
+    const totalMachineCosts = machines.reduce((s, m) => s + costOf(m.id), 0);
     const netResult = totalRevenue - totalMachineCosts;
     const avgOccupancy = machines.length > 0
       ? Math.round((machines.filter((m) => m.status === 'uthyrd' || m.status === 'reserverad').length / machines.length) * 100) : 0;
@@ -43,7 +52,7 @@ export default function StatisticsPage() {
       : null;
 
     return { totalRevenue, totalMachineCosts, netResult, avgOccupancy, totalRentals, revenueTrendPct };
-  }, [machines, orders, machineStatsMap]);
+  }, [machines, orders, machineStatsMap, costMap]);
 
   const revenueByMonth = useMemo(() => getMonthlyRevenueData(orders), [orders]);
 
@@ -70,19 +79,23 @@ export default function StatisticsPage() {
     [machines, machineStatsMap]
   );
 
-  const machineROIData = useMemo(() =>
-    machines.map((m) => {
-      const totalCosts = m.purchasePrice + m.totalServiceCost + (m.financingCost + m.insuranceCost + m.otherCosts) * 12;
-      const revenue = revenueOf(m.id);
-      return {
-        name: m.name.length > 20 ? m.name.substring(0, 18) + '...' : m.name,
-        intäkt: revenue,
-        kostnad: totalCosts,
-        netto: revenue - totalCosts,
-      };
-    }).sort((a, b) => b.netto - a.netto),
-    [machines, machineStatsMap]
+  // Only machines with any revenue or cost; the rest would just be empty slots in the chart.
+  const machineROIAll = useMemo(() =>
+    machines
+      .map((m) => {
+        const revenue = revenueOf(m.id);
+        const cost = costOf(m.id);
+        return { id: m.id, name: m.name, intäkt: revenue, kostnad: cost, netto: revenue - cost };
+      })
+      .filter((d) => d.intäkt > 0 || d.kostnad > 0)
+      .sort((a, b) => b.netto - a.netto),
+    [machines, machineStatsMap, costMap]
   );
+  const machineROIData = useMemo(() => {
+    const list = roiView === 'best' ? machineROIAll : [...machineROIAll].reverse();
+    return list.slice(0, ROI_CHART_SIZE).map((d) => ({ ...d, label: d.name.length > 26 ? d.name.slice(0, 24) + '…' : d.name }));
+  }, [machineROIAll, roiView]);
+  const estimatedCostCount = useMemo(() => [...costMap.values()].filter((c) => c.monthsEstimated).length, [costMap]);
 
   const tooltipStyle = {
     borderRadius: 10,
@@ -178,23 +191,58 @@ export default function StatisticsPage() {
           </div>
         </div>
 
-        {/* Machine ROI */}
+        {/* Machine ROI: top/bottom 10 by net result, horizontal so names stay readable */}
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
-          <div className="mb-5">
-            <h2 className="text-[14px] font-semibold text-slate-900">Intäkt vs Kostnad per maskin</h2>
-            <p className="text-[11px] text-slate-400 mt-0.5">Jämförelse av lönsamhet</p>
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-5">
+            <div>
+              <h2 className="text-[14px] font-semibold text-slate-900">Intäkt vs kostnad per maskin</h2>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                {roiView === 'best' ? 'Mest' : 'Minst'} lönsamma efter nettoresultat. Visar {machineROIData.length} av {machineROIAll.length} maskiner med intäkter eller kostnader.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />Intäkt</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-red-500" />Kostnad</span>
+              </div>
+              <div role="group" aria-label="Visa" className="flex p-0.5 bg-slate-100 rounded-lg">
+                {([['best', 'Mest lönsamma'], ['worst', 'Minst lönsamma']] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setRoiView(key)}
+                    aria-pressed={roiView === key}
+                    className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors ${roiView === key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={machineROIData} margin={{ top: 0, right: 0, left: -15, bottom: 55 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94A3B8' }} angle={-35} textAnchor="end" axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={(v) => formatCurrency(Number(v))} contentStyle={tooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
-              <Bar dataKey="intäkt" name="Intäkt" fill="#10B981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="kostnad" name="Kostnad" fill="#EF4444" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {machineROIData.length === 0 ? (
+            <p className="text-[13px] text-slate-400 py-10 text-center">Inga maskiner med intäkter eller kostnader ännu.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={machineROIData.length * 40 + 30}>
+              <BarChart data={machineROIData} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }} barGap={2} barCategoryGap="28%">
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                <YAxis type="category" dataKey="label" width={170} tick={{ fontSize: 11, fill: '#475569' }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  cursor={{ fill: '#F8FAFC' }}
+                  labelFormatter={(_, p) => (p?.[0]?.payload as { name?: string } | undefined)?.name ?? ''}
+                  formatter={(v, n) => [formatCurrency(Number(v)), n]}
+                />
+                <Bar dataKey="intäkt" name="Intäkt" fill="#10B981" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="kostnad" name="Kostnad" fill="#EF4444" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+          <p className="text-[11px] text-slate-400 mt-3">
+            Kostnad = inköpspris + service + fasta månadskostnader (leasing, finansiering, försäkring, övrigt) sedan inköpsdatum.
+            {estimatedCostCount > 0 && ` ${estimatedCostCount} maskiner saknar inköpsdatum, där räknas 12 månader.`}
+          </p>
         </div>
 
         {/* Revenue by Customer */}
@@ -232,7 +280,7 @@ export default function StatisticsPage() {
             <tbody className="divide-y divide-slate-50">
               {topMachines.map((machine, i) => {
                 const machineStats = machineStatsMap.get(machine.id) ?? { totalRevenue: 0, totalRentalDays: 0, totalRentals: 0 };
-                const totalCosts = machine.purchasePrice + machine.totalServiceCost + (machine.financingCost + machine.insuranceCost + machine.otherCosts) * 12;
+                const totalCosts = costOf(machine.id);
                 const roi = calculateROI(machineStats.totalRevenue, totalCosts);
                 const recovery = calculateRecoveryPercent(machineStats.totalRevenue, machine.purchasePrice);
                 return (

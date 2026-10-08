@@ -1,5 +1,5 @@
 import { type ClassValue, clsx } from 'clsx';
-import type { Order } from './types';
+import type { Machine, Order } from './types';
 
 export function cn(...inputs: ClassValue[]) {
   return inputs.filter(Boolean).join(' ');
@@ -269,6 +269,33 @@ export function calculateOccupancyRate(totalRentalDays: number, machineAge: numb
 export function calculateROI(totalRevenue: number, totalCosts: number): number {
   if (totalCosts === 0) return 0;
   return Math.round(((totalRevenue - totalCosts) / totalCosts) * 100);
+}
+
+// Fallback when a machine has no (valid) purchase date, e.g. machines imported from
+// Serviceprotokoll. Matches the 12 months the cost calculation always used before.
+export const DEFAULT_COST_MONTHS = 12;
+
+/**
+ * Total cost of owning a machine, comparable to its lifetime revenue: purchase price plus
+ * service records, plus the monthly costs (leasing, financing, insurance, other) for every
+ * month since the purchase date. Shared by Statistik and the machine page so they agree.
+ */
+export function getMachineCost(
+  machine: Pick<Machine, 'purchasePrice' | 'purchaseDate' | 'leasingCost' | 'financingCost' | 'insuranceCost' | 'otherCosts' | 'totalServiceCost'>,
+  now: Date = new Date(),
+): { total: number; monthlyCost: number; months: number; monthsEstimated: boolean } {
+  const monthlyCost = machine.leasingCost + machine.financingCost + machine.insuranceCost + machine.otherCosts;
+  const purchased = machine.purchaseDate ? new Date(machine.purchaseDate) : null;
+  const validDate = purchased && !Number.isNaN(purchased.getTime()) && purchased <= now;
+  const months = validDate
+    ? Math.max(1, Math.ceil((now.getTime() - purchased.getTime()) / (1000 * 60 * 60 * 24 * 30.44)))
+    : DEFAULT_COST_MONTHS;
+  return {
+    total: machine.purchasePrice + machine.totalServiceCost + monthlyCost * months,
+    monthlyCost,
+    months,
+    monthsEstimated: !validDate,
+  };
 }
 
 export function calculateRecoveryPercent(totalRevenue: number, purchasePrice: number): number {

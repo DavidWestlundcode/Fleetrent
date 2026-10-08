@@ -15,7 +15,7 @@ import { OrderStatusBadge } from '@/components/ui/StatusBadge';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useStore } from '@/store';
 import {
-  formatCurrency, formatDate, calculateRecoveryPercent, calculateROI, getRealizedRevenueEvents, getMachineStats, calcOrderTotal,
+  formatCurrency, formatDate, calculateRecoveryPercent, calculateROI, getRealizedRevenueEvents, getMachineStats, calcOrderTotal, getMachineCost,
 } from '@/lib/utils';
 import { CATEGORY_LABELS, FUEL_LABELS } from '@/lib/types';
 
@@ -138,13 +138,13 @@ export default function MachineDetailPage() {
 
   const machineStats = useMemo(() => getMachineStats(orders, machine.id), [orders, machine.id]);
 
-  const totalCosts = machine.purchasePrice + machine.leasingCost * 12 + machine.financingCost * 12 +
-    machine.insuranceCost * 12 + machine.totalServiceCost + machine.otherCosts * 12;
+  const cost = getMachineCost(machine);
+  const totalCosts = cost.total;
   const netResult = machineStats.totalRevenue - totalCosts;
   const recoveryPercent = calculateRecoveryPercent(machineStats.totalRevenue, machine.purchasePrice);
   const roi = calculateROI(machineStats.totalRevenue, totalCosts);
-  const monthlyCost = (machine.leasingCost + machine.financingCost + machine.insuranceCost + machine.otherCosts);
-  const avgMonthlyRevenue = machineStats.totalRentals > 0 ? machineStats.totalRevenue / 12 : 0;
+  const monthlyCost = cost.monthlyCost;
+  const avgMonthlyRevenue = machineStats.totalRentals > 0 ? machineStats.totalRevenue / cost.months : 0;
 
   return (
     <div className="flex flex-col flex-1 overflow-auto">
@@ -421,6 +421,10 @@ export default function MachineDetailPage() {
                   <span className="text-sm text-slate-500">Totala kostnader</span>
                   <span className="text-sm font-semibold text-red-500">{formatCurrency(totalCosts)}</span>
                 </div>
+                <p className="-mt-1 text-[11px] text-slate-400">
+                  Inköp, service och {cost.months} mån fasta kostnader
+                  {cost.monthsEstimated ? ' (inköpsdatum saknas, 12 mån antaget)' : ' sedan inköp'}
+                </p>
                 <div className="pt-2 border-t border-slate-100 flex justify-between items-center">
                   <span className="text-sm font-medium text-slate-700">Nettoresultat</span>
                   <span className={`text-sm font-bold ${netResult >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
