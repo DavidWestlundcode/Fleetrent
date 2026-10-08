@@ -1,16 +1,15 @@
-/* Fonts are self-hosted via next/font in app/layout.tsx (exposes --font-jakarta and
-   --font-instrument on <html>) — no render-blocking @import from Google Fonts. */
+/* Fonts are self-hosted via next/font in app/layout.tsx (exposes --font-jakarta on <html>) — no render-blocking @import from Google Fonts. */
 @import "tailwindcss";
 
 @theme {
+  /* Easing from emil-design-eng: strong ease-out for UI, iOS-like drawer curve for reveals. */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --color-sidebar: #0F172A;
   --color-sidebar-hover: #1E293B;
   --color-brand: #2563EB;
   --color-brand-dark: #1D4ED8;
   --font-sans: var(--font-jakarta), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  /* Small italic accent used for "trusted by"-style eyebrow labels — deliberately NOT the
-     site-wide sans, to give those labels an editorial feel distinct from body/UI copy. */
-  --font-serif-accent: var(--font-instrument), Georgia, serif;
 }
 
 * {
@@ -71,8 +70,14 @@ body {
 }
 .animate-fade-up { animation: fade-up 0.6s cubic-bezier(0.16,1,0.3,1) both; }
 .animate-fade-up-delayed { animation: fade-up 0.6s cubic-bezier(0.16,1,0.3,1) 80ms both; }
+/* Menus scale from their trigger, never from scale(0) (emil-design-eng). */
+@keyframes menu-in {
+  from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-menu-in { animation: menu-in 180ms var(--ease-out-strong) both; }
 @media (prefers-reduced-motion: reduce) {
-  .animate-fade-up, .animate-fade-up-delayed { animation-name: none; }
+  .animate-fade-up, .animate-fade-up-delayed, .animate-menu-in { animation-name: none; }
 }
 
 @keyframes float {
@@ -150,4 +155,11 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
+}
+
+/* Visible keyboard focus on every link and button (redesign skill: missing focus ring). */
+a:focus-visible, button:focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: 3px;
+  border-radius: 10px;
 }

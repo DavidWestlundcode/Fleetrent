@@ -15,51 +15,42 @@ export default async function LatestEventsSection() {
   if (!events || events.length === 0) return null;
 
   return (
-    <section className="py-16 sm:py-28 px-4 sm:px-6 bg-slate-50 border-t border-slate-200">
-      <div className="max-w-5xl mx-auto">
-        <AnimateIn className="text-center mb-14">
-          <div className="inline-flex items-center gap-2 text-blue-600 text-[12px] font-semibold uppercase tracking-widest mb-3">
-            Senaste händelserna
-          </div>
-          <h2 className="text-2xl sm:text-[40px] font-bold text-slate-900 tracking-tight mb-4">Vad som händer hos FleetOS</h2>
-          <p className="text-[16px] text-slate-500 max-w-xl mx-auto">Nya kunder, funktioner och milstolpar – i realtid.</p>
-        </AnimateIn>
+    <section aria-labelledby="events-heading" className="py-24 sm:py-28 px-4 sm:px-6 bg-slate-50">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+          <h2 id="events-heading" className="text-[28px] sm:text-[34px] font-semibold text-slate-950 tracking-[-0.02em] leading-tight">
+            Senaste nytt från FleetOS
+          </h2>
+          <Link href="/handelser" className="group inline-flex items-center gap-1.5 text-[14px] font-semibold text-slate-900">
+            Alla händelser
+            <ArrowRight className="w-4 h-4 transition-transform duration-200 ease-out-strong group-hover:translate-x-0.5" strokeWidth={1.75} />
+          </Link>
+        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {events.map((event, i) => (
-            <AnimateIn key={event.id} delay={i * 80} className="h-full">
+            <AnimateIn key={event.id} delay={i * 60} className="h-full">
               <Link
                 href={`/handelser/${event.id}`}
-                className="block bg-white border border-slate-200 hover:border-blue-200 rounded-2xl overflow-hidden h-full flex flex-col transition-colors"
+                className="group flex flex-col h-full rounded-2xl bg-white ring-1 ring-slate-900/[0.06] overflow-hidden transition-shadow duration-200 hover:shadow-[0_12px_32px_-16px_rgba(15,23,42,0.25)]"
               >
                 {event.image_url && (
-                  // eslint-disable-next-line @next/next/no-img-element -- external Supabase storage URL
-                  <img src={event.image_url} alt={event.title} loading="lazy" decoding="async" width={640} height={360} className="w-full aspect-video object-cover" />
+                  <div className="aspect-[16/9] overflow-hidden bg-slate-100">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- external Supabase storage URL */}
+                    <img src={event.image_url} alt={event.title} loading="lazy" decoding="async" width={640} height={360} className="w-full h-full object-cover transition-transform duration-500 ease-out-strong group-hover:scale-[1.02]" />
+                  </div>
                 )}
                 <div className="p-6 flex flex-col flex-1">
-                  <div className="flex items-center gap-2 flex-wrap mb-3">
-                    {event.category && (
-                      <span className="text-[11px] bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-semibold">{event.category}</span>
-                    )}
-                    <span className="text-[12px] text-slate-400">
-                      {new Date(event.event_date).toLocaleDateString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </span>
-                  </div>
-                  <h3 className="font-semibold text-slate-900 leading-snug">{event.title}</h3>
+                  <p className="text-[12.5px] text-slate-500 mb-2">
+                    {event.category ? `${event.category}, ` : ''}
+                    {new Date(event.event_date).toLocaleDateString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                  <h3 className="text-[16px] font-semibold text-slate-900 leading-snug text-pretty">{event.title}</h3>
                 </div>
               </Link>
             </AnimateIn>
           ))}
         </div>
-
-        <AnimateIn className="text-center mt-10">
-          <Link
-            href="/handelser"
-            className="inline-flex items-center gap-1.5 text-[14px] font-medium text-blue-600 hover:text-blue-700 transition-colors"
-          >
-            Visa alla händelser <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </AnimateIn>
       </div>
     </section>
   );

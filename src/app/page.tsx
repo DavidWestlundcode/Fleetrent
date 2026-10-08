@@ -1,18 +1,11 @@
-﻿import type { Metadata } from 'next';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
-import {
-  Zap, Truck, BarChart3, Wrench, Users, CheckCircle,
-  ArrowRight, TrendingUp, Bell, Search,
-  LayoutDashboard, FileText, ChevronRight,
-  Sparkles, X, Check, FileSignature, Gauge, FileX2,
-} from 'lucide-react';
+import { ArrowRight, Check, Minus } from 'lucide-react';
 import { AnimateIn } from '@/components/ui/AnimateIn';
-import { Logo } from '@/components/ui/Logo';
 import PublicHeader from '@/components/public/PublicHeader';
 import PublicFooter from '@/components/public/PublicFooter';
 import FAQSection from '@/components/public/FAQSection';
-import FeaturesSection from '@/components/public/FeaturesSection';
 import LatestEventsSection from '@/components/public/LatestEventsSection';
 import JsonLd from '@/components/public/JsonLd';
 import { SITE_URL, organizationJsonLd, pageMetadata } from '@/lib/seo';
@@ -61,377 +54,146 @@ const jsonLd = [
   },
 ];
 
-/* ─── Sub-components ─────────────────────────────────────────────── */
-function DashboardMockup() {
+
+/*
+ * Design rules for this page (from the taste/redesign skills in .agents/skills):
+ * - One light theme, cool slate neutrals, FleetOS blue as the only accent.
+ * - Radius scale: containers 20px (rounded-[1.25rem]), inner frames 14px, buttons 12px.
+ * - Product visuals are real screenshots of /demo (example data), never div mockups.
+ * - No em dashes, no eyebrow labels, no decorative glows or gradients.
+ */
+
+const SCREEN = { width: 2880, height: 1740 };
+
+/** Nested "double bezel" frame for product screenshots. */
+function Screenshot({
+  src, alt, priority = false, sizes, className = '', imgClassName = '',
+}: {
+  src: string; alt: string; priority?: boolean; sizes: string; className?: string; imgClassName?: string;
+}) {
   return (
-    <div className="relative bg-[#0B1120] border border-white/[0.08] rounded-2xl overflow-hidden shadow-2xl">
-      {/* Browser chrome */}
-      <div className="flex items-center gap-1.5 px-4 h-10 bg-[#0B1120] border-b border-white/[0.06]">
-        <div className="w-2.5 h-2.5 rounded-full bg-red-400/50" />
-        <div className="w-2.5 h-2.5 rounded-full bg-amber-400/50" />
-        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/50" />
-        <div className="ml-3 flex items-center gap-1.5 bg-white/[0.05] rounded-md px-3 h-6 max-w-[160px] flex-1">
-          <div className="w-2 h-2 rounded-full bg-emerald-500/60 shrink-0" />
-          <div className="h-1.5 bg-white/20 rounded flex-1" />
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 rounded-md border border-emerald-500/20">
-            <div className="w-1 h-1 rounded-full bg-emerald-400" />
-            <span className="text-[8px] font-semibold text-emerald-400">LIVE</span>
-          </div>
-          <Bell className="w-3 h-3 text-white/20" />
-          <div className="w-5 h-5 rounded-full bg-blue-600/50" />
-        </div>
-      </div>
-      <div className="flex">
-        {/* Sidebar */}
-        <div className="w-40 bg-[#060D1A] border-r border-white/[0.05] p-2.5 shrink-0">
-          <div className="flex items-center gap-1.5 px-2 py-2 mb-3">
-            <Logo size={20} />
-            <span className="text-[11px] font-bold text-white">FleetOS</span>
-          </div>
-          {[
-            { icon: LayoutDashboard, label: 'Dashboard', active: true },
-            { icon: Truck, label: 'Maskinflotta', active: false },
-            { icon: FileText, label: 'Order', active: false },
-            { icon: Users, label: 'Kunder', active: false },
-            { icon: Wrench, label: 'Service', active: false },
-            { icon: BarChart3, label: 'Statistik', active: false },
-          ].map(({ icon: Icon, label, active }) => (
-            <div key={label} className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg mb-0.5 relative ${active ? 'bg-white/10' : ''}`}>
-              {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-3 bg-blue-400 rounded-r-full" />}
-              <Icon className={`w-3 h-3 ${active ? 'text-blue-400' : 'text-white/20'}`} />
-              <span className={`text-[10px] font-medium ${active ? 'text-white' : 'text-white/25'}`}>{label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Main content */}
-        <div className="flex-1 p-4 space-y-3 min-w-0">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-[12px] font-semibold text-white">Dashboard</div>
-              <div className="text-[9px] text-white/30 mt-0.5">måndag 12 maj 2025</div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-1 bg-white/[0.05] border border-white/[0.08] rounded-lg px-2 py-1">
-                <Search className="w-2.5 h-2.5 text-white/20" />
-                <div className="w-14 h-1.5 bg-white/10 rounded" />
-              </div>
-              <div className="px-2 py-1 bg-blue-600 rounded-lg text-[9px] text-white font-medium">+ Ny order</div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { label: 'I lager', val: '8', sub: 'av 14 totalt', dot: 'bg-emerald-500', accent: 'bg-emerald-500' },
-              { label: 'Uthyrda', val: '5', sub: '36% beläggning', dot: 'bg-blue-500', accent: 'bg-blue-500' },
-              { label: 'Aktiva order', val: '7', sub: '1 försenad', dot: 'bg-amber-400', accent: 'bg-amber-400' },
-              { label: 'Månadsintäkt', val: '84k', sub: '+12% vs förra', dot: 'bg-violet-500', accent: 'bg-violet-500' },
-            ].map(({ label, val, sub, dot, accent }) => (
-              <div key={label} className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-2.5 overflow-hidden relative">
-                <div className={`absolute top-0 left-0 right-0 h-[2px] ${accent}`} />
-                <div className="text-[9px] text-white/40 uppercase tracking-wider">{label}</div>
-                <div className="text-[20px] font-bold text-white mt-0.5 leading-none">{val}</div>
-                <div className="flex items-center gap-1 mt-1">
-                  <div className={`w-1 h-1 rounded-full ${dot}`} />
-                  <div className="text-[8px] text-white/30">{sub}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-5 gap-2">
-            <div className="col-span-3 bg-white/[0.04] border border-white/[0.06] rounded-xl p-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-[10px] font-semibold text-white/70">Intäkter per månad</div>
-                <div className="text-[8px] text-white/30 bg-white/[0.05] px-2 py-0.5 rounded">12 månader</div>
-              </div>
-              <div className="flex items-end gap-1 h-16">
-                {[30, 50, 40, 70, 55, 80, 65, 90, 60, 85, 70, 95].map((h, i) => (
-                  <div key={i} className={`flex-1 rounded-t-sm ${i === 11 ? 'bg-blue-500' : 'bg-blue-500/30'}`} style={{ height: `${h}%` }} />
-                ))}
-              </div>
-              <div className="flex justify-between mt-1">
-                {['Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'Maj'].map((m) => (
-                  <div key={m} className="flex-1 text-center text-[7px] text-white/20">{m}</div>
-                ))}
-              </div>
-            </div>
-            <div className="col-span-2 bg-white/[0.04] border border-white/[0.06] rounded-xl p-2.5">
-              <div className="text-[10px] font-semibold text-white/70 mb-2">Senaste order</div>
-              {[
-                { nr: 'ORD-241', co: 'Lindström AB', color: 'bg-blue-500' },
-                { nr: 'ORD-240', co: 'Björk & Söner', color: 'bg-emerald-500' },
-                { nr: 'ORD-239', co: 'NordMark', color: 'bg-red-500' },
-                { nr: 'ORD-238', co: 'Svensson HB', color: 'bg-blue-500' },
-              ].map(({ nr, co, color }) => (
-                <div key={nr} className="flex items-center justify-between py-1.5 border-b border-white/[0.04] last:border-0">
-                  <div>
-                    <div className="text-[9px] font-medium text-white/70">{nr}</div>
-                    <div className="text-[8px] text-white/30">{co}</div>
-                  </div>
-                  <div className={`w-1.5 h-1.5 rounded-full ${color}`} />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl overflow-hidden">
-            <div className="grid grid-cols-5 px-3 py-1.5 border-b border-white/[0.05]">
-              {['Maskin', 'Kategori', 'Status', 'Intäkt', 'ROI'].map((h) => (
-                <div key={h} className="text-[8px] font-semibold text-white/30 uppercase tracking-wider">{h}</div>
-              ))}
-            </div>
-            {[
-              { name: 'Toyota 8FBN25', cat: 'Motviktstruck', color: 'bg-blue-500', rev: '42 000 kr', roi: '+127%', roiColor: 'text-emerald-400' },
-              { name: 'Volvo L60H', cat: 'Hjullastare', color: 'bg-emerald-500', rev: '38 500 kr', roi: '+89%', roiColor: 'text-emerald-400' },
-              { name: 'CAT 308CR', cat: 'Grävmaskin', color: 'bg-amber-400', rev: '29 000 kr', roi: '+44%', roiColor: 'text-amber-400' },
-            ].map(({ name, cat, color, rev, roi, roiColor }) => (
-              <div key={name} className="grid grid-cols-5 px-3 py-2 border-b border-white/[0.03] last:border-0">
-                <div className="text-[9px] font-medium text-white/70 truncate pr-2">{name}</div>
-                <div className="text-[9px] text-white/35 truncate pr-2">{cat}</div>
-                <div className="flex items-center gap-1">
-                  <div className={`w-1.5 h-1.5 rounded-full ${color}`} />
-                </div>
-                <div className="text-[9px] font-semibold text-emerald-400">{rev}</div>
-                <div className={`text-[9px] font-bold ${roiColor}`}>{roi}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+    <div className={`rounded-[1.25rem] bg-slate-900/[0.04] ring-1 ring-slate-900/[0.06] p-1.5 ${className}`}>
+      <div className="h-full rounded-[14px] overflow-hidden bg-white ring-1 ring-slate-900/[0.08] shadow-[0_24px_48px_-28px_rgba(15,23,42,0.35)]">
+        <Image
+          src={src}
+          alt={alt}
+          width={SCREEN.width}
+          height={SCREEN.height}
+          sizes={sizes}
+          priority={priority}
+          className={`w-full h-full object-cover object-left-top ${imgClassName}`}
+        />
       </div>
     </div>
   );
 }
 
-function DashboardPhoneMockup() {
+function PrimaryCta({ href = '/kom-igang', children, inverted = false }: { href?: string; children: React.ReactNode; inverted?: boolean }) {
   return (
-    <div className="relative w-[200px] bg-[#0B1120] border border-white/10 rounded-[28px] overflow-hidden shadow-2xl mx-auto">
-      <div className="flex justify-center pt-3 pb-1">
-        <div className="w-20 h-5 bg-black rounded-full" />
-      </div>
-      <div className="px-3 pb-4 space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-bold text-white">Dashboard</div>
-            <div className="text-[8px] text-white/40 mt-0.5">Denna månad</div>
-          </div>
-          <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/10 rounded-full border border-emerald-500/20">
-            <div className="w-1 h-1 rounded-full bg-emerald-400" />
-            <span className="text-[7px] font-semibold text-emerald-400">LIVE</span>
-          </div>
-        </div>
-
-        <div className="bg-white/[0.06] border border-white/[0.08] rounded-xl p-2.5">
-          <div className="text-[8px] text-white/40 uppercase tracking-wide">Beläggningsgrad</div>
-          <div className="flex items-end gap-1.5 mt-0.5">
-            <div className="text-[20px] font-bold text-white leading-none">78%</div>
-            <div className="flex items-center gap-0.5 text-emerald-400 text-[9px] font-semibold mb-0.5">
-              <TrendingUp className="w-2.5 h-2.5" /> +9%
-            </div>
-          </div>
-          <div className="flex items-end gap-1 h-10 mt-2">
-            {[40, 55, 45, 70, 60, 85, 78].map((h, i) => (
-              <div key={i} className={`flex-1 rounded-t-sm ${i === 6 ? 'bg-blue-500' : 'bg-blue-500/25'}`} style={{ height: `${h}%` }} />
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white/[0.06] border border-white/[0.08] rounded-xl p-2.5">
-          <div className="text-[9px] font-semibold text-white/70 mb-2">Senaste händelser</div>
-          {[
-            { text: 'Ny order skapad', sub: 'Toyota 8FBN25', time: '2 min', color: 'bg-blue-500' },
-            { text: 'Retur registrerad', sub: 'Volvo L60H', time: '18 min', color: 'bg-emerald-500' },
-            { text: 'Faktura skickad', sub: 'Lindström AB', time: '1 h', color: 'bg-violet-500' },
-          ].map(({ text, sub, time, color }) => (
-            <div key={text} className="flex items-center gap-2 py-1.5 border-b border-white/[0.05] last:border-0">
-              <div className={`w-1.5 h-1.5 rounded-full ${color} shrink-0`} />
-              <div className="flex-1 min-w-0">
-                <div className="text-[9px] font-medium text-white/80 truncate">{text}</div>
-                <div className="text-[8px] text-white/30 truncate">{sub}</div>
-              </div>
-              <div className="text-[7px] text-white/25 shrink-0">{time}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+    <Link
+      href={href}
+      className={`group inline-flex items-center gap-3 pl-5 pr-2 py-2 rounded-xl text-[15px] font-semibold transition-[background-color,transform] duration-150 ease-out-strong active:scale-[0.97] ${
+        inverted ? 'bg-white text-slate-950 hover:bg-slate-100' : 'bg-blue-600 text-white hover:bg-blue-700'
+      }`}
+    >
+      {children}
+      <span className={`flex items-center justify-center w-8 h-8 rounded-lg transition-transform duration-200 ease-out-strong group-hover:translate-x-0.5 ${inverted ? 'bg-slate-950/[0.06]' : 'bg-white/15'}`}>
+        <ArrowRight className="w-4 h-4" strokeWidth={2} />
+      </span>
+    </Link>
   );
 }
+
+function TextLink({ href, children, className = '' }: { href: string; children: React.ReactNode; className?: string }) {
+  return (
+    <Link href={href} className={`group inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-slate-900 ${className}`}>
+      {children}
+      <ArrowRight className="w-4 h-4 text-slate-400 transition-transform duration-200 ease-out-strong group-hover:translate-x-0.5 group-hover:text-slate-900" strokeWidth={1.75} />
+    </Link>
+  );
+}
+
+const WITHOUT = [
+  'Kalkylblad och mejlkedjor som enda verktyg',
+  'Telefonsamtal för varje fråga om vad som är ledigt',
+  'Returdatum som missas och dagar som aldrig faktureras',
+  'Ingen överblick över vilka maskiner som lönar sig',
+  'Returer och skador som dokumenteras på papper',
+];
+
+const WITH = [
+  'Flottans status samlad på ett ställe och uppdaterad direkt',
+  'Notiser när en retur är försenad',
+  'Maskinuppgifter ifyllda från ett foto av typskylten',
+  'Intäkter och kostnader per maskin',
+  'Utlämning och retur via maskinens QR-kod',
+];
+
+const FORTNOX_FIELDS = [
+  ['Kund', 'skapas i Fortnox om den saknas'],
+  ['Hyresrader', 'dag-, vecko- eller månadspris med rabatt'],
+  ['Tillägg', 'försäkring, transport och andra artiklar'],
+  ['Referenser', 'ordernummer och beställare'],
+  ['Kostnadsställe', 'kopplat till användaren'],
+];
+
+const INDUSTRIES = [
+  { href: '/uthyrning/truckar', title: 'Uthyrningssystem för truckar', desc: 'Kapacitet och lyfthöjd på maskinkortet, långtidshyra med månadsvisa delfakturor och kontroll av laddare och tillbehör vid retur.' },
+  { href: '/uthyrning/byggmaskiner', title: 'Uthyrningssystem för byggmaskiner', desc: 'Reservationer, transport och deposition på ordern, och drifttimmar och skador med foto när maskinen kommer tillbaka.' },
+  { href: '/uthyrning/liftar', title: 'Uthyrningssystem för liftar', desc: 'Besiktningar och kontroller per lift, korta hyror och returer som avgör om liften går till lager eller service.' },
+];
+
+const STEPS = [
+  { title: 'Boka demo', desc: 'Vi går igenom era behov, sätter upp kontot och ni bjuder in kollegorna.' },
+  { title: 'Lägg upp flottan', desc: 'Fotografera typskylten så fylls uppgifterna i, eller hämta maskinerna från Serviceprotokoll.' },
+  { title: 'Skapa order', desc: 'Välj kund, maskin och prismall. Systemet räknar fram priset och skapar avtalet.' },
+  { title: 'Följ upp', desc: 'Se beläggning, försenade returer och lönsamhet per maskin.' },
+];
+
+const sectionHeading = 'text-[32px] sm:text-[42px] font-semibold text-slate-950 tracking-[-0.03em] leading-[1.08] text-balance';
+const sectionLead = 'mt-5 text-[16.5px] text-slate-500 leading-relaxed max-w-[60ch] text-pretty';
 
 /* ─── Page ─────────────────────────────────────────────────────────── */
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white text-slate-900">
       <JsonLd data={jsonLd} />
-
       <PublicHeader />
 
-      {/* ── Hero ── */}
-      <section className="relative pt-24 pb-0 bg-[#060D1A] overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none select-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[700px] bg-blue-600/[0.07] rounded-full blur-[160px]" />
-          <div className="absolute top-40 left-[10%] w-[400px] h-[400px] bg-indigo-600/[0.05] rounded-full blur-[120px]" />
-          <div className="absolute top-20 right-[10%] w-[350px] h-[350px] bg-violet-600/[0.04] rounded-full blur-[100px]" />
-          <div
-            className="absolute inset-0 opacity-[0.022]"
-            style={{
-              backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)',
-              backgroundSize: '64px 64px',
-            }}
-          />
-          <div className="absolute inset-0 bg-grain" />
-          <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-[#060D1A] to-transparent" />
-        </div>
-
-        <div className="relative max-w-5xl mx-auto px-6 text-center pb-16">
-
-
-          <h1 className="text-[34px] sm:text-[52px] md:text-[68px] font-bold text-white leading-[1.04] tracking-[-0.025em] mb-6">
-            Uthyrningssystem för maskiner, truckar och liftar
-          </h1>
-
-          <p className="text-[15px] sm:text-[18px] text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-            FleetOS är för företag som hyr ut maskiner. Ni samlar bokningar, hyresavtal, utlämning och retur med QR-kod, service och fakturaunderlag till Fortnox i ett system, i stället för i Excel-filer, mejl och telefonsamtal.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-12">
-            <Link href="/kom-igang" className="flex items-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-500 active:scale-[0.97] text-white font-semibold rounded-xl transition text-[14px] shadow-xl shadow-blue-900/40 hover:shadow-blue-700/30 hover:-translate-y-0.5">
-              Boka gratis demo
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link href="/demo" className="flex items-center gap-2 px-6 py-3.5 bg-white/[0.06] hover:bg-white/[0.1] active:scale-[0.97] text-white font-medium rounded-xl border border-white/10 transition text-[14px] hover:-translate-y-0.5">
-              Prova dashboarden
-              <ChevronRight className="w-4 h-4 text-white/50" />
-            </Link>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-slate-500 text-[12px] font-medium mb-16 sm:mb-20">
-            {[
-              { icon: Gauge, label: 'Full kontroll' },
-              { icon: FileX2, label: 'Slipp Excel' },
-              { icon: Zap, label: 'Automatisera flödet' },
-              { icon: TrendingUp, label: 'Öka lönsamheten' },
-            ].map(({ icon: Icon, label }) => (
-              <span key={label} className="flex items-center gap-1.5">
-                <Icon className="w-3.5 h-3.5 text-emerald-500" />
-                {label}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Dashboard – desktop */}
-        <div className="relative max-w-6xl mx-auto px-6 hidden sm:block">
-          <div className="absolute -inset-4 bg-gradient-to-b from-blue-600/10 via-transparent to-transparent rounded-3xl blur-3xl pointer-events-none" />
-          <div className="relative">
-            <div className="absolute -top-5 right-8 z-20 hidden lg:flex items-center gap-2.5 bg-white rounded-2xl border border-slate-200 shadow-2xl px-3.5 py-2.5 animate-float">
-              <div className="w-8 h-8 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
-                <CheckCircle className="w-4 h-4 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold text-slate-800">Ny order skapad</p>
-                <p className="text-[10px] text-slate-400">Toyota 8FBN25 · Lindström AB</p>
+      <main>
+        {/* Hero: left-aligned copy, real product screenshot bleeding off the right edge */}
+        <section className="relative pt-32 sm:pt-36 lg:pt-40 pb-16 sm:pb-24 px-4 sm:px-6 overflow-hidden">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-12 lg:gap-14 items-center">
+            <div className="animate-fade-up">
+              <h1 className="text-[38px] sm:text-[50px] lg:text-[54px] font-semibold text-slate-950 tracking-[-0.035em] leading-[1.04] text-balance">
+                Uthyrningssystem för maskiner, truckar och liftar
+              </h1>
+              <p className="mt-6 text-[17px] sm:text-[18px] text-slate-500 leading-relaxed max-w-[44ch] text-pretty">
+                Bokningar, hyresavtal, utlämning, retur och fakturaunderlag till Fortnox i ett system. Byggt för företag som hyr ut maskiner.
+              </p>
+              <div className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-4">
+                <PrimaryCta>Boka demo</PrimaryCta>
+                <TextLink href="/demo">Prova demon</TextLink>
               </div>
             </div>
-            <div className="absolute -top-5 left-8 z-20 hidden lg:flex items-center gap-2.5 bg-white rounded-2xl border border-slate-200 shadow-2xl px-3.5 py-2.5 animate-float4">
-              <div className="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
-                <FileText className="w-4 h-4 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold text-slate-800">10 månadsfakturor klara</p>
-                <p className="text-[10px] text-slate-400">Skickade till Fortnox</p>
-              </div>
-            </div>
-            <div className="absolute -bottom-4 left-8 z-20 hidden lg:flex items-center gap-2.5 bg-white rounded-2xl border border-slate-200 shadow-2xl px-3.5 py-2.5 animate-float2">
-              <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
-                <TrendingUp className="w-4 h-4 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold text-slate-800">ROI +127% denna mån</p>
-                <p className="text-[10px] text-slate-400">Toyota 8FBN25</p>
-              </div>
-            </div>
-            <div className="absolute -bottom-4 right-8 z-20 hidden lg:flex items-center gap-2.5 bg-white rounded-2xl border border-slate-200 shadow-2xl px-3.5 py-2.5 animate-float3">
-              <div className="w-8 h-8 bg-violet-100 rounded-xl flex items-center justify-center shrink-0">
-                <FileSignature className="w-4 h-4 text-violet-600" />
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold text-slate-800">Avtal signerat med BankID</p>
-                <p className="text-[10px] text-slate-400">Lindström Bygg AB</p>
-              </div>
-            </div>
-            <DashboardMockup />
-          </div>
-          <p className="relative text-center text-[11px] text-slate-500 pt-8 pb-2">
-            Illustration med exempeldata. Siffrorna är inte verkliga kundresultat.
-          </p>
-        </div>
 
-        {/* Dashboard – mobil */}
-        <div className="sm:hidden px-4 pb-8 space-y-3">
-          <div className="bg-[#0B1120] border border-white/[0.08] rounded-2xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">Flottans status</div>
-              <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 rounded-full border border-emerald-500/20">
-                <div className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[9px] font-semibold text-emerald-400">LIVE</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { label: 'I lager', val: '8', sub: 'av 14 totalt', dot: 'bg-emerald-500', accent: 'bg-emerald-500' },
-                { label: 'Uthyrda', val: '5', sub: '36% beläggning', dot: 'bg-blue-500', accent: 'bg-blue-500' },
-                { label: 'Aktiva order', val: '7', sub: '1 försenad', dot: 'bg-amber-400', accent: 'bg-amber-400' },
-                { label: 'Månadsintäkt', val: '84k', sub: '+12% vs förra', dot: 'bg-violet-500', accent: 'bg-violet-500' },
-              ].map(({ label, val, sub, dot, accent }) => (
-                <div key={label} className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3 relative overflow-hidden">
-                  <div className={`absolute top-0 left-0 right-0 h-[2px] ${accent}`} />
-                  <div className="text-[9px] text-white/40 uppercase tracking-wider">{label}</div>
-                  <div className="text-[22px] font-bold text-white mt-0.5 leading-none">{val}</div>
-                  <div className="flex items-center gap-1 mt-1">
-                    <div className={`w-1 h-1 rounded-full ${dot}`} />
-                    <div className="text-[8px] text-white/30">{sub}</div>
-                  </div>
-                </div>
-              ))}
+            <div className="animate-fade-up-delayed lg:-mr-40 xl:-mr-56">
+              <Screenshot
+                src="/screens/dashboard.png"
+                alt="FleetOS dashboard med flottans status, intäkter per månad och varningar för försenade returer"
+                priority
+                sizes="(min-width: 1024px) 860px, 100vw"
+              />
+              <p className="mt-3 text-[12px] text-slate-500">Skärmbild från den interaktiva demon med exempeldata.</p>
             </div>
           </div>
-          <div className="bg-[#0B1120] border border-white/[0.08] rounded-2xl p-4">
-            <div className="text-[11px] font-semibold text-white/60 uppercase tracking-wider mb-3">Senaste order</div>
-            <div className="space-y-2">
-              {[
-                { nr: 'ORD-241', co: 'Lindström AB', roi: '+127%', color: 'text-emerald-400' },
-                { nr: 'ORD-240', co: 'Björk & Söner', roi: '+89%', color: 'text-emerald-400' },
-                { nr: 'ORD-239', co: 'NordMark', roi: '+44%', color: 'text-amber-400' },
-              ].map(({ nr, co, roi, color }) => (
-                <div key={nr} className="flex items-center justify-between py-1.5 border-b border-white/[0.05] last:border-0">
-                  <div>
-                    <div className="text-[11px] font-medium text-white/80">{nr}</div>
-                    <div className="text-[9px] text-white/30">{co}</div>
-                  </div>
-                  <span className={`text-[11px] font-bold ${color}`}>{roi}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <p className="text-center text-[11px] text-slate-500">
-            Illustration med exempeldata. Siffrorna är inte verkliga kundresultat.
-          </p>
-        </div>
-      </section>
+        </section>
 
-      {/* ── Customers ── */}
-      <section className="py-14 px-6 bg-slate-50">
-        <div className="max-w-5xl mx-auto">
-          <AnimateIn>
-            <div className="flex items-center gap-6">
-              <div className="flex-1 h-px bg-slate-300" />
-              <span className="shrink-0 font-serif-accent italic text-[22px] sm:text-[26px] text-slate-600">Betrodd av</span>
-              <div className="flex-1 h-px bg-slate-300" />
-            </div>
-            <Link href="/kunder/wts-machinery-solutions" className="group flex items-center justify-center py-8">
+        {/* Customer logo */}
+        <section aria-label="Kunder" className="px-4 sm:px-6">
+          <div className="max-w-6xl mx-auto py-9 border-y border-slate-100 flex flex-col sm:flex-row items-center gap-5 sm:gap-10">
+            <p className="text-[14px] text-slate-500">Används av uthyrare som</p>
+            <Link href="/kunder/wts-machinery-solutions" className="group">
               {/* eslint-disable-next-line @next/next/no-img-element -- 4 KB PNG, not worth the optimizer */}
               <img
                 src="/wts-logo.png"
@@ -440,411 +202,279 @@ export default function LandingPage() {
                 height={56}
                 loading="lazy"
                 decoding="async"
-                className="h-7 w-auto object-contain opacity-70 grayscale group-hover:opacity-100 group-hover:grayscale-0 transition-all"
+                className="h-7 w-auto grayscale opacity-60 transition-[filter,opacity] duration-200 group-hover:grayscale-0 group-hover:opacity-100"
               />
             </Link>
-            <div className="h-px bg-slate-300" />
-          </AnimateIn>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* ── Problem → Solution ── */}
-      <section className="pt-0 pb-16 sm:pb-28 px-4 sm:px-6 bg-slate-50 border-b border-slate-200 overflow-hidden">
-        <div className="max-w-6xl mx-auto">
-          <AnimateIn className="text-center mb-16">
-            <p className="text-[12px] font-semibold text-red-500 uppercase tracking-widest mb-3">Problemet</p>
-            <h2 className="text-2xl sm:text-[40px] md:text-[48px] font-bold text-slate-900 tracking-tight mb-4 leading-tight">
-              Maskinuthyrning utan rätt<br />verktyg är kostsamt
-            </h2>
-            <p className="text-[16px] text-slate-500 max-w-xl mx-auto leading-relaxed">
-              De flesta uthyrningsföretag förlorar tid och pengar på grund av ineffektiva processer. FleetOS löser det.
-            </p>
-          </AnimateIn>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {/* Before */}
-            <AnimateIn direction="left">
-              <div className="bg-white border border-red-100 rounded-2xl overflow-hidden shadow-sm h-full">
-                <div className="px-6 py-4 bg-red-50 border-b border-red-100 flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-red-400" />
-                  <span className="text-[12px] font-bold text-red-600 uppercase tracking-wider">Utan FleetOS</span>
-                </div>
-                <div className="p-6 space-y-4">
-                  {[
-                    { icon: X, text: 'Excel-kalkylblad och e-postkedjor som primära verktyg', sub: 'Information sprids och går förlorad' },
-                    { icon: X, text: 'Telefonsamtal för varje lagerfråga och statusuppdatering', sub: 'Timmar läggs på administration' },
-                    { icon: X, text: 'Missade returdatum och förlorade intäkter', sub: 'Ingen automatisk påminnelse' },
-                    { icon: X, text: 'Ingen lönsamhetsöverblick per maskin', sub: 'Vet inte vilka maskiner som lönar sig' },
-                    { icon: X, text: 'Ingen digital returhantering', sub: 'Manuell hantering kostar tid och skapar fel' },
-                  ].map(({ icon: Icon, text, sub }, i) => (
-                    <AnimateIn key={text} delay={i * 60} className="flex gap-3">
-                      <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center shrink-0 mt-0.5">
-                        <Icon className="w-3.5 h-3.5 text-red-500" />
-                      </div>
-                      <div>
-                        <p className="text-[13px] font-medium text-slate-700">{text}</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>
-                      </div>
-                    </AnimateIn>
-                  ))}
-                </div>
-              </div>
+        {/* Before / after */}
+        <section className="py-24 sm:py-32 px-4 sm:px-6">
+          <div className="max-w-6xl mx-auto">
+            <AnimateIn className="max-w-3xl">
+              <h2 className={sectionHeading}>Ett system i stället för Excel, mejl och pärmar</h2>
+              <p className={sectionLead}>
+                Kalkylblad fungerar när flottan är liten. När den växer behöver alla se samma sak: vad som är uthyrt, till vem och när det ska tillbaka.
+              </p>
             </AnimateIn>
 
-            {/* After */}
-            <AnimateIn direction="right">
-              <div className="bg-[#060D1A] border border-blue-500/20 rounded-2xl overflow-hidden shadow-xl h-full">
-                <div className="px-6 py-4 bg-blue-600/10 border-b border-blue-500/20 flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                  <span className="text-[12px] font-bold text-blue-400 uppercase tracking-wider">Med FleetOS</span>
+            <div className="mt-14 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <AnimateIn className="h-full">
+                <div className="h-full rounded-[1.25rem] bg-slate-50 p-7 sm:p-9">
+                  <h3 className="text-[17px] font-semibold text-slate-500">Utan ett uthyrningssystem</h3>
+                  <ul className="mt-6 space-y-4">
+                    {WITHOUT.map((t) => (
+                      <li key={t} className="flex gap-3 text-[15px] text-slate-500 leading-snug">
+                        <Minus className="w-4 h-4 mt-0.5 shrink-0 text-slate-300" strokeWidth={2} />
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <div className="p-6 space-y-4">
-                  {[
-                    { icon: Check, text: 'Realtids-dashboard med hela flottans status', sub: 'All information samlad på ett ställe', color: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' },
-                    { icon: Check, text: 'Automatiska notiser och påminnelser', sub: 'Aldrig mer missade returdatum', color: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' },
-                    { icon: Check, text: 'AI fyller i maskinuppgifter från foto', sub: 'Registrering tar sekunder, inte minuter', color: 'bg-blue-500/20 text-blue-400 border border-blue-500/20' },
-                    { icon: Check, text: 'Full ROI-analys per maskin i realtid', sub: 'Fatta beslut baserade på data', color: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' },
-                    { icon: Check, text: 'Digital returhantering via QR-kod', sub: 'Skanna och registrera retur på sekunder', color: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' },
-                  ].map(({ icon: Icon, text, sub, color }, i) => (
-                    <AnimateIn key={text} delay={i * 60} className="flex gap-3">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${color}`}>
-                        <Icon className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <p className="text-[13px] font-medium text-white/90">{text}</p>
-                        <p className="text-[11px] text-white/35 mt-0.5">{sub}</p>
-                      </div>
-                    </AnimateIn>
-                  ))}
+              </AnimateIn>
+              <AnimateIn delay={80} className="h-full">
+                <div className="h-full rounded-[1.25rem] bg-white ring-1 ring-slate-900/[0.07] shadow-[0_24px_48px_-32px_rgba(15,23,42,0.3)] p-7 sm:p-9">
+                  <h3 className="text-[17px] font-semibold text-slate-950">Med FleetOS</h3>
+                  <ul className="mt-6 space-y-4">
+                    {WITH.map((t) => (
+                      <li key={t} className="flex gap-3 text-[15px] text-slate-800 leading-snug">
+                        <Check className="w-4 h-4 mt-0.5 shrink-0 text-blue-600" strokeWidth={2.25} />
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </div>
+              </AnimateIn>
+            </div>
+          </div>
+        </section>
+
+        {/* Workflow bento: five steps, five cells */}
+        <section className="py-24 sm:py-32 px-4 sm:px-6 bg-slate-50">
+          <div className="max-w-6xl mx-auto">
+            <AnimateIn className="max-w-3xl">
+              <h2 className={sectionHeading}>Från bokning till faktura</h2>
+              <p className={sectionLead}>
+                Order, avtal, utlämning, retur och fakturaunderlag hänger ihop på samma order, så att inget behöver föras över för hand.
+              </p>
+            </AnimateIn>
+
+            <div className="mt-14 grid grid-cols-1 lg:grid-cols-12 gap-4">
+              {/* Orders */}
+              <AnimateIn className="lg:col-span-7">
+                <article className="h-full rounded-[1.25rem] bg-white ring-1 ring-slate-900/[0.06] p-7 sm:p-9 flex flex-col">
+                  <h3 className="text-[20px] font-semibold text-slate-950 tracking-tight">Order och bokning</h3>
+                  <p className="mt-3 text-[15px] text-slate-500 leading-relaxed max-w-[52ch]">
+                    Välj kund, anläggning och maskin. Priset räknas fram från prismallen för dag, vecka eller månad, och maskinen kan reserveras i förväg.
+                  </p>
+                  <Screenshot
+                    src="/screens/order.png"
+                    alt="Lista över uthyrningsorder med kund, maskin, period, belopp och status"
+                    sizes="(min-width: 1024px) 620px, 100vw"
+                    className="mt-8 aspect-[16/10]"
+                  />
+                </article>
+              </AnimateIn>
+
+              {/* Pickup and return */}
+              <AnimateIn delay={60} className="lg:col-span-5">
+                <article className="relative h-full min-h-[420px] rounded-[1.25rem] overflow-hidden flex flex-col justify-end p-7 sm:p-9 text-white">
+                  <Image
+                    src="/Rental-truck-demo-picture.png"
+                    alt="Motviktstruck med pall i ett lager"
+                    fill
+                    sizes="(min-width: 1024px) 440px, 100vw"
+                    className="object-cover object-[20%_center]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-slate-950/0" />
+                  <div className="relative">
+                    <h3 className="text-[20px] font-semibold tracking-tight">Utlämning och retur med QR-kod</h3>
+                    <p className="mt-3 text-[15px] text-slate-200 leading-relaxed">
+                      Skanna maskinens QR-kod och registrera drifttimmar, skick, foton och tillbehör. En skadad maskin går direkt till service.
+                    </p>
+                  </div>
+                </article>
+              </AnimateIn>
+
+              {/* Agreements */}
+              <AnimateIn className="lg:col-span-5">
+                <article className="h-full rounded-[1.25rem] bg-blue-50 ring-1 ring-blue-100 p-7 sm:p-9 flex flex-col">
+                  <h3 className="text-[20px] font-semibold text-slate-950 tracking-tight">Hyresavtal med e-signering</h3>
+                  <p className="mt-3 text-[15px] text-slate-600 leading-relaxed">
+                    Avtalet skapas från ordern och skickas till kunden för digital signering via e-post.
+                  </p>
+                  <p className="mt-3 text-[15px] text-slate-600 leading-relaxed">
+                    Det går till beställarens e-post, eller kundens om ingen beställare är angiven. Kunden behöver inget konto i FleetOS. En rörlig kostnad tillkommer per skickat avtal.
+                  </p>
+                  <ul className="mt-auto pt-10 space-y-3.5">
+                    {['Skapas direkt från ordern', 'Signeringsstatus följs upp i FleetOS', 'Det signerade avtalet sparas på ordern'].map((t) => (
+                      <li key={t} className="flex gap-3 text-[15px] text-slate-800 leading-snug">
+                        <Check className="w-4 h-4 mt-0.5 shrink-0 text-blue-600" strokeWidth={2.25} />
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              </AnimateIn>
+
+              {/* Fortnox */}
+              <AnimateIn delay={60} className="lg:col-span-7">
+                <article className="h-full rounded-[1.25rem] bg-white ring-1 ring-slate-900/[0.06] p-7 sm:p-9 flex flex-col">
+                  <h3 className="text-[20px] font-semibold text-slate-950 tracking-tight">Fakturaunderlag till Fortnox</h3>
+                  <p className="mt-3 text-[15px] text-slate-500 leading-relaxed max-w-[52ch]">
+                    En klar order blir en order i Fortnox med ett klick. Långtidshyror får en delfaktura i slutet av varje månad som ni granskar innan den skickas.
+                  </p>
+                  <dl className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                    {FORTNOX_FIELDS.map(([k, v]) => (
+                      <div key={k} className="border-t border-slate-100 pt-3">
+                        <dt className="text-[14px] font-semibold text-slate-900">{k}</dt>
+                        <dd className="text-[14px] text-slate-500">{v}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <TextLink href="/integrationer/fortnox" className="mt-auto pt-8">Så fungerar Fortnox-integrationen</TextLink>
+                </article>
+              </AnimateIn>
+
+              {/* Profitability */}
+              <AnimateIn className="lg:col-span-12">
+                <article className="rounded-[1.25rem] bg-white ring-1 ring-slate-900/[0.06] p-7 sm:p-9 grid grid-cols-1 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] gap-8 lg:gap-12 items-center">
+                  <div>
+                    <h3 className="text-[20px] font-semibold text-slate-950 tracking-tight">Lönsamhet per maskin</h3>
+                    <p className="mt-3 text-[15px] text-slate-500 leading-relaxed">
+                      Intäkter, beläggning och resultat per maskin och kund, räknat mot inköp, leasing, försäkring och service. Ni ser vilka maskiner som tjänar pengar och vilka som står still.
+                    </p>
+                    <TextLink href="/funktioner" className="mt-8">Se alla funktioner</TextLink>
+                  </div>
+                  <Screenshot
+                    src="/screens/statistik.png"
+                    alt="Statistik med intäkter per månad, intäkt per kategori och lönsamhet per maskin"
+                    sizes="(min-width: 1024px) 700px, 100vw"
+                    className="aspect-[16/9]"
+                  />
+                </article>
+              </AnimateIn>
+            </div>
+          </div>
+        </section>
+
+        {/* Industries */}
+        <section id="branscher" className="py-24 sm:py-32 px-4 sm:px-6 scroll-mt-24">
+          <div className="max-w-6xl mx-auto">
+            <AnimateIn className="max-w-3xl">
+              <h2 className={sectionHeading}>Byggt för er typ av flotta</h2>
+              <p className={sectionLead}>Samma system, men olika vardag. Så används FleetOS av uthyrare med olika maskinparker.</p>
+            </AnimateIn>
+
+            <ul className="mt-14 border-t border-slate-200">
+              {INDUSTRIES.map(({ href, title, desc }, i) => (
+                <li key={href} className="border-b border-slate-200">
+                  <AnimateIn delay={i * 50}>
+                    <Link href={href} className="group grid grid-cols-1 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)_auto] gap-3 md:gap-10 items-center py-8">
+                      <h3 className="text-[20px] sm:text-[22px] font-semibold text-slate-950 tracking-tight transition-colors group-hover:text-blue-700">{title}</h3>
+                      <p className="text-[15px] text-slate-500 leading-relaxed text-pretty">{desc}</p>
+                      <span className="hidden md:flex items-center justify-center w-10 h-10 rounded-xl ring-1 ring-slate-200 text-slate-400 transition-[background-color,color,transform] duration-200 ease-out-strong group-hover:bg-slate-950 group-hover:text-white group-hover:ring-slate-950 group-hover:translate-x-0.5">
+                        <ArrowRight className="w-4 h-4" strokeWidth={1.75} />
+                      </span>
+                    </Link>
+                  </AnimateIn>
+                </li>
+              ))}
+            </ul>
+
+            <AnimateIn>
+              <Link href="/kunder/wts-machinery-solutions" className="group mt-10 flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-8 rounded-[1.25rem] bg-slate-50 p-6 sm:p-7">
+                <span className="flex items-center justify-center w-28 h-14 rounded-[14px] bg-white ring-1 ring-slate-900/[0.06] shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- small local logo */}
+                  <img src="/wts-logo.png" alt="" width={200} height={56} loading="lazy" className="h-6 w-auto" />
+                </span>
+                <span className="flex-1">
+                  <span className="block text-[13px] text-slate-500">Kundcase</span>
+                  <span className="block text-[16px] font-semibold text-slate-950 text-pretty">Så använder WTS Machinery Solutions FleetOS med Fortnox och Serviceprotokoll</span>
+                </span>
+                <ArrowRight className="w-5 h-5 text-slate-400 transition-transform duration-200 ease-out-strong group-hover:translate-x-1 group-hover:text-slate-900" strokeWidth={1.75} />
+              </Link>
             </AnimateIn>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── Demo CTA ── */}
-      <section className="relative py-10 border-b border-white/[0.05] overflow-hidden">
-        {/* next/image instead of a CSS background: the source PNG is ~2.5 MB, this serves a
-            resized AVIF/WebP and lazy-loads it (the section is below the fold). */}
-        <Image
-          src="/Rental-truck-demo-picture.png"
-          alt=""
-          fill
-          sizes="100vw"
-          className="object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-[#060D1A]/70" />
-        <div className="relative max-w-5xl mx-auto px-6">
-          <AnimateIn>
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-5 bg-white/[0.04] border border-white/[0.08] rounded-2xl px-6 py-5">
-              <div className="text-center sm:text-left">
-                <p className="text-[12px] font-semibold text-blue-400 uppercase tracking-widest mb-1">Interaktiv demo</p>
-                <h3 className="text-[18px] font-bold text-white leading-snug">
-                  Se dashboarden live – utan att skapa konto
-                </h3>
-                <p className="text-[13px] text-slate-400 mt-1">
-                  Klicka runt i en riktig FleetOS-vy med exempeldata. Maskiner, kunder, order och statistik.
+        {/* Integrations */}
+        <section id="integrations" className="py-24 sm:py-32 px-4 sm:px-6 bg-slate-50 scroll-mt-24">
+          <div className="max-w-6xl mx-auto">
+            <AnimateIn className="max-w-3xl">
+              <h2 className={sectionHeading}>Fungerar med Fortnox och Serviceprotokoll</h2>
+              <p className={sectionLead}>
+                Fortnox och Serviceprotokoll är tillgängliga i dag. Visma är planerad men inte klar.
+              </p>
+            </AnimateIn>
+
+            <AnimateIn>
+              <div className="mt-14 rounded-[1.25rem] bg-white ring-1 ring-slate-900/[0.06] grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                {[
+                  { name: 'Fortnox', href: '/integrationer/fortnox', direction: 'Från FleetOS till Fortnox', desc: 'Klara ordrar och delfakturor skickas som ordrar i Fortnox med kund, hyresrader, artikelnummer och kostnadsställe. Kunder som saknas skapas automatiskt.' },
+                  { name: 'Serviceprotokoll', href: '/integrationer/serviceprotokoll', direction: 'Från Serviceprotokoll till FleetOS', desc: 'Hyresmaskiner med tekniska data samt kunder, anläggningar och kontakter hämtas automatiskt var 30:e minut.' },
+                ].map(({ name, href, direction, desc }) => (
+                  <div key={name} className="p-7 sm:p-10 flex flex-col">
+                    <p className="text-[13px] text-slate-500">{direction}</p>
+                    <h3 className="mt-1 text-[24px] font-semibold text-slate-950 tracking-tight">{name}</h3>
+                    <p className="mt-4 text-[15px] text-slate-500 leading-relaxed text-pretty">{desc}</p>
+                    <TextLink href={href} className="mt-8">Läs om {name}-integrationen</TextLink>
+                  </div>
+                ))}
+              </div>
+            </AnimateIn>
+
+            <div className="mt-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-[14.5px] text-slate-500">
+              <p className="max-w-[60ch] text-pretty">Använder ni ett annat system, till exempel för GPS eller ekonomi? Berätta vad ni behöver så bedömer vi om det går att anpassa.</p>
+              <TextLink href="/integrationer">Alla integrationer</TextLink>
+            </div>
+          </div>
+        </section>
+
+        {/* Getting started */}
+        <section id="how-it-works" className="py-24 sm:py-32 px-4 sm:px-6 scroll-mt-24">
+          <div className="max-w-6xl mx-auto">
+            <AnimateIn className="max-w-3xl">
+              <h2 className={sectionHeading}>Så kommer ni igång</h2>
+              <p className={sectionLead}>Från första genomgången till full koll på flottan.</p>
+            </AnimateIn>
+            <ol className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
+              {STEPS.map(({ title, desc }, i) => (
+                <li key={title} className={`border-t-2 pt-6 ${i === 0 ? 'border-blue-600' : 'border-slate-200'}`}>
+                  <AnimateIn delay={i * 60}>
+                    <h3 className="text-[17px] font-semibold text-slate-950">{title}</h3>
+                    <p className="mt-2 text-[15px] text-slate-500 leading-relaxed text-pretty">{desc}</p>
+                  </AnimateIn>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        <LatestEventsSection />
+
+        <FAQSection />
+
+        {/* Closing CTA */}
+        <section className="pb-24 sm:pb-32 px-4 sm:px-6">
+          <AnimateIn className="max-w-6xl mx-auto">
+            <div className="rounded-[1.5rem] bg-slate-950 px-7 py-14 sm:px-14 sm:py-20 grid grid-cols-1 lg:grid-cols-[minmax(0,7fr)_auto] gap-10 items-end">
+              <div>
+                <h2 className="text-[32px] sm:text-[42px] font-semibold text-white tracking-[-0.03em] leading-[1.08] text-balance">
+                  Se FleetOS med era egna maskiner
+                </h2>
+                <p className="mt-5 text-[16.5px] text-slate-400 leading-relaxed max-w-[52ch] text-pretty">
+                  Vi visar flödet från order till retur och fakturaunderlag. Ingen bindningstid, och ni betalar månad för månad.
                 </p>
               </div>
-              <Link
-                href="/demo"
-                className="shrink-0 flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-500 active:scale-[0.97] text-white font-semibold rounded-xl transition text-[14px] shadow-lg shadow-blue-900/30 hover:-translate-y-0.5 whitespace-nowrap"
-              >
-                Öppna demo
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </AnimateIn>
-        </div>
-      </section>
-
-      {/* ── Features showcase ── */}
-      <FeaturesSection />
-
-      {/* ── Industries ── */}
-      <section id="branscher" className="py-16 sm:py-24 px-4 sm:px-6 bg-slate-50 border-t border-slate-200">
-        <div className="max-w-5xl mx-auto">
-          <AnimateIn className="text-center max-w-2xl mx-auto mb-12">
-            <p className="text-[12px] font-semibold text-blue-600 uppercase tracking-widest mb-3">Branscher</p>
-            <h2 className="text-2xl sm:text-[40px] font-bold text-slate-900 tracking-tight mb-4">Byggt för er typ av flotta</h2>
-            <p className="text-[16px] text-slate-500 leading-relaxed">
-              Samma system, men olika vardag. Se hur FleetOS används av uthyrare med olika maskinparker.
-            </p>
-          </AnimateIn>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {[
-              { href: '/uthyrning/truckar', title: 'Uthyrningssystem för truckar', desc: 'Kapacitet och lyfthöjd på maskinkortet, långtidshyra med månadsvisa delfakturor och kontroll av laddare och tillbehör vid retur.' },
-              { href: '/uthyrning/byggmaskiner', title: 'Uthyrningssystem för byggmaskiner', desc: 'Reservationer, transport och deposition på ordern, drifttimmar och skador med foto när maskinen kommer tillbaka.' },
-              { href: '/uthyrning/liftar', title: 'Uthyrningssystem för liftar', desc: 'Besiktningar och kontroller per lift, korta hyror och returer som avgör om liften går till lager eller service.' },
-            ].map(({ href, title, desc }, i) => (
-              <AnimateIn key={href} delay={i * 80}>
-                <Link href={href} className="group block h-full bg-white border border-slate-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-md transition-all">
-                  <h3 className="text-[16px] font-semibold text-slate-900 group-hover:text-blue-700 mb-2">{title}</h3>
-                  <p className="text-[13px] text-slate-500 leading-relaxed mb-4">{desc}</p>
-                  <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-blue-600">Läs mer <ArrowRight className="w-3.5 h-3.5" /></span>
-                </Link>
-              </AnimateIn>
-            ))}
-          </div>
-          <AnimateIn>
-            <Link href="/kunder/wts-machinery-solutions" className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#060D1A] rounded-2xl px-6 py-5">
-              <div>
-                <p className="text-[12px] font-semibold text-blue-400 uppercase tracking-widest mb-1">Kundcase</p>
-                <p className="text-[15px] font-semibold text-white">Så använder WTS Machinery Solutions FleetOS med Fortnox och Serviceprotokoll</p>
+              <div className="flex flex-wrap items-center gap-x-7 gap-y-4">
+                <PrimaryCta inverted>Boka demo</PrimaryCta>
+                <Link href="/kontakt" className="text-[14.5px] font-semibold text-slate-300 hover:text-white transition-colors">Kontakta oss</Link>
               </div>
-              <span className="shrink-0 inline-flex items-center gap-1 text-[13px] font-semibold text-white/80 group-hover:text-white">Läs kundcaset <ArrowRight className="w-3.5 h-3.5" /></span>
-            </Link>
-          </AnimateIn>
-        </div>
-      </section>
-
-      {/* ── 6 reasons ── */}
-      <section className="py-16 sm:py-28 px-4 sm:px-6 bg-[#060D1A] relative overflow-hidden border-t border-white/[0.04]">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 right-1/4 w-[500px] h-[400px] bg-blue-600/[0.05] rounded-full blur-[100px]" />
-          <div className="absolute bottom-0 left-1/4 w-[400px] h-[300px] bg-violet-600/[0.05] rounded-full blur-[100px]" />
-          <div className="absolute inset-0 bg-grain" />
-        </div>
-        <div className="max-w-5xl mx-auto relative">
-          <AnimateIn className="text-center max-w-2xl mx-auto mb-16 sm:mb-20">
-            <div className="inline-flex items-center gap-2 text-blue-300 text-[12px] font-semibold mb-5">
-              <Sparkles className="w-3.5 h-3.5" />
-              Varför FleetOS
             </div>
-            <h2 className="text-2xl sm:text-[40px] font-bold text-white tracking-tight leading-tight mb-5">
-              6 anledningar att börja använda FleetOS
-            </h2>
-            <p className="text-[15px] text-slate-400 leading-relaxed">
-              Byggt för maskinuthyrare som vill lägga mindre tid på administration och mer tid på det som faktiskt skapar värde.
-            </p>
           </AnimateIn>
-
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-x-14 gap-y-12 items-center">
-            {/* Left column */}
-            <div className="space-y-10 order-2 lg:order-1">
-              {[
-                { title: 'Mer tid för kärnverksamheten', desc: 'Mindre administration betyder mer tid till kunder, maskiner och tillväxt istället för pappersarbete.' },
-                { title: 'Snabbare betalt', desc: 'Order blir fakturaunderlag direkt vid retur — inga glömda debiteringar eller dröjande fakturor.' },
-                { title: 'Högre beläggningsgrad', desc: 'Full överblick över flottan gör det enklare att hyra ut fler maskiner, oftare.' },
-              ].map(({ title, desc }, i) => (
-                <AnimateIn key={title} direction="left" delay={i * 80}>
-                  <h3 className="text-[15px] font-semibold text-white mb-2">{title}</h3>
-                  <p className="text-[13px] text-slate-400 leading-relaxed">{desc}</p>
-                </AnimateIn>
-              ))}
-            </div>
-
-            {/* Phone */}
-            <AnimateIn direction="scale" className="order-1 lg:order-2 mx-auto">
-              <DashboardPhoneMockup />
-              <p className="text-center text-[11px] text-slate-500 mt-3">Illustration med exempeldata</p>
-            </AnimateIn>
-
-            {/* Right column */}
-            <div className="space-y-10 order-3">
-              {[
-                { title: 'Färre fel och missförstånd', desc: 'Automatiska flöden minskar risken för manuella misstag och glapp mellan kontor och verkstad.' },
-                { title: 'Nöjdare kunder', desc: 'Tydliga avtal, snabba returer och proffsig hantering stärker förtroendet för er som leverantör.' },
-                { title: 'Väx utan att anställa fler', desc: 'Ett system som skalar med verksamheten utan att administrationen växer i samma takt.' },
-              ].map(({ title, desc }, i) => (
-                <AnimateIn key={title} direction="right" delay={i * 80}>
-                  <h3 className="text-[15px] font-semibold text-white mb-2">{title}</h3>
-                  <p className="text-[13px] text-slate-400 leading-relaxed">{desc}</p>
-                </AnimateIn>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Integrations ── */}
-      <section id="integrations" className="py-16 sm:py-28 px-4 sm:px-6 bg-white border-t border-slate-100 overflow-hidden">
-        <style>{`
-          @keyframes orbit-cw { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-          @keyframes orbit-ccw { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
-        `}</style>
-        <div className="max-w-6xl mx-auto">
-          <AnimateIn className="text-center mb-16">
-            <p className="text-[12px] font-semibold text-blue-600 uppercase tracking-widest mb-3">Integrationer</p>
-            <h2 className="text-2xl sm:text-[40px] font-bold text-slate-900 tracking-tight mb-4">Fungerar med Fortnox och Serviceprotokoll</h2>
-            <p className="text-[16px] text-slate-500 max-w-xl mx-auto">
-              Fortnox och Serviceprotokoll är tillgängliga i dag. Visma är planerad men inte klar. Använder ni något annat system kan vi diskutera en anpassning.
-            </p>
-          </AnimateIn>
-
-          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
-
-            {/* Orbit visualization */}
-            <AnimateIn className="shrink-0 mx-auto lg:mx-0">
-              <div className="relative" style={{ width: 340, height: 340 }}>
-                {/* Ring lines */}
-                <div className="absolute rounded-full border border-slate-200" style={{ inset: 35 }} />
-                <div className="absolute rounded-full border border-slate-200" style={{ inset: 85 }} />
-
-                {/* Center: FleetOS */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-[64px] h-[64px] bg-white rounded-2xl shadow-md border border-slate-200 flex items-center justify-center p-2">
-                    <Logo size={40} />
-                  </div>
-                </div>
-
-                {/* Inner orbit — clockwise 20s — Fortnox + Serviceprotokoll */}
-                {[
-                  { label: 'Fortnox', bg: '#1e7a3c', fontSize: 8.5, delay: 0 },
-                  { label: 'SP', bg: '#c2500c', fontSize: 15, delay: -10 },
-                ].map(({ label, bg, fontSize, delay }) => (
-                  <div key={label} style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0, animation: 'orbit-cw 20s linear infinite', animationDelay: `${delay}s` }}>
-                    <div style={{ position: 'absolute', left: 59, top: -26, animation: 'orbit-ccw 20s linear infinite', animationDelay: `${delay}s` }}>
-                      <div style={{ width: 52, height: 52, borderRadius: 13, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize, fontWeight: 700, color: '#fff', letterSpacing: 0.2, boxShadow: '0 2px 8px rgba(0,0,0,0.18)' }}>
-                        {label}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Outer orbit — counter-clockwise 28s — Visma (planned) + custom. Only list
-                    systems that are available or on the roadmap. */}
-                {[
-                  { label: 'Visma', bg: '#1a3190', fontSize: 8.5, delay: 0 },
-                  { label: '+', bg: '#334155', fontSize: 24, delay: -14 },
-                ].map(({ label, bg, fontSize, delay }) => (
-                  <div key={label} style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0, animation: 'orbit-ccw 28s linear infinite', animationDelay: `${delay}s` }}>
-                    <div style={{ position: 'absolute', left: 109, top: -26, animation: 'orbit-cw 28s linear infinite', animationDelay: `${delay}s` }}>
-                      <div style={{ width: 52, height: 52, borderRadius: 13, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize, fontWeight: 700, color: '#fff', letterSpacing: 0.2, boxShadow: '0 2px 8px rgba(0,0,0,0.18)' }}>
-                        {label}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </AnimateIn>
-
-            {/* Text content */}
-            <AnimateIn className="flex-1 max-w-lg">
-              <div className="space-y-6 mb-8">
-                {[
-                  {
-                    name: 'Fortnox',
-                    href: '/integrationer/fortnox',
-                    badge: 'Tillgänglig nu',
-                    badgeClass: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
-                    desc: 'Skicka klara ordrar och delfakturor till Fortnox med kund, hyresrader, artikelnummer och kostnadsställe. Kunder som saknas skapas automatiskt.',
-                  },
-                  {
-                    name: 'Serviceprotokoll',
-                    href: '/integrationer/serviceprotokoll',
-                    badge: 'Tillgänglig nu',
-                    badgeClass: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
-                    desc: 'Hyresmaskiner med tekniska data samt kunder, anläggningar och kontakter hämtas automatiskt var 30:e minut.',
-                  },
-                  {
-                    name: 'Visma',
-                    href: null,
-                    badge: 'Planerad',
-                    badgeClass: 'bg-amber-50 text-amber-700 border border-amber-100',
-                    desc: 'Finns på vår roadmap men är inte tillgänglig ännu.',
-                  },
-                  {
-                    name: 'Andra system',
-                    href: null,
-                    badge: 'På förfrågan',
-                    badgeClass: 'bg-slate-100 text-slate-600 border border-slate-200',
-                    desc: 'Behöver ni koppla FleetOS till något annat, till exempel ett GPS-system? Berätta vad ni behöver så bedömer vi om det går att anpassa.',
-                  },
-                ].map(({ name, href, badge, badgeClass, desc }, i) => (
-                  <AnimateIn key={name} delay={i * 80} className="flex items-start gap-4">
-                    <div className="w-0.5 self-stretch bg-slate-200 rounded-full shrink-0" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        {href
-                          ? <Link href={href} className="text-[14px] font-bold text-slate-900 hover:text-blue-700">{name}-integration</Link>
-                          : <span className="text-[14px] font-bold text-slate-900">{name}</span>}
-                        <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${badgeClass}`}>{badge}</span>
-                      </div>
-                      <p className="text-[13px] text-slate-500 leading-relaxed">{desc}</p>
-                    </div>
-                  </AnimateIn>
-                ))}
-              </div>
-              <Link href="/integrationer" className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-blue-600 hover:text-blue-700">
-                Läs mer om integrationerna <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </AnimateIn>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ── How it works ── */}
-      <section id="how-it-works" className="py-16 sm:py-28 px-4 sm:px-6 bg-slate-50 border-y border-slate-200">
-        <div className="max-w-5xl mx-auto">
-          <AnimateIn className="text-center mb-20">
-            <p className="text-[12px] font-semibold text-blue-600 uppercase tracking-widest mb-3">Hur det fungerar</p>
-            <h2 className="text-2xl sm:text-[40px] font-bold text-slate-900 tracking-tight mb-4">Så kommer ni igång</h2>
-            <p className="text-[16px] text-slate-500 max-w-lg mx-auto">Fyra steg från första genomgång till full koll på flottan.</p>
-          </AnimateIn>
-
-          <div className="relative">
-            <div className="absolute top-10 left-[calc(12.5%+20px)] right-[calc(12.5%+20px)] h-px bg-gradient-to-r from-blue-200 via-blue-400 to-blue-200 hidden md:block" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-              {[
-                { step: 1, title: 'Boka demo', desc: 'Vi går igenom era behov, sätter upp kontot och ni bjuder in kollegorna.', icon: Users },
-                { step: 2, title: 'Lägg upp flottan', desc: 'Fotografera typskylten så fyller AI i uppgifterna, eller hämta maskinerna från Serviceprotokoll.', icon: Truck },
-                { step: 3, title: 'Skapa order', desc: 'Välj kund, maskin och prismall. Systemet beräknar pris och genererar avtal.', icon: FileText },
-                { step: 4, title: 'Följ & analysera', desc: 'Realtidsdashboard med beläggning, försenade returer och lönsamhet.', icon: BarChart3 },
-              ].map(({ step, title, desc, icon: Icon }, i) => (
-                <AnimateIn key={step} delay={i * 100} direction="up" className="flex flex-col items-center text-center relative">
-                  <div className="w-20 h-20 rounded-2xl bg-white border-2 border-blue-200 flex flex-col items-center justify-center mb-5 shadow-sm relative z-10">
-                    <Icon className="w-7 h-7 text-blue-600 mb-1" />
-                    <span className="text-[10px] font-bold text-blue-400">STEG {step}</span>
-                  </div>
-                  <h3 className="text-[15px] font-semibold text-slate-900 mb-2">{title}</h3>
-                  <p className="text-[13px] text-slate-500 leading-relaxed">{desc}</p>
-                </AnimateIn>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-      {/* ── Senaste händelserna ── */}
-      <LatestEventsSection />
-
-      <FAQSection />
-
-      {/* ── Final CTA ── */}
-      <section className="py-28 px-6 bg-[#060D1A] relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/[0.07] rounded-full blur-[120px]" />
-          <div className="absolute inset-0 opacity-[0.022]"
-            style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '64px 64px' }}
-          />
-          <div className="absolute inset-0 bg-grain" />
-        </div>
-        <AnimateIn direction="scale" className="relative max-w-2xl mx-auto text-center">
-          <div className="mx-auto mb-8">
-            <Logo size={56} />
-          </div>
-          <h2 className="text-[44px] font-bold text-white tracking-tight leading-tight mb-5">
-            Redo att modernisera<br />din uthyrning?
-          </h2>
-          <p className="text-[16px] text-slate-400 mb-10 max-w-md mx-auto leading-relaxed">
-            Digitalisera hela uthyrningsprocessen med FleetOS — från order och hyresavtal till returhantering och fakturaunderlag.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/kom-igang" className="flex items-center gap-2 px-7 py-4 bg-blue-600 hover:bg-blue-500 active:scale-[0.97] text-white font-bold rounded-xl transition text-[15px] shadow-xl shadow-blue-900/40 hover:-translate-y-0.5">
-              Kom igång med FleetOS
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link href="/kontakt" className="flex items-center gap-2 px-7 py-4 bg-white/[0.06] hover:bg-white/[0.1] active:scale-[0.97] text-white font-medium rounded-xl border border-white/10 transition text-[15px]">
-              Kontakta oss
-            </Link>
-          </div>
-          <p className="text-[12px] text-slate-600 mt-6">Ingen bindningstid · AI-drivet · Full kontroll på intäkterna</p>
-        </AnimateIn>
-      </section>
+        </section>
+      </main>
 
       <PublicFooter />
     </div>

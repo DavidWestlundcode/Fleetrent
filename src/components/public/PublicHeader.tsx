@@ -1,50 +1,61 @@
 'use client';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import PublicMobileNav from '@/components/public/PublicMobileNav';
-import CustomersNavDropdown from '@/components/public/CustomersNavDropdown';
 
 const NAV_ITEMS = [
   { label: 'Funktioner', href: '/funktioner' },
-  { label: 'Hur det fungerar', href: '/#how-it-works' },
+  { label: 'Branscher', href: '/#branscher' },
   { label: 'Integrationer', href: '/integrationer' },
   { label: 'Priser', href: '/priser' },
   { label: 'Kunder', href: '/kunder' },
 ];
 
+// Floating, single-line bar. The same component is used on every public page.
 export default function PublicHeader() {
+  const pathname = usePathname();
+  const isActive = (href: string) => !href.startsWith('/#') && (pathname === href || pathname.startsWith(href + '/'));
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+    <header className="fixed top-3 inset-x-3 sm:top-4 sm:inset-x-6 z-50">
+      <div className="max-w-6xl mx-auto h-14 pl-3 pr-2 sm:pl-5 flex items-center justify-between rounded-2xl bg-white/85 backdrop-blur-xl ring-1 ring-slate-900/[0.06] shadow-[0_8px_24px_-12px_rgba(15,23,42,0.18)]">
+        <div className="flex items-center gap-1.5">
           <PublicMobileNav items={NAV_ITEMS} />
-          <Link href="/" className="flex items-center gap-2">
-            <Logo size={28} priority />
+          <Link href="/" className="flex items-center gap-2 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600">
+            <Logo size={24} priority decorative />
             <span className="font-bold text-slate-900 text-[15px] tracking-tight">FleetOS</span>
           </Link>
         </div>
-        <nav className="hidden md:flex items-center justify-center gap-1 absolute left-1/2 -translate-x-1/2">
-          {NAV_ITEMS.map(({ label, href }) =>
-            label === 'Kunder' ? (
-              <CustomersNavDropdown key={label} />
-            ) : (
-              <a key={label} href={href} className="px-3 py-1.5 text-[13px] text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors font-medium">
-                {label}
-              </a>
-            )
-          )}
+
+        <nav aria-label="Huvudmeny" className="hidden md:flex items-center gap-0.5">
+          {NAV_ITEMS.map(({ label, href }) => (
+            <Link
+              key={label}
+              href={href}
+              aria-current={isActive(href) ? 'page' : undefined}
+              className={`px-3 py-1.5 text-[13.5px] font-medium rounded-lg transition-colors duration-150 ${
+                isActive(href) ? 'text-slate-900 bg-slate-100' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/70'
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
         </nav>
-        <div className="flex items-center gap-2">
-          <Link href="/login" className="text-[13px] font-medium text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+
+        <div className="flex items-center gap-1">
+          <Link href="/login" className="hidden sm:inline-block text-[13.5px] font-medium text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-lg transition-colors">
             Logga in
           </Link>
           <Link
             href="/kom-igang"
-            className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 bg-slate-900 hover:bg-slate-700 active:scale-[0.97] text-white text-[13px] font-semibold rounded-xl transition-all shadow-sm"
+            className="group inline-flex items-center gap-2 pl-4 pr-1.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-[13.5px] font-semibold rounded-xl transition-[background-color,transform] duration-150 ease-out-strong active:scale-[0.97]"
           >
             Boka demo
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-white/10 transition-transform duration-200 ease-out-strong group-hover:translate-x-0.5">
+              <ArrowRight className="w-3.5 h-3.5" strokeWidth={2} />
+            </span>
           </Link>
         </div>
       </div>

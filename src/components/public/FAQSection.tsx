@@ -1,115 +1,65 @@
-'use client';
-import { useState } from 'react';
-import { Plus } from 'lucide-react';
-import { AnimateIn } from '@/components/ui/AnimateIn';
+import Link from 'next/link';
+import JsonLd from '@/components/public/JsonLd';
+import { faqJsonLd } from '@/lib/seo';
 
-type Category = 'Allmänt' | 'Teknik' | 'Affär';
-
-const FAQS: Record<Category, { q: string; a: string }[]> = {
-  Allmänt: [
-    { q: 'Hur lång tid tar det att komma igång?', a: 'Det beror på hur stor flottan är och var era maskiner finns i dag. Vi sätter upp kontot, hjälper er att lägga upp flottan och går igenom systemet med teamet. Finns maskinerna i Serviceprotokoll hämtas de automatiskt.' },
-    { q: 'Vad händer med mina befintliga data i Excel?', a: 'Vi hjälper dig migrera din befintliga data. Kontakta oss så sätter vi upp en import anpassad för din situation.' },
-    { q: 'Fungerar det i mobilen?', a: 'Ja, FleetOS är fullt responsivt och optimerat för mobila enheter. QR-funktionen kräver bara en webbläsare.' },
-  ],
-  Teknik: [
-    { q: 'Hur säker är datan?', a: 'All data lagras krypterad i EU-baserade datacenter (Supabase/AWS Irland). Vi följer GDPR fullt ut.' },
-    { q: 'Hur fungerar e-signeringen?', a: 'E-signering ingår i alla planer. Du skickar hyresavtalet direkt från FleetOS och kunden signerar digitalt via e-post. En rörlig kostnad tillkommer per skickat avtal — kontakta oss för aktuell prislista.' },
-  ],
-  Affär: [
-    { q: 'Kan jag bjuda in hela teamet?', a: 'Ja. Start har 2 användare, Basic 5 och Premium 10, och fler användare kan läggas till mot en månadskostnad per person. Varje användare får rollen admin, säljare eller verkstad.' },
-    { q: 'Kan jag byta plan?', a: 'Ja, kontakta oss så hjälper vi dig uppgradera eller nedgradera när som helst.' },
-    { q: 'Finns det en bindningstid?', a: 'Nej. Du betalar månad för månad och kan avsluta när du vill.' },
-    { q: 'Ingår support?', a: 'Ja, support via e-post ingår i alla planer. Premium-kunder får prioriterad hantering.' },
-  ],
-};
-
-const CATEGORIES = Object.keys(FAQS) as Category[];
-
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: CATEGORIES.flatMap((c) => FAQS[c]).map(({ q, a }) => ({
-    '@type': 'Question',
-    name: q,
-    acceptedAnswer: { '@type': 'Answer', text: a },
-  })),
-};
+// Answers must match /priser and the product. Grouped and fully visible (no accordion),
+// which also keeps this a server component.
+const GROUPS: { title: string; faqs: { q: string; a: string }[] }[] = [
+  {
+    title: 'Komma igång',
+    faqs: [
+      { q: 'Hur lång tid tar det att komma igång?', a: 'Det beror på hur stor flottan är och var era maskiner finns i dag. Vi sätter upp kontot, hjälper er att lägga upp flottan och går igenom systemet med teamet. Finns maskinerna i Serviceprotokoll hämtas de automatiskt.' },
+      { q: 'Vad händer med mina befintliga data i Excel?', a: 'Vi hjälper dig att flytta över befintliga uppgifter. Kontakta oss så sätter vi upp en import som passar er situation.' },
+      { q: 'Fungerar det i mobilen?', a: 'Ja. FleetOS fungerar i webbläsaren på dator, surfplatta och mobil. QR-funktionen kräver bara en webbläsare.' },
+    ],
+  },
+  {
+    title: 'Teknik',
+    faqs: [
+      { q: 'Hur säker är datan?', a: 'All data lagras krypterad i EU-baserade datacenter (Supabase/AWS Irland). Vi följer GDPR.' },
+      { q: 'Hur fungerar e-signeringen?', a: 'E-signering ingår i alla planer. Du skickar hyresavtalet direkt från FleetOS och kunden signerar digitalt via e-post. En rörlig kostnad tillkommer per skickat avtal. Kontakta oss för aktuell prislista.' },
+    ],
+  },
+  {
+    title: 'Avtal och priser',
+    faqs: [
+      { q: 'Kan jag bjuda in hela teamet?', a: 'Ja. Start har 2 användare, Basic 5 och Premium 10, och fler användare kan läggas till mot en månadskostnad per person. Varje användare får rollen admin, säljare eller verkstad.' },
+      { q: 'Kan jag byta plan?', a: 'Ja, kontakta oss så hjälper vi dig att uppgradera eller nedgradera när som helst.' },
+      { q: 'Finns det en bindningstid?', a: 'Nej. Du betalar månad för månad och kan avsluta när du vill.' },
+      { q: 'Ingår support?', a: 'Ja, support via e-post ingår i alla planer. Premium-kunder får prioriterad hantering.' },
+    ],
+  },
+];
 
 export default function FAQSection() {
-  const [tab, setTab] = useState<Category>('Allmänt');
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-  function selectTab(c: Category) {
-    setTab(c);
-    setOpenIndex(null);
-  }
-
   return (
-    <section className="py-14 sm:py-24 px-4 sm:px-6 border-t border-slate-100 bg-slate-50">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
-      <AnimateIn className="max-w-5xl mx-auto">
-        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 sm:p-12">
-          {/* Tabs */}
-          <div className="flex mb-10 sm:mb-14 -mx-1">
-            {CATEGORIES.map((c) => (
-              <button
-                key={c}
-                onClick={() => selectTab(c)}
-                className="flex-1 mx-1 pb-3 text-[13px] sm:text-[14px] font-semibold border-b-2 transition-colors cursor-pointer text-center"
-                style={{
-                  color: tab === c ? '#0f172a' : '#94a3b8',
-                  borderColor: tab === c ? '#2563eb' : '#e2e8f0',
-                }}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,280px)_1fr] gap-10 lg:gap-16">
-            {/* Left: intro */}
-            <div>
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Vanliga frågor</p>
-              <h2 className="text-[36px] sm:text-[44px] font-bold text-slate-900 tracking-tight leading-none mb-4">FAQ</h2>
-              <p className="text-[14px] text-slate-500 leading-relaxed">
-                Allt du behöver veta om FleetOS. Hittar du inte svaret du söker? Kontakta oss så hjälper vi dig.
-              </p>
-            </div>
-
-            {/* Right: accordion */}
-            <div className="divide-y divide-slate-100">
-              {FAQS[tab].map(({ q, a }, i) => {
-                const open = openIndex === i;
-                return (
-                  <div key={q} className="py-4 sm:py-5 first:pt-0 last:pb-0">
-                    <button
-                      onClick={() => setOpenIndex(open ? null : i)}
-                      className="w-full flex items-center justify-between gap-6 text-left cursor-pointer group"
-                    >
-                      <span className="text-[14px] sm:text-[15px] font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
-                        {q}
-                      </span>
-                      <span
-                        className={`shrink-0 w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 transition-transform duration-200 ${open ? 'rotate-45 border-blue-200 text-blue-600' : ''}`}
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </span>
-                    </button>
-                    <div
-                      className="grid transition-[grid-template-rows] duration-300 ease-out"
-                      style={{ gridTemplateRows: open ? '1fr' : '0fr' }}
-                    >
-                      <div className="overflow-hidden">
-                        <p className="text-[13px] sm:text-[14px] text-slate-500 leading-relaxed pt-3 pr-10">{a}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+    <section aria-labelledby="faq-heading" className="py-24 sm:py-32 px-4 sm:px-6 bg-white">
+      <JsonLd data={faqJsonLd(GROUPS.flatMap((g) => g.faqs))} />
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] gap-12 lg:gap-16">
+        <div className="lg:sticky lg:top-28 lg:self-start">
+          <h2 id="faq-heading" className="text-[32px] sm:text-[40px] font-semibold text-slate-950 tracking-[-0.025em] leading-[1.1] text-balance">
+            Vanliga frågor
+          </h2>
+          <p className="mt-4 text-[15px] text-slate-500 leading-relaxed max-w-sm text-pretty">
+            Hittar du inte svaret? <Link href="/kontakt" className="text-slate-900 underline decoration-slate-300 underline-offset-4 hover:decoration-slate-900 transition-colors">Hör av dig</Link>, vi svarar normalt inom en arbetsdag.
+          </p>
         </div>
-      </AnimateIn>
+        <div className="space-y-12">
+          {GROUPS.map(({ title, faqs }) => (
+            <div key={title}>
+              <h3 className="text-[13px] font-semibold text-slate-500 mb-2">{title}</h3>
+              <dl className="divide-y divide-slate-100">
+                {faqs.map(({ q, a }) => (
+                  <div key={q} className="py-5 grid grid-cols-1 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-2 md:gap-8">
+                    <dt className="text-[15px] font-semibold text-slate-900 text-pretty">{q}</dt>
+                    <dd className="text-[14.5px] text-slate-600 leading-relaxed text-pretty">{a}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }

@@ -12,11 +12,11 @@ export default function PageCta({
   secondary?: { label: string; href: string };
 }) {
   return (
-    <div className="not-prose mt-14 p-6 sm:p-8 bg-[#060D1A] rounded-2xl">
+    <div className="not-prose mt-14 p-7 sm:p-10 bg-slate-950 rounded-[1.25rem]">
       <p className="text-[20px] font-bold text-white mb-2">{heading}</p>
       <p className="text-[14px] text-slate-400 leading-relaxed mb-6 max-w-xl">{text}</p>
       <div className="flex flex-col sm:flex-row gap-3">
-        <Link href="/kom-igang" className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-colors text-sm">
+        <Link href="/kom-igang" className="inline-flex items-center justify-center px-6 py-3 bg-white hover:bg-slate-100 text-slate-950 font-semibold rounded-xl transition-[background-color,transform] duration-150 ease-out-strong active:scale-[0.97] text-sm">
           Boka demo
         </Link>
         <Link href={secondary.href} className="inline-flex items-center justify-center px-6 py-3 bg-white/[0.06] hover:bg-white/[0.1] border border-white/10 text-white font-medium rounded-xl transition-colors text-sm">

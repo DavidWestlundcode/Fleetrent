@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Logo } from '@/components/ui/Logo';
 
 const FOOTER_COLUMNS = [
@@ -7,19 +8,18 @@ const FOOTER_COLUMNS = [
     { label: 'Fortnox-integration', href: '/integrationer/fortnox' },
     { label: 'Serviceprotokoll-integration', href: '/integrationer/serviceprotokoll' },
     { label: 'Kundcase', href: '/kunder' },
-    { label: 'Boka demo', href: '/kom-igang' },
+  ]},
+  { title: 'Branscher', links: [
+    { label: 'Truckar', href: '/uthyrning/truckar' },
+    { label: 'Byggmaskiner', href: '/uthyrning/byggmaskiner' },
+    { label: 'Liftar och skylift', href: '/uthyrning/liftar' },
   ]},
   { title: 'Företag', links: [
     { label: 'Om oss', href: '/om-oss' },
-    { label: 'Karriär', href: '/karriar' },
-    { label: 'Press', href: '/press' },
-    { label: 'Senaste händelserna', href: '/handelser' },
     { label: 'Kontakt', href: '/kontakt' },
-  ]},
-  { title: 'Branscher', links: [
-    { label: 'Byggmaskiner', href: '/uthyrning/byggmaskiner' },
-    { label: 'Truckar', href: '/uthyrning/truckar' },
-    { label: 'Liftar & skylift', href: '/uthyrning/liftar' },
+    { label: 'Senaste händelserna', href: '/handelser' },
+    { label: 'Press', href: '/press' },
+    { label: 'Karriär', href: '/karriar' },
   ]},
   { title: 'Juridik', links: [
     { label: 'Integritetspolicy', href: '/integritetspolicy' },
@@ -31,54 +31,50 @@ const FOOTER_COLUMNS = [
 
 export default function PublicFooter() {
   return (
-    <footer className="bg-[#030810] border-t border-white/[0.04]">
-      <div className="max-w-6xl mx-auto px-6 py-14">
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-10 mb-12">
+    <footer className="bg-slate-50 border-t border-slate-200/70">
+      <div className="max-w-6xl mx-auto px-6 pt-16 pb-10">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-x-8 gap-y-10 mb-14">
           <div className="col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <Logo size={28} />
-              <span className="text-[14px] font-bold text-white tracking-tight">FleetOS</span>
-            </div>
-            <p className="text-[13px] text-slate-500 leading-relaxed max-w-[240px]">
+            <Link href="/" className="inline-flex items-center gap-2 mb-4">
+              <Logo size={24} decorative />
+              <span className="text-[15px] font-bold text-slate-900 tracking-tight">FleetOS</span>
+            </Link>
+            <p className="text-[13.5px] text-slate-500 leading-relaxed max-w-[260px]">
               Uthyrningssystem för företag som hyr ut maskiner, truckar och liftar.
             </p>
-            <p className="text-[12px] text-slate-600 leading-relaxed mt-4">
-              DSE ENTERPRISE AB · Org.nr 559510-0248<br />
-              <a href="mailto:david@fleetos.se" className="hover:text-slate-300 transition-colors">david@fleetos.se</a>
-            </p>
+            <Link
+              href="/kom-igang"
+              className="inline-flex mt-6 px-4 py-2 rounded-xl bg-white ring-1 ring-slate-900/10 text-[13px] font-semibold text-slate-900 hover:ring-slate-900/20 transition-[box-shadow,transform] duration-150 ease-out-strong active:scale-[0.97]"
+            >
+              Boka demo
+            </Link>
           </div>
           {FOOTER_COLUMNS.map(({ title, links }) => (
             <div key={title}>
-              <p className="text-[12px] font-semibold text-white uppercase tracking-wider mb-4">{title}</p>
+              <p className="text-[13px] font-semibold text-slate-900 mb-4">{title}</p>
               <ul className="space-y-2.5">
                 {links.map(({ label, href }) => (
                   <li key={label}>
-                    <a href={href} className="text-[13px] text-slate-500 hover:text-slate-300 transition-colors">{label}</a>
+                    <Link href={href} className="text-[13.5px] text-slate-500 hover:text-slate-900 transition-colors">{label}</Link>
                   </li>
                 ))}
               </ul>
             </div>
           ))}
         </div>
-        <div className="pt-8 border-t border-white/[0.05] flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-[12px] text-slate-600">
-            © {new Date().getFullYear()} DSE ENTERPRISE AB. Alla rättigheter förbehållna.
+        <div className="pt-6 border-t border-slate-200/70 flex flex-col md:flex-row md:items-center justify-between gap-3 text-[12.5px] text-slate-500">
+          <p>
+            © {new Date().getFullYear()} DSE ENTERPRISE AB, org.nr 559510-0248.{' '}
+            <a href="mailto:david@fleetos.se" className="hover:text-slate-900 transition-colors">david@fleetos.se</a>
           </p>
-          <div className="flex items-center gap-2">
-            <a
-              href="https://www.instagram.com/fleetos.se/"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Instagram"
-              className="text-slate-500 hover:text-slate-300 transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-              </svg>
-            </a>
-          </div>
+          <a
+            href="https://www.instagram.com/fleetos.se/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-slate-900 transition-colors"
+          >
+            Instagram
+          </a>
         </div>
       </div>
     </footer>

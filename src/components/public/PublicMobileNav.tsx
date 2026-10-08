@@ -30,13 +30,13 @@ export default function PublicMobileNav({ items }: { items: NavItem[] }) {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-2 w-[min(14rem,calc(100vw-2rem))] bg-white rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/60 py-2 z-50">
-          {items.map(({ label, href }) => (
+        <div className="absolute -left-1 top-full mt-3 w-[min(16rem,calc(100vw-2rem))] bg-white rounded-2xl ring-1 ring-slate-900/[0.06] shadow-[0_16px_40px_-16px_rgba(15,23,42,0.3)] p-1.5 z-50 origin-top-left animate-menu-in">
+          {[...items, { label: 'Logga in', href: '/login' }].map(({ label, href }) => (
             <a
               key={label}
               href={href}
               onClick={() => setOpen(false)}
-              className="block px-4 py-2.5 text-[14px] font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+              className="block px-3.5 py-2.5 rounded-xl text-[14px] font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors"
             >
               {label}
             </a>

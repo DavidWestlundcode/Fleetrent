@@ -1,6 +1,6 @@
 ﻿import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
-import { Plus_Jakarta_Sans, Instrument_Serif } from 'next/font/google';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import { ChunkErrorReload } from '@/components/ChunkErrorReload';
 import { SITE_URL } from '@/lib/seo';
 import './globals.css';
@@ -14,15 +14,6 @@ const jakarta = Plus_Jakarta_Sans({
   variable: '--font-jakarta',
 });
 
-// Only used for the small italic "Betrodd av" accent below the fold — not worth a preload.
-const instrument = Instrument_Serif({
-  subsets: ['latin'],
-  weight: '400',
-  style: 'italic',
-  display: 'swap',
-  preload: false,
-  variable: '--font-instrument',
-});
 
 // No `alternates.canonical` here on purpose: a canonical in the root layout is inherited by
 // every page that doesn't set its own, which pointed /demo, /press etc. at the home page.
@@ -62,7 +53,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="sv" className={`h-full ${jakarta.variable} ${instrument.variable}`}>
+    <html lang="sv" className={`h-full ${jakarta.variable}`}>
       <body className="h-full bg-slate-50">
         <ChunkErrorReload />
         <Script src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_ID}`} strategy="afterInteractive" />
