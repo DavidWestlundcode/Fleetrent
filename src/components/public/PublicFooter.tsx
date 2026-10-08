@@ -66,6 +66,8 @@ export default function PublicFooter() {
           <p>
             © {new Date().getFullYear()} DSE ENTERPRISE AB, org.nr 559510-0248.{' '}
             <a href="mailto:david@fleetos.se" className="hover:text-slate-900 transition-colors">david@fleetos.se</a>
+            {' och '}
+            <a href="mailto:elias@fleetos.se" className="hover:text-slate-900 transition-colors">elias@fleetos.se</a>
           </p>
           <a
             href="https://www.instagram.com/fleetos.se/"
