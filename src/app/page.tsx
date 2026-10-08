@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Check, Minus } from 'lucide-react';
 import { AnimateIn } from '@/components/ui/AnimateIn';
+import { Logo } from '@/components/ui/Logo';
 import PublicHeader from '@/components/public/PublicHeader';
 import PublicFooter from '@/components/public/PublicFooter';
 import FAQSection from '@/components/public/FAQSection';
@@ -113,6 +114,13 @@ function TextLink({ href, children, className = '' }: { href: string; children: 
   );
 }
 
+const FACTS = [
+  { value: '1 495 kr', label: 'per månad för Start, exkl. moms' },
+  { value: '0 kr', label: 'i installationsavgift och ingen bindningstid' },
+  { value: '30 min', label: 'mellan varje synk med Serviceprotokoll' },
+  { value: '3 roller', label: 'admin, säljare och verkstad' },
+];
+
 const WITHOUT = [
   'Kalkylblad och mejlkedjor som enda verktyg',
   'Telefonsamtal för varje fråga om vad som är ledigt',
@@ -150,6 +158,39 @@ const STEPS = [
   { title: 'Följ upp', desc: 'Se beläggning, försenade returer och lönsamhet per maskin.' },
 ];
 
+const cardLink = 'group h-full rounded-[1.25rem] flex flex-col transition-[transform,box-shadow] duration-300 ease-out-strong hover:-translate-y-1 active:scale-[0.995]';
+const zoomImg = 'transition-transform duration-700 ease-out-strong group-hover:scale-[1.025]';
+
+/** Arrow label inside a card that is itself a link (a nested <a> would be invalid). */
+function CardArrow({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-slate-900 ${className}`}>
+      {children}
+      <ArrowRight className="w-4 h-4 text-slate-400 transition-transform duration-200 ease-out-strong group-hover:translate-x-0.5 group-hover:text-slate-900" strokeWidth={1.75} />
+    </span>
+  );
+}
+
+/** Two systems and the direction data moves between them (decorative; text says the same). */
+function FlowDiagram({ from, to }: { from: string; to: string }) {
+  const node = (label: string) => (
+    <span className="inline-flex items-center gap-1.5 shrink-0 rounded-[10px] bg-white ring-1 ring-slate-900/[0.08] px-3 py-1.5 text-[13px] font-semibold text-slate-900">
+      {label === 'FleetOS' && <Logo size={14} decorative />}
+      {label}
+    </span>
+  );
+  return (
+    <div aria-hidden="true" className="flex items-center gap-3">
+      {node(from)}
+      <span className="relative flex-1 h-[2px] rounded-full bg-slate-200 overflow-hidden">
+        <span className="flow-pulse absolute inset-y-0 left-0 w-[30%] rounded-full bg-gradient-to-r from-blue-600/0 via-blue-600 to-blue-600/0" />
+      </span>
+      <ArrowRight className="w-4 h-4 -ml-2 text-slate-300 shrink-0" strokeWidth={2} />
+      {node(to)}
+    </div>
+  );
+}
+
 const sectionHeading = 'text-[32px] sm:text-[42px] font-semibold text-slate-950 tracking-[-0.03em] leading-[1.08] text-balance';
 const sectionLead = 'mt-5 text-[16.5px] text-slate-500 leading-relaxed max-w-[60ch] text-pretty';
 
@@ -162,9 +203,9 @@ export default function LandingPage() {
 
       <main>
         {/* Hero: left-aligned copy, real product screenshot bleeding off the right edge */}
-        <section className="relative pt-32 sm:pt-36 lg:pt-40 pb-16 sm:pb-24 px-4 sm:px-6 overflow-hidden">
+        <section className="relative isolate pt-32 sm:pt-36 lg:pt-40 pb-16 sm:pb-24 px-4 sm:px-6 overflow-hidden">
           <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-12 lg:gap-14 items-center">
-            <div className="animate-fade-up">
+            <div className="hero-copy relative">
               <h1 className="text-[38px] sm:text-[50px] lg:text-[54px] font-semibold text-slate-950 tracking-[-0.035em] leading-[1.04] text-balance">
                 Uthyrningssystem för maskiner, truckar och liftar
               </h1>
@@ -177,12 +218,14 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="animate-fade-up-delayed lg:-mr-40 xl:-mr-56">
+            <div className="relative lg:-mr-40 xl:-mr-56">
+              <div aria-hidden="true" className="dot-field absolute -inset-x-16 -inset-y-20 -z-10" />
               <Screenshot
                 src="/screens/dashboard.png"
                 alt="FleetOS dashboard med flottans status, intäkter per månad och varningar för försenade returer"
                 priority
                 sizes="(min-width: 1024px) 860px, 100vw"
+                className="hero-shot"
               />
               <p className="mt-3 text-[12px] text-slate-500">Skärmbild från den interaktiva demon med exempeldata.</p>
             </div>
@@ -208,6 +251,23 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Facts: real, verifiable numbers from /priser and the integrations */}
+        <section aria-label="FleetOS i siffror" className="px-4 sm:px-6 pt-16 sm:pt-20">
+          {/* Left rule between columns only: odd cells on mobile (2 cols) and the first cell on desktop (4 cols) start flush with the page edge. */}
+          <dl className="max-w-6xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-y-10">
+            {FACTS.map(({ value, label }, i) => (
+              <AnimateIn
+                key={label}
+                delay={i * 60}
+                className="flex flex-col-reverse justify-end pl-6 border-l border-slate-200/80 max-lg:odd:pl-0 max-lg:odd:border-l-0 lg:pl-8 lg:first:pl-0 lg:first:border-l-0"
+              >
+                <dt className="mt-3 text-[14px] text-slate-500 leading-snug max-w-[24ch]">{label}</dt>
+                <dd className="text-[32px] sm:text-[42px] font-semibold text-slate-950 tracking-[-0.03em] leading-none tabular-nums">{value}</dd>
+              </AnimateIn>
+            ))}
+          </dl>
+        </section>
+
         {/* Before / after */}
         <section className="py-24 sm:py-32 px-4 sm:px-6">
           <div className="max-w-6xl mx-auto">
@@ -223,10 +283,12 @@ export default function LandingPage() {
                 <div className="h-full rounded-[1.25rem] bg-slate-50 p-7 sm:p-9">
                   <h3 className="text-[17px] font-semibold text-slate-500">Utan ett uthyrningssystem</h3>
                   <ul className="mt-6 space-y-4">
-                    {WITHOUT.map((t) => (
-                      <li key={t} className="flex gap-3 text-[15px] text-slate-500 leading-snug">
+                    {WITHOUT.map((t, i) => (
+                      <li key={t}>
+                        <AnimateIn delay={120 + i * 50} className="flex gap-3 text-[15px] text-slate-500 leading-snug">
                         <Minus className="w-4 h-4 mt-0.5 shrink-0 text-slate-300" strokeWidth={2} />
                         {t}
+                        </AnimateIn>
                       </li>
                     ))}
                   </ul>
@@ -236,10 +298,12 @@ export default function LandingPage() {
                 <div className="h-full rounded-[1.25rem] bg-white ring-1 ring-slate-900/[0.07] shadow-[0_24px_48px_-32px_rgba(15,23,42,0.3)] p-7 sm:p-9">
                   <h3 className="text-[17px] font-semibold text-slate-950">Med FleetOS</h3>
                   <ul className="mt-6 space-y-4">
-                    {WITH.map((t) => (
-                      <li key={t} className="flex gap-3 text-[15px] text-slate-800 leading-snug">
+                    {WITH.map((t, i) => (
+                      <li key={t}>
+                        <AnimateIn delay={120 + i * 50} className="flex gap-3 text-[15px] text-slate-800 leading-snug">
                         <Check className="w-4 h-4 mt-0.5 shrink-0 text-blue-600" strokeWidth={2.25} />
                         {t}
+                        </AnimateIn>
                       </li>
                     ))}
                   </ul>
@@ -259,10 +323,12 @@ export default function LandingPage() {
               </p>
             </AnimateIn>
 
+            {/* Each cell is one link (hover = feedback that it leads somewhere). Lift and image
+                zoom use transform only; Tailwind v4 gates hover: to real pointer devices. */}
             <div className="mt-14 grid grid-cols-1 lg:grid-cols-12 gap-4">
               {/* Orders */}
               <AnimateIn className="lg:col-span-7">
-                <article className="h-full rounded-[1.25rem] bg-white ring-1 ring-slate-900/[0.06] p-7 sm:p-9 flex flex-col">
+                <Link href="/funktioner" className={`${cardLink} bg-white ring-1 ring-slate-900/[0.06] hover:ring-slate-900/[0.12] p-7 sm:p-9`}>
                   <h3 className="text-[20px] font-semibold text-slate-950 tracking-tight">Order och bokning</h3>
                   <p className="mt-3 text-[15px] text-slate-500 leading-relaxed max-w-[52ch]">
                     Välj kund, anläggning och maskin. Priset räknas fram från prismallen för dag, vecka eller månad, och maskinen kan reserveras i förväg.
@@ -272,33 +338,34 @@ export default function LandingPage() {
                     alt="Lista över uthyrningsorder med kund, maskin, period, belopp och status"
                     sizes="(min-width: 1024px) 620px, 100vw"
                     className="mt-8 aspect-[16/10]"
+                    imgClassName={zoomImg}
                   />
-                </article>
+                </Link>
               </AnimateIn>
 
               {/* Pickup and return */}
               <AnimateIn delay={60} className="lg:col-span-5">
-                <article className="relative h-full min-h-[420px] rounded-[1.25rem] overflow-hidden flex flex-col justify-end p-7 sm:p-9 text-white">
+                <Link href="/funktioner" className={`${cardLink} relative min-h-[420px] overflow-hidden justify-end p-7 sm:p-9 text-white`}>
                   <Image
                     src="/Rental-truck-demo-picture.png"
                     alt="Motviktstruck med pall i ett lager"
                     fill
                     sizes="(min-width: 1024px) 440px, 100vw"
-                    className="object-cover object-[20%_center]"
+                    className={`object-cover object-[20%_center] ${zoomImg}`}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-slate-950/0" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/45 to-slate-950/0" />
                   <div className="relative">
                     <h3 className="text-[20px] font-semibold tracking-tight">Utlämning och retur med QR-kod</h3>
                     <p className="mt-3 text-[15px] text-slate-200 leading-relaxed">
                       Skanna maskinens QR-kod och registrera drifttimmar, skick, foton och tillbehör. En skadad maskin går direkt till service.
                     </p>
                   </div>
-                </article>
+                </Link>
               </AnimateIn>
 
               {/* Agreements */}
               <AnimateIn className="lg:col-span-5">
-                <article className="h-full rounded-[1.25rem] bg-blue-50 ring-1 ring-blue-100 p-7 sm:p-9 flex flex-col">
+                <Link href="/funktioner" className={`${cardLink} bg-blue-50 ring-1 ring-blue-100 hover:ring-blue-200 p-7 sm:p-9`}>
                   <h3 className="text-[20px] font-semibold text-slate-950 tracking-tight">Hyresavtal med e-signering</h3>
                   <p className="mt-3 text-[15px] text-slate-600 leading-relaxed">
                     Avtalet skapas från ordern och skickas till kunden för digital signering via e-post.
@@ -314,12 +381,12 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                </article>
+                </Link>
               </AnimateIn>
 
               {/* Fortnox */}
               <AnimateIn delay={60} className="lg:col-span-7">
-                <article className="h-full rounded-[1.25rem] bg-white ring-1 ring-slate-900/[0.06] p-7 sm:p-9 flex flex-col">
+                <Link href="/integrationer/fortnox" className={`${cardLink} bg-white ring-1 ring-slate-900/[0.06] hover:ring-slate-900/[0.12] p-7 sm:p-9`}>
                   <h3 className="text-[20px] font-semibold text-slate-950 tracking-tight">Fakturaunderlag till Fortnox</h3>
                   <p className="mt-3 text-[15px] text-slate-500 leading-relaxed max-w-[52ch]">
                     En klar order blir en order i Fortnox med ett klick. Långtidshyror får en delfaktura i slutet av varje månad som ni granskar innan den skickas.
@@ -332,27 +399,28 @@ export default function LandingPage() {
                       </div>
                     ))}
                   </dl>
-                  <TextLink href="/integrationer/fortnox" className="mt-auto pt-8">Så fungerar Fortnox-integrationen</TextLink>
-                </article>
+                  <CardArrow className="mt-auto pt-8">Så fungerar Fortnox-integrationen</CardArrow>
+                </Link>
               </AnimateIn>
 
               {/* Profitability */}
               <AnimateIn className="lg:col-span-12">
-                <article className="rounded-[1.25rem] bg-white ring-1 ring-slate-900/[0.06] p-7 sm:p-9 grid grid-cols-1 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] gap-8 lg:gap-12 items-center">
+                <Link href="/funktioner" className={`${cardLink} bg-white ring-1 ring-slate-900/[0.06] hover:ring-slate-900/[0.12] p-7 sm:p-9 lg:grid lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] gap-8 lg:gap-12 items-center`}>
                   <div>
                     <h3 className="text-[20px] font-semibold text-slate-950 tracking-tight">Lönsamhet per maskin</h3>
                     <p className="mt-3 text-[15px] text-slate-500 leading-relaxed">
                       Intäkter, beläggning och resultat per maskin och kund, räknat mot inköp, leasing, försäkring och service. Ni ser vilka maskiner som tjänar pengar och vilka som står still.
                     </p>
-                    <TextLink href="/funktioner" className="mt-8">Se alla funktioner</TextLink>
+                    <CardArrow className="mt-8">Se alla funktioner</CardArrow>
                   </div>
                   <Screenshot
                     src="/screens/statistik.png"
                     alt="Statistik med intäkter per månad, intäkt per kategori och lönsamhet per maskin"
                     sizes="(min-width: 1024px) 700px, 100vw"
-                    className="aspect-[16/9]"
+                    className="mt-8 lg:mt-0 aspect-[16/9]"
+                    imgClassName={zoomImg}
                   />
-                </article>
+                </Link>
               </AnimateIn>
             </div>
           </div>
@@ -370,7 +438,7 @@ export default function LandingPage() {
               {INDUSTRIES.map(({ href, title, desc }, i) => (
                 <li key={href} className="border-b border-slate-200">
                   <AnimateIn delay={i * 50}>
-                    <Link href={href} className="group grid grid-cols-1 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)_auto] gap-3 md:gap-10 items-center py-8">
+                    <Link href={href} className="group grid grid-cols-1 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)_auto] gap-3 md:gap-10 items-center py-8 md:-mx-5 md:px-5 rounded-[14px] transition-colors duration-200 hover:bg-slate-50">
                       <h3 className="text-[20px] sm:text-[22px] font-semibold text-slate-950 tracking-tight transition-colors group-hover:text-blue-700">{title}</h3>
                       <p className="text-[15px] text-slate-500 leading-relaxed text-pretty">{desc}</p>
                       <span className="hidden md:flex items-center justify-center w-10 h-10 rounded-xl ring-1 ring-slate-200 text-slate-400 transition-[background-color,color,transform] duration-200 ease-out-strong group-hover:bg-slate-950 group-hover:text-white group-hover:ring-slate-950 group-hover:translate-x-0.5">
@@ -411,10 +479,13 @@ export default function LandingPage() {
             <AnimateIn>
               <div className="mt-14 rounded-[1.25rem] bg-white ring-1 ring-slate-900/[0.06] grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
                 {[
-                  { name: 'Fortnox', href: '/integrationer/fortnox', direction: 'Från FleetOS till Fortnox', desc: 'Klara ordrar och delfakturor skickas som ordrar i Fortnox med kund, hyresrader, artikelnummer och kostnadsställe. Kunder som saknas skapas automatiskt.' },
-                  { name: 'Serviceprotokoll', href: '/integrationer/serviceprotokoll', direction: 'Från Serviceprotokoll till FleetOS', desc: 'Hyresmaskiner med tekniska data samt kunder, anläggningar och kontakter hämtas automatiskt var 30:e minut.' },
-                ].map(({ name, href, direction, desc }) => (
+                  { name: 'Fortnox', href: '/integrationer/fortnox', from: 'FleetOS', to: 'Fortnox', direction: 'Från FleetOS till Fortnox', desc: 'Klara ordrar och delfakturor skickas som ordrar i Fortnox med kund, hyresrader, artikelnummer och kostnadsställe. Kunder som saknas skapas automatiskt.' },
+                  { name: 'Serviceprotokoll', href: '/integrationer/serviceprotokoll', from: 'Serviceprotokoll', to: 'FleetOS', direction: 'Från Serviceprotokoll till FleetOS', desc: 'Hyresmaskiner med tekniska data samt kunder, anläggningar och kontakter hämtas automatiskt var 30:e minut.' },
+                ].map(({ name, href, from, to, direction, desc }) => (
                   <div key={name} className="p-7 sm:p-10 flex flex-col">
+                    <div className="mb-8 rounded-[14px] bg-slate-50 px-4 py-5">
+                      <FlowDiagram from={from} to={to} />
+                    </div>
                     <p className="text-[13px] text-slate-500">{direction}</p>
                     <h3 className="mt-1 text-[24px] font-semibold text-slate-950 tracking-tight">{name}</h3>
                     <p className="mt-4 text-[15px] text-slate-500 leading-relaxed text-pretty">{desc}</p>
@@ -440,7 +511,13 @@ export default function LandingPage() {
             </AnimateIn>
             <ol className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
               {STEPS.map(({ title, desc }, i) => (
-                <li key={title} className={`border-t-2 pt-6 ${i === 0 ? 'border-blue-600' : 'border-slate-200'}`}>
+                <li key={title} className="relative pt-7">
+                  <span aria-hidden="true" className="absolute top-0 inset-x-0 h-0.5 rounded-full bg-slate-200" />
+                  <span
+                    aria-hidden="true"
+                    className="step-fill absolute top-0 inset-x-0 h-0.5 rounded-full bg-blue-600"
+                    style={{ '--fill-from': `${10 + i * 6}%`, '--fill-to': `${22 + i * 6}%` } as React.CSSProperties}
+                  />
                   <AnimateIn delay={i * 60}>
                     <h3 className="text-[17px] font-semibold text-slate-950">{title}</h3>
                     <p className="mt-2 text-[15px] text-slate-500 leading-relaxed text-pretty">{desc}</p>
@@ -458,7 +535,8 @@ export default function LandingPage() {
         {/* Closing CTA */}
         <section className="pb-24 sm:pb-32 px-4 sm:px-6">
           <AnimateIn className="max-w-6xl mx-auto">
-            <div className="rounded-[1.5rem] bg-slate-950 px-7 py-14 sm:px-14 sm:py-20 grid grid-cols-1 lg:grid-cols-[minmax(0,7fr)_auto] gap-10 items-end">
+            <div className="relative isolate overflow-hidden rounded-[1.5rem] bg-slate-950 px-7 py-14 sm:px-14 sm:py-20 grid grid-cols-1 lg:grid-cols-[minmax(0,7fr)_auto] gap-10 items-end">
+              <div aria-hidden="true" className="dot-field-dark absolute inset-0 -z-10" />
               <div>
                 <h2 className="text-[32px] sm:text-[42px] font-semibold text-white tracking-[-0.03em] leading-[1.08] text-balance">
                   Se FleetOS med era egna maskiner

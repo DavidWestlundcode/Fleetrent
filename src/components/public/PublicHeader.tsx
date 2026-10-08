@@ -20,7 +20,7 @@ export default function PublicHeader() {
 
   return (
     <header className="fixed top-3 inset-x-3 sm:top-4 sm:inset-x-6 z-50">
-      <div className="max-w-6xl mx-auto h-14 pl-3 pr-2 sm:pl-5 flex items-center justify-between rounded-2xl bg-white/85 backdrop-blur-xl ring-1 ring-slate-900/[0.06] shadow-[0_8px_24px_-12px_rgba(15,23,42,0.18)]">
+      <div className="header-bar relative max-w-6xl mx-auto h-14 pl-3 pr-2 sm:pl-5 flex items-center justify-between rounded-2xl bg-white/85 backdrop-blur-xl ring-1 ring-slate-900/[0.06]">
         <div className="flex items-center gap-1.5">
           <PublicMobileNav items={NAV_ITEMS} />
           <Link href="/" className="flex items-center gap-2 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600">

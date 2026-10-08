@@ -163,3 +163,73 @@ a:focus-visible, button:focus-visible {
   outline-offset: 3px;
   border-radius: 10px;
 }
+
+/* ── Landing page motion (animate / emil-design-eng skills) ───────────────────────────
+   Marketing page, seen on first visit: entrances and explanatory loops are allowed.
+   transform + opacity only, custom curves, reduced motion handled at the bottom. */
+
+/* Hero: copy enters in sequence, the screenshot settles from a slight 3D tilt.
+   The screenshot is never faded (it may be the LCP element), only transformed. */
+@keyframes hero-copy-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes hero-shot-in {
+  from { transform: perspective(1800px) rotateX(9deg) translateY(36px) scale(0.985); }
+  to { transform: perspective(1800px) rotateX(0deg) translateY(0) scale(1); }
+}
+.hero-copy > * { animation: hero-copy-in 700ms var(--ease-drawer) both; }
+.hero-copy > *:nth-child(2) { animation-delay: 70ms; }
+.hero-copy > *:nth-child(3) { animation-delay: 140ms; }
+.hero-shot { transform-origin: 50% 0%; animation: hero-shot-in 1100ms var(--ease-drawer) 120ms both; }
+
+@keyframes fade-only { from { opacity: 0; } to { opacity: 1; } }
+
+/* Subtle dot texture, faded out towards the edges. */
+.dot-field {
+  background-image: radial-gradient(rgb(15 23 42 / 0.14) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 72% 68% at 50% 50%, #000 45%, transparent 88%);
+}
+.dot-field-dark {
+  background-image: radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 70% 80% at 85% 20%, #000 20%, transparent 70%);
+}
+
+/* Header gains its shadow once the page is scrolled (state indication). CSS scroll
+   timeline, no scroll listener; browsers without support simply keep the base style. */
+.header-bar::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  box-shadow: 0 10px 30px -12px rgb(15 23 42 / 0.28);
+  opacity: 0;
+}
+@supports (animation-timeline: scroll()) {
+  @keyframes header-raise { to { opacity: 1; } }
+  .header-bar::after { animation: header-raise linear both; animation-timeline: scroll(root); animation-range: 0 140px; }
+}
+@supports not (animation-timeline: scroll()) {
+  .header-bar::after { opacity: 0.6; }
+}
+
+/* Integration diagrams: a pulse travels along the connector to show sync direction. */
+@keyframes flow-travel {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(340%); }
+}
+.flow-pulse { animation: flow-travel 2.6s linear infinite; }
+
+/* Getting-started timeline fills step by step as it scrolls into view (explanation).
+   Fallback without scroll timelines: fully filled. */
+.step-fill { transform-origin: 0 50%; }
+@supports (animation-timeline: view()) {
+  @keyframes step-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  .step-fill { animation: step-fill linear both; animation-timeline: view(); animation-range: cover var(--fill-from, 10%) cover var(--fill-to, 25%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-copy > * { animation: fade-only 300ms ease both; animation-delay: 0ms !important; }
+  .hero-shot { animation: none; }
+  .flow-pulse { animation: none; opacity: 0; }
+  .step-fill { animation: none; transform: none; }
+}

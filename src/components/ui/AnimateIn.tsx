@@ -46,7 +46,7 @@ export function AnimateIn({
   // Reduced motion keeps the fade (it aids comprehension of what's changing) but drops
   // the translate/scale movement, per prefers-reduced-motion guidance.
   const from = reducedMotion ? 'none' :
-    direction === 'up' ? 'translateY(28px)' :
+    direction === 'up' ? 'translateY(20px)' :
     direction === 'left' ? 'translateX(-28px)' :
     direction === 'right' ? 'translateX(28px)' :
     direction === 'scale' ? 'scale(0.95) translateY(10px)' : 'none';
@@ -58,7 +58,8 @@ export function AnimateIn({
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? 'none' : from,
-        transition: `opacity 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}ms, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}ms`,
+        // iOS-like drawer curve (emil-design-eng) for a heavier, calmer settle.
+        transition: `opacity 0.8s cubic-bezier(0.32,0.72,0,1) ${delay}ms, transform 0.8s cubic-bezier(0.32,0.72,0,1) ${delay}ms`,
       }}
     >
       {children}
