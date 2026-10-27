@@ -577,6 +577,7 @@ interface AppStore {
     ordererEmail?: string;
   }) => void;
   deleteOrder: (id: string) => void;
+  cancelOrder: (id: string) => void;
   returnMachine: (orderId: string, data: {
     returnCondition: string;
     returnNotes: string;
@@ -1245,6 +1246,36 @@ export const useStore = create<AppStore>()((set, get) => ({
       }
       Promise.all(ops).then((results) => {
         results.forEach((r, i) => { if (r.error) console.error(`sync editOrder[${i}]:`, r.error); });
+      });
+    }
+  },
+
+  // Annulling an order used to be a plain status update (updateOrder), which never released the
+  // machine — a machine cancelled mid-rental stayed stuck on "uthyrd" forever, with no order left
+  // to point back to it. Mirrors the same releasesMachine check deleteOrder already does.
+  cancelOrder: (id) => {
+    const { organizationId } = get();
+    const order = get().orders.find((o) => o.id === id);
+    if (!order) return;
+    const now = new Date().toISOString();
+    const releasesMachine = order.status === 'aktiv' || order.status === 'reserverad';
+
+    set((s) => ({
+      orders: s.orders.map((o) => (o.id === id ? { ...o, status: 'annullerad' as const } : o)),
+      machines: releasesMachine
+        ? s.machines.map((m) => (m.id === order.machineId ? { ...m, status: 'i_lager' as const, updatedAt: now } : m))
+        : s.machines,
+    }));
+
+    if (organizationId) {
+      const ops: Promise<{ error: unknown }>[] = [
+        sb().from('orders').update({ status: 'annullerad' }).eq('id', id) as unknown as Promise<{ error: unknown }>,
+      ];
+      if (releasesMachine) {
+        ops.push(sb().from('machines').update({ status: 'i_lager', updated_at: now }).eq('id', order.machineId) as unknown as Promise<{ error: unknown }>);
+      }
+      Promise.all(ops).then((results) => {
+        results.forEach((r, i) => { if (r.error) console.error(`sync cancelOrder[${i}]:`, r.error); });
       });
     }
   },

@@ -13,7 +13,7 @@ import { ARTICLE_UNIT_LABELS } from '@/lib/types';
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { orders, machines, customers, articles, members, updateOrder, deleteOrder, addInvoicePeriod, editInvoicePeriod, markInvoicePeriodSent, swapOrderMachine } = useStore();
+  const { orders, machines, customers, articles, members, updateOrder, deleteOrder, cancelOrder, addInvoicePeriod, editInvoicePeriod, markInvoicePeriodSent, swapOrderMachine } = useStore();
   const getMemberName = (userId: string) => members.find((m) => m.id === userId)?.fullName ?? 'Okänd användare';
   const [sendingToFortnox, setSendingToFortnox] = useState(false);
   const [fortnoxError, setFortnoxError] = useState<string | null>(null);
@@ -89,7 +89,7 @@ export default function OrderDetailPage() {
   const handleDeleteOrder = () => setDialog('delete');
 
   const confirmCancelOrder = () => {
-    updateOrder(order.id, { status: 'annullerad' });
+    cancelOrder(order.id);
     setDialog(null);
   };
 

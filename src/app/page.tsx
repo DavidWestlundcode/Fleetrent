@@ -113,6 +113,20 @@ function PrimaryCta({ href = '/kom-igang', children, inverted = false }: { href?
   );
 }
 
+function SecondaryCta({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="group inline-flex items-center gap-3 pl-5 pr-2 py-2 rounded-xl text-[15px] font-semibold text-slate-900 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-[background-color,border-color] duration-150 ease-out-strong active:scale-[0.97]"
+    >
+      {children}
+      <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 transition-transform duration-200 ease-out-strong group-hover:translate-x-0.5">
+        <ArrowRight className="w-4 h-4" strokeWidth={2} />
+      </span>
+    </Link>
+  );
+}
+
 function TextLink({ href, children, className = '' }: { href: string; children: React.ReactNode; className?: string }) {
   return (
     <Link href={href} className={`group inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-slate-900 ${className}`}>
@@ -218,10 +232,11 @@ export default function LandingPage() {
                 Uthyrningssystem för maskiner, truckar och liftar
               </h1>
               <p className="mt-6 text-[17px] sm:text-[18px] text-slate-500 leading-relaxed max-w-[44ch] text-pretty">
-                Bokningar, hyresavtal, utlämning, retur och fakturaunderlag till Fortnox i ett system. Byggt för företag som hyr ut maskiner.
+                Bokningar, hyresavtal, utlämning, retur och fakturaunderlag till Fortnox i ett system. Byggt för företag som hyr ut maskiner — behöver ni något mer skräddarsytt bygger vi en egen dashboard efter er verksamhet, oavsett om ni hyr ut maskiner, verktyg eller personal.
               </p>
-              <div className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-4">
+              <div className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-4">
                 <PrimaryCta>Boka demo</PrimaryCta>
+                <SecondaryCta href="/kontakt">Skapa din egen dashboard</SecondaryCta>
                 <TextLink href="/demo">Prova demon</TextLink>
               </div>
             </div>
