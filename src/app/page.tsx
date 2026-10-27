@@ -236,7 +236,7 @@ export default function LandingPage() {
               </p>
               <div className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-4">
                 <PrimaryCta>Boka demo</PrimaryCta>
-                <SecondaryCta href="/kontakt">Skapa din egen dashboard</SecondaryCta>
+                <SecondaryCta href="/skraddarsydd-dashboard">Skapa din egen dashboard</SecondaryCta>
                 <TextLink href="/demo">Prova demon</TextLink>
               </div>
             </div>
