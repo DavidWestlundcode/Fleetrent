@@ -118,6 +118,16 @@ export function calcRentalBreakdown(
   }
   const weeksEnd = isoDate(new Date(new Date(cursor).getTime() - 86400000));
 
+  // A month/week block's rate is understood to cover its full span through the boundary day
+  // where the next block would start (e.g. "1 månad från den 28:e" covers through the 28:e nästa
+  // månad) — so once at least one such block has been counted, leftover daily billing starts the
+  // day AFTER that boundary, not on it. Without this, an end date landing exactly on the
+  // month/week anniversary — the common case right when the "en månad sedan senaste fakturan"
+  // reminder fires — always produced one stray extra day on top of an otherwise-clean period.
+  if (months > 0 || weeks > 0) {
+    cursor = isoDate(new Date(new Date(cursor).getTime() + 86400000));
+  }
+
   const daysStart = cursor;
   const days = cursor <= endDate
     ? (chargeWeekends ? daysBetween(cursor, endDate) : countBusinessDays(cursor, endDate))
