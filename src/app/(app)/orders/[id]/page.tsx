@@ -141,6 +141,14 @@ export default function OrderDetailPage() {
     }
   };
 
+  // Zigned has no reliable way to detect a cancellation made directly in their dashboard (no
+  // webhook wired up, and "Kontrollera status" only maps a couple of lifecycle states) — this
+  // just lets someone mark it cancelled here so the order isn't stuck showing "Väntar på
+  // kundens signering" forever, and a new signing request can be sent.
+  const handleCancelSigning = () => {
+    updateOrder(order.id, { signingStatus: 'cancelled' });
+  };
+
   const handleDownloadAgreement = async () => {
     setDownloadingAgreement(true);
     try {
@@ -247,7 +255,7 @@ export default function OrderDetailPage() {
                 </button>
               </>
             )}
-            {(order.status === 'aktiv' || order.status === 'reserverad') && !order.signingStatus && (
+            {(order.status === 'aktiv' || order.status === 'reserverad') && (!order.signingStatus || order.signingStatus === 'cancelled') && (
               <button
                 onClick={() => setDialog('sendForSigning')}
                 disabled={sendingToZigned}
@@ -369,7 +377,19 @@ export default function OrderDetailPage() {
                 {checkingZignedStatus ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                 Kontrollera status
               </button>
+              <button
+                onClick={handleCancelSigning}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
+                Avbryt signering
+              </button>
             </div>
+          </div>
+        )}
+
+        {order.signingStatus === 'cancelled' && (
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center gap-3">
+            <FileSignature className="w-5 h-5 text-slate-400 shrink-0" />
+            <p className="text-sm font-semibold text-slate-600 flex-1">Signeringen avbröts. Skicka en ny via "Skicka för signering" ovan om ni vill försöka igen.</p>
           </div>
         )}
 

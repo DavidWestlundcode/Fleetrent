@@ -1167,6 +1167,9 @@ export const useStore = create<AppStore>()((set, get) => ({
       if (updates.orderArticles !== undefined) dbUpdates.order_articles = updates.orderArticles;
       if (updates.invoicePeriods !== undefined) dbUpdates.invoice_periods = updates.invoicePeriods;
       if (updates.internalNotes !== undefined) dbUpdates.internal_notes = updates.internalNotes;
+      if (updates.signingStatus !== undefined) dbUpdates.signing_status = updates.signingStatus;
+      if (updates.zignedAgreementId !== undefined) dbUpdates.zigned_agreement_id = updates.zignedAgreementId;
+      if (updates.signingUrl !== undefined) dbUpdates.signing_url = updates.signingUrl;
       if (Object.keys(dbUpdates).length > 0) {
         syncQuery(sb().from('orders').update(dbUpdates).eq('id', id), 'sync updateOrder:');
       }
