@@ -146,6 +146,17 @@ function computeNotifications(
         href: `/orders/${o.id}`,
       });
     }
+
+    // Avtalshyra: genererad delfaktura väntar på att skickas till Fortnox
+    if (o.isLongTerm && o.invoicePeriods?.some((p) => !p.sentToAccounting)) {
+      notifs.push({
+        id: `contract-invoice-pending-${o.id}`,
+        type: 'success',
+        title: `Delfaktura redo att skickas — ${o.orderNumber}`,
+        desc: `${label}${customerName ? ` · ${customerName}` : ''}`,
+        href: `/orders/${o.id}`,
+      });
+    }
   });
 
   // Maskiner på service
