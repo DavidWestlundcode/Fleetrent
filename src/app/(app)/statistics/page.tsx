@@ -85,7 +85,7 @@ export default function StatisticsPage() {
       .map((m) => {
         const revenue = revenueOf(m.id);
         const cost = costOf(m.id);
-        return { id: m.id, name: m.name, intäkt: revenue, kostnad: cost, netto: revenue - cost };
+        return { id: m.id, name: m.name, internalCode: m.internalCode, intäkt: revenue, kostnad: cost, netto: revenue - cost };
       })
       .filter((d) => d.intäkt > 0 || d.kostnad > 0)
       .sort((a, b) => b.netto - a.netto),
@@ -93,7 +93,10 @@ export default function StatisticsPage() {
   );
   const machineROIData = useMemo(() => {
     const list = roiView === 'best' ? machineROIAll : [...machineROIAll].reverse();
-    return list.slice(0, ROI_CHART_SIZE).map((d) => ({ ...d, label: d.name.length > 26 ? d.name.slice(0, 24) + '…' : d.name }));
+    return list.slice(0, ROI_CHART_SIZE).map((d) => {
+      const fullName = d.internalCode ? `${d.name} (${d.internalCode})` : d.name;
+      return { ...d, fullName, label: fullName.length > 26 ? fullName.slice(0, 24) + '…' : fullName };
+    });
   }, [machineROIAll, roiView]);
   const estimatedCostCount = useMemo(() => [...costMap.values()].filter((c) => c.monthsEstimated).length, [costMap]);
 
@@ -231,7 +234,7 @@ export default function StatisticsPage() {
                 <Tooltip
                   contentStyle={tooltipStyle}
                   cursor={{ fill: '#F8FAFC' }}
-                  labelFormatter={(_, p) => (p?.[0]?.payload as { name?: string } | undefined)?.name ?? ''}
+                  labelFormatter={(_, p) => (p?.[0]?.payload as { fullName?: string } | undefined)?.fullName ?? ''}
                   formatter={(v, n) => [formatCurrency(Number(v)), n]}
                 />
                 <Bar dataKey="intäkt" name="Intäkt" fill="#10B981" radius={[0, 4, 4, 0]} />
