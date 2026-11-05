@@ -1186,6 +1186,20 @@ export const useStore = create<AppStore>()((set, get) => ({
     const machineChanged = data.machineId !== oldOrder.machineId;
     const customerChanged = data.customerId !== oldOrder.customerId;
 
+    // Moving startDate across "today" should flip aktiv <-> reserverad, same as the status this
+    // order would've gotten had it been created with the new date — otherwise pushing a just-created
+    // order's start to tomorrow leaves it stuck showing "Aktiv" (and the machine stuck "Uthyrd")
+    // until nothing ever corrects it, since activateReservedOrders only moves reserverad -> aktiv,
+    // never the other way.
+    const today = new Date().toISOString().split('T')[0];
+    const statusManaged = oldOrder.status === 'aktiv' || oldOrder.status === 'reserverad';
+    const recomputedStatus: Order['status'] | undefined =
+      statusManaged && data.startDate !== oldOrder.startDate
+        ? (data.startDate > today ? 'reserverad' : 'aktiv')
+        : undefined;
+    const effectiveStatus = recomputedStatus ?? oldOrder.status;
+    const statusChanged = effectiveStatus !== oldOrder.status;
+
     // Changing the customer shouldn't retroactively move already-invoiced revenue to the new
     // customer — snapshot the old customer onto every existing period that doesn't already carry
     // one, so getCustomerTotalSpent keeps attributing past delfakturor to whoever was actually
@@ -1199,9 +1213,13 @@ export const useStore = create<AppStore>()((set, get) => ({
       if (machineChanged) {
         machines = machines.map((m) => {
           if (m.id === oldOrder.machineId) return { ...m, status: 'i_lager' as const, updatedAt: now };
-          if (m.id === data.machineId) return { ...m, status: 'uthyrd' as const, updatedAt: now };
+          if (m.id === data.machineId) return { ...m, status: statusManaged && effectiveStatus === 'reserverad' ? 'i_lager' as const : 'uthyrd' as const, updatedAt: now };
           return m;
         });
+      } else if (statusChanged && statusManaged) {
+        machines = machines.map((m) =>
+          m.id === data.machineId ? { ...m, status: effectiveStatus === 'aktiv' ? 'uthyrd' as const : 'i_lager' as const, updatedAt: now } : m
+        );
       }
       let customers = s.customers;
       if (customerChanged && isActive) {
@@ -1214,7 +1232,7 @@ export const useStore = create<AppStore>()((set, get) => ({
       const orders = s.orders.map((o) =>
         o.id === orderId
           ? {
-              ...o, ...data,
+              ...o, ...data, status: effectiveStatus,
               ...(invoicePeriodsAfterSwap ? { invoicePeriods: invoicePeriodsAfterSwap } : {}),
               events: [
                 ...o.events,
@@ -1239,7 +1257,9 @@ export const useStore = create<AppStore>()((set, get) => ({
       }) as unknown as Promise<{ error: unknown }>);
       if (machineChanged) {
         ops.push(client.from('machines').update({ status: 'i_lager', updated_at: now }).eq('id', oldOrder.machineId) as unknown as Promise<{ error: unknown }>);
-        ops.push(client.from('machines').update({ status: 'uthyrd', updated_at: now }).eq('id', data.machineId) as unknown as Promise<{ error: unknown }>);
+        ops.push(client.from('machines').update({ status: statusManaged && effectiveStatus === 'reserverad' ? 'i_lager' : 'uthyrd', updated_at: now }).eq('id', data.machineId) as unknown as Promise<{ error: unknown }>);
+      } else if (statusChanged && statusManaged) {
+        ops.push(client.from('machines').update({ status: effectiveStatus === 'aktiv' ? 'uthyrd' : 'i_lager', updated_at: now }).eq('id', data.machineId) as unknown as Promise<{ error: unknown }>);
       }
       if (customerChanged && isActive) {
         const updatedOldCust = get().customers.find((c) => c.id === oldOrder.customerId);
