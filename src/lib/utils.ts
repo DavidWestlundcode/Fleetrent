@@ -202,16 +202,20 @@ function getEasterSunday(year: number): Date {
   const m = Math.floor((a + 11 * h + 22 * l) / 451);
   const month = Math.floor((h + l - 7 * m + 114) / 31);
   const day = ((h + l - 7 * m + 114) % 31) + 1;
-  return new Date(year, month - 1, day);
+  return new Date(Date.UTC(year, month - 1, day));
 }
 
 function isoDate(d: Date): string {
   return d.toISOString().split('T')[0];
 }
 
+// All date arithmetic here is done in UTC (Date.UTC / getUTCDay / setUTCDate), matching how
+// ISO date-only strings are parsed and formatted throughout this file. Mixing in local-time
+// Date methods previously shifted the movable holidays (midsommar, alla helgons dag, påsk, …)
+// back a day in any UTC+ timezone (e.g. Sweden), since isoDate() always formats via UTC.
 export function getSwedishHolidays(year: number): Set<string> {
   const easter = getEasterSunday(year);
-  const add = (d: Date, n: number) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
+  const add = (d: Date, n: number) => { const r = new Date(d); r.setUTCDate(r.getUTCDate() + n); return r; };
   const s = new Set<string>();
 
   // Fixed
@@ -221,13 +225,13 @@ export function getSwedishHolidays(year: number): Set<string> {
   s.add(`${year}-12-26`); s.add(`${year}-12-31`);
 
   // Midsommarafton — fredag 19-25 juni
-  const mid = new Date(year, 5, 19);
-  while (mid.getDay() !== 5) mid.setDate(mid.getDate() + 1);
+  const mid = new Date(Date.UTC(year, 5, 19));
+  while (mid.getUTCDay() !== 5) mid.setUTCDate(mid.getUTCDate() + 1);
   s.add(isoDate(mid)); s.add(isoDate(add(mid, 1)));
 
   // Alla helgons dag — lördag 31 okt–6 nov
-  const allS = new Date(year, 9, 31);
-  while (allS.getDay() !== 6) allS.setDate(allS.getDate() + 1);
+  const allS = new Date(Date.UTC(year, 9, 31));
+  while (allS.getUTCDay() !== 6) allS.setUTCDate(allS.getUTCDate() + 1);
   s.add(isoDate(allS));
 
   // Easter-based
