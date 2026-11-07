@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Check, Minus } from 'lucide-react';
-import { AnimateIn } from '@/components/ui/AnimateIn';
+import { AnimateIn, CountUp } from '@/components/ui/AnimateIn';
 import { Logo } from '@/components/ui/Logo';
 import PublicHeader from '@/components/public/PublicHeader';
 import PublicFooter from '@/components/public/PublicFooter';
@@ -137,10 +137,10 @@ function TextLink({ href, children, className = '' }: { href: string; children: 
 }
 
 const FACTS = [
-  { value: '1 495 kr', label: 'per månad för Start, exkl. moms' },
-  { value: '0 kr', label: 'i installationsavgift och ingen bindningstid' },
-  { value: '30 min', label: 'mellan varje synk med Serviceprotokoll' },
-  { value: '3 roller', label: 'admin, säljare och verkstad' },
+  { end: 1495, suffix: ' kr', label: 'per månad för Start, exkl. moms' },
+  { end: 0, suffix: ' kr', label: 'i installationsavgift och ingen bindningstid' },
+  { end: 30, suffix: ' min', label: 'mellan varje synk med Serviceprotokoll' },
+  { end: 3, suffix: ' roller', label: 'admin, säljare och verkstad' },
 ];
 
 const WITHOUT = [
@@ -231,8 +231,8 @@ export default function LandingPage() {
               <h1 className="text-[38px] sm:text-[50px] lg:text-[54px] font-semibold text-slate-950 tracking-[-0.035em] leading-[1.04] text-balance">
                 Uthyrningssystem för maskiner, truckar och liftar
               </h1>
-              <p className="mt-6 text-[17px] sm:text-[18px] text-slate-500 leading-relaxed max-w-[44ch] text-pretty">
-                Bokningar, hyresavtal, utlämning, retur och fakturaunderlag till Fortnox i ett system. Byggt för företag som hyr ut maskiner — behöver ni något mer skräddarsytt bygger vi en egen dashboard efter er verksamhet, oavsett om ni hyr ut maskiner, verktyg eller personal.
+              <p className="mt-6 text-[17px] sm:text-[18px] text-slate-500 leading-relaxed max-w-[40ch] text-pretty">
+                Bokningar, hyresavtal, utlämning, retur och fakturaunderlag till Fortnox i ett system. Behöver ni något mer skräddarsytt bygger vi en egen dashboard efter er verksamhet.
               </p>
               <div className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-4">
                 <PrimaryCta>Boka demo</PrimaryCta>
@@ -278,14 +278,16 @@ export default function LandingPage() {
         <section aria-label="FleetOS i siffror" className="px-4 sm:px-6 pt-16 sm:pt-20">
           {/* Left rule between columns only: odd cells on mobile (2 cols) and the first cell on desktop (4 cols) start flush with the page edge. */}
           <dl className="max-w-6xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-y-10">
-            {FACTS.map(({ value, label }, i) => (
+            {FACTS.map(({ end, suffix, label }, i) => (
               <AnimateIn
                 key={label}
                 delay={i * 60}
                 className="flex flex-col-reverse justify-end pl-6 border-l border-slate-200/80 max-lg:odd:pl-0 max-lg:odd:border-l-0 lg:pl-8 lg:first:pl-0 lg:first:border-l-0"
               >
                 <dt className="mt-3 text-[14px] text-slate-500 leading-snug max-w-[24ch]">{label}</dt>
-                <dd className="text-[32px] sm:text-[42px] font-semibold text-slate-950 tracking-[-0.03em] leading-none tabular-nums">{value}</dd>
+                <dd className="text-[32px] sm:text-[42px] font-semibold text-slate-950 tracking-[-0.03em] leading-none tabular-nums">
+                  <CountUp end={end} suffix={suffix} format />
+                </dd>
               </AnimateIn>
             ))}
           </dl>
@@ -464,7 +466,7 @@ export default function LandingPage() {
                     <Link href={href} className="group grid grid-cols-1 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)_auto] gap-3 md:gap-10 items-center py-8 md:-mx-5 md:px-5 rounded-[14px] transition-colors duration-200 hover:bg-slate-50">
                       <h3 className="text-[20px] sm:text-[22px] font-semibold text-slate-950 tracking-tight transition-colors group-hover:text-blue-700">{title}</h3>
                       <p className="text-[15px] text-slate-500 leading-relaxed text-pretty">{desc}</p>
-                      <span className="hidden md:flex items-center justify-center w-10 h-10 rounded-xl ring-1 ring-slate-200 text-slate-400 transition-[background-color,color,transform] duration-200 ease-out-strong group-hover:bg-slate-950 group-hover:text-white group-hover:ring-slate-950 group-hover:translate-x-0.5">
+                      <span className="hidden md:flex items-center justify-center w-10 h-10 rounded-xl ring-1 ring-slate-200 text-slate-400 transition-[background-color,color,transform] duration-200 ease-out-strong group-hover:bg-blue-600 group-hover:text-white group-hover:ring-blue-600 group-hover:translate-x-0.5">
                         <ArrowRight className="w-4 h-4" strokeWidth={1.75} />
                       </span>
                     </Link>

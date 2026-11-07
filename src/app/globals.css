@@ -139,6 +139,12 @@ body {
   mix-blend-mode: overlay;
 }
 
+/* Brand-colored text selection instead of the OS/browser default blue. */
+::selection {
+  background: #BFDBFE;
+  color: #0F172A;
+}
+
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;

@@ -67,10 +67,18 @@ export function AnimateIn({
   );
 }
 
-export function CountUp({ end, suffix = '', prefix = '' }: { end: number; suffix?: string; prefix?: string }) {
+export function CountUp({
+  end, suffix = '', prefix = '', format = false,
+}: {
+  end: number; suffix?: string; prefix?: string;
+  /** Thousands-separated sv-SE formatting (e.g. 1495 -> "1 495"). A function prop can't cross
+   *  the server/client boundary, so this is a flag the client component formats itself. */
+  format?: boolean;
+}) {
   const ref = useRef<HTMLSpanElement>(null);
   const [count, setCount] = useState(0);
   const [on, setOn] = useState(false);
+  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   useEffect(() => {
     const el = ref.current;
@@ -82,6 +90,7 @@ export function CountUp({ end, suffix = '', prefix = '' }: { end: number; suffix
 
   useEffect(() => {
     if (!on) return;
+    if (reducedMotion) { setCount(end); return; }
     const t0 = Date.now();
     const dur = 1800;
     const tick = () => {
@@ -90,7 +99,7 @@ export function CountUp({ end, suffix = '', prefix = '' }: { end: number; suffix
       if (p < 1) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
-  }, [on, end]);
+  }, [on, end, reducedMotion]);
 
-  return <span ref={ref}>{prefix}{count}{suffix}</span>;
+  return <span ref={ref}>{prefix}{format ? count.toLocaleString('sv-SE') : count}{suffix}</span>;
 }
