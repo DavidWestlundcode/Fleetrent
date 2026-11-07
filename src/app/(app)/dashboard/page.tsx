@@ -7,7 +7,7 @@ import {
 } from 'recharts';
 import {
   Truck, Package, AlertTriangle, TrendingUp, Users, Clock,
-  Wrench, CheckCircle2, ArrowRight, Plus, BarChart3,
+  Wrench, CheckCircle2, ArrowRight, Plus, BarChart3, FileText,
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import StatCard from '@/components/ui/StatCard';
@@ -176,34 +176,52 @@ export default function DashboardPage() {
                 <p className="text-[11px] text-slate-400 mt-0.5">Senaste 12 månader</p>
               </div>
             </div>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={revenueData} margin={{ top: 0, right: 0, left: -15, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                <Tooltip
-                  formatter={(v) => [formatCurrency(Number(v)), 'Intäkt']}
-                  contentStyle={{ borderRadius: 10, border: '1px solid #E2E8F0', fontSize: 12, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}
-                  cursor={{ fill: '#F8FAFC' }}
-                />
-                <Bar dataKey="revenue" fill="#3B82F6" radius={[5, 5, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {revenueData.every((d) => d.revenue === 0) ? (
+              <div className="flex flex-col items-center justify-center h-[200px] text-center px-6">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                  <TrendingUp className="w-5 h-5 text-slate-400" />
+                </div>
+                <p className="text-[13px] font-medium text-slate-700">Ingen intäkt ännu</p>
+                <p className="text-[11px] text-slate-400 mt-1">Trenden visas här när första ordern faktureras</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={revenueData} margin={{ top: 0, right: 0, left: -15, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip
+                    formatter={(v) => [formatCurrency(Number(v)), 'Intäkt']}
+                    contentStyle={{ borderRadius: 10, border: '1px solid #E2E8F0', fontSize: 12, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }}
+                    cursor={{ fill: '#F8FAFC' }}
+                  />
+                  <Bar dataKey="revenue" fill="#3B82F6" radius={[5, 5, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
             <h2 className="text-[14px] font-semibold text-slate-900 mb-1">Flottans status</h2>
             <p className="text-[11px] text-slate-400 mb-3">Fördelning just nu</p>
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie data={fleetStatusData} cx="50%" cy="50%" innerRadius={48} outerRadius={72} paddingAngle={3} dataKey="value">
-                  {fleetStatusData.map((entry, i) => (
-                    <Cell key={i} fill={MACHINE_STATUS_COLORS[entry.name] ?? '#94A3B8'} />
-                  ))}
-                </Pie>
-                <Legend iconType="circle" iconSize={7} formatter={(value) => <span style={{ fontSize: 11, color: '#64748B' }}>{value}</span>} />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="relative">
+              <ResponsiveContainer width="100%" height={180}>
+                <PieChart>
+                  <Pie data={fleetStatusData} cx="50%" cy="50%" innerRadius={48} outerRadius={72} paddingAngle={fleetStatusData.length > 1 ? 3 : 0} dataKey="value" isAnimationActive={false}>
+                    {fleetStatusData.map((entry, i) => (
+                      <Cell key={i} fill={MACHINE_STATUS_COLORS[entry.name] ?? '#94A3B8'} />
+                    ))}
+                  </Pie>
+                  <Legend iconType="circle" iconSize={7} formatter={(value) => <span style={{ fontSize: 11, color: '#64748B' }}>{value}</span>} />
+                </PieChart>
+              </ResponsiveContainer>
+              {machines.length > 0 && (
+                <div className="absolute inset-x-0 top-[81px] -translate-y-1/2 flex flex-col items-center pointer-events-none">
+                  <span className="text-[22px] font-semibold text-slate-900 leading-none tabular-nums">{machines.length}</span>
+                  <span className="text-[11px] text-slate-400 mt-1">{machines.length === 1 ? 'maskin' : 'maskiner'}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -217,28 +235,40 @@ export default function DashboardPage() {
                 Visa alla <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
-            <div className="divide-y divide-slate-50">
-              {recentOrders.map((order) => {
-                const machine = machines.find((m) => m.id === order.machineId);
-                const customer = customers.find((c) => c.id === order.customerId);
-                return (
-                  <Link
-                    key={order.id}
-                    href={`/orders/${order.id}`}
-                    className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50/80 transition-colors cursor-pointer"
-                  >
-                    <div>
-                      <p className="text-[13px] font-medium text-slate-800">{order.orderNumber}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{customer?.companyName} · {machine?.name}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[13px] font-semibold text-slate-700">{formatCurrency(calcOrderTotal(order))}</span>
-                      <OrderStatusBadge status={order.status} />
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
+            {recentOrders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center px-6">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                  <FileText className="w-5 h-5 text-slate-400" />
+                </div>
+                <p className="text-[13px] font-medium text-slate-700">Inga ordrar ännu</p>
+                <Link href="/orders/new" className="text-[12px] text-blue-600 hover:text-blue-700 font-medium mt-1 transition-colors">
+                  Skapa den första ordern
+                </Link>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-50">
+                {recentOrders.map((order) => {
+                  const machine = machines.find((m) => m.id === order.machineId);
+                  const customer = customers.find((c) => c.id === order.customerId);
+                  return (
+                    <Link
+                      key={order.id}
+                      href={`/orders/${order.id}`}
+                      className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50/80 transition-colors cursor-pointer"
+                    >
+                      <div>
+                        <p className="text-[13px] font-medium text-slate-800">{order.orderNumber}</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">{customer?.companyName} · {machine?.name}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[13px] font-semibold text-slate-700">{formatCurrency(calcOrderTotal(order))}</span>
+                        <OrderStatusBadge status={order.status} />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Top Machines */}
@@ -249,27 +279,39 @@ export default function DashboardPage() {
                 Se statistik <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
-            <div className="divide-y divide-slate-50">
-              {topMachines.map(({ machine, stats }, i) => (
-                <Link
-                  key={machine.id}
-                  href={`/machines/${machine.id}`}
-                  className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50/80 transition-colors cursor-pointer"
-                >
-                  <span className="flex items-center justify-center w-5 h-5 text-[11px] font-bold text-slate-400 bg-slate-100 rounded-full shrink-0">
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium text-slate-800 truncate">{machine.name}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">{stats.totalRentals} uthyrn. · {stats.totalRentalDays} dagar</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-[13px] font-semibold text-slate-700">{formatCurrency(stats.totalRevenue)}</p>
-                    <MachineStatusBadge status={machine.status} />
-                  </div>
+            {topMachines.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center px-6">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                  <Truck className="w-5 h-5 text-slate-400" />
+                </div>
+                <p className="text-[13px] font-medium text-slate-700">Inga maskiner ännu</p>
+                <Link href="/machines/new" className="text-[12px] text-blue-600 hover:text-blue-700 font-medium mt-1 transition-colors">
+                  Lägg till den första maskinen
                 </Link>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-50">
+                {topMachines.map(({ machine, stats }, i) => (
+                  <Link
+                    key={machine.id}
+                    href={`/machines/${machine.id}`}
+                    className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50/80 transition-colors cursor-pointer"
+                  >
+                    <span className="flex items-center justify-center w-5 h-5 text-[11px] font-bold text-slate-400 bg-slate-100 rounded-full shrink-0">
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-medium text-slate-800 truncate">{machine.name}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{stats.totalRentals} uthyrn. · {stats.totalRentalDays} dagar</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-[13px] font-semibold text-slate-700">{formatCurrency(stats.totalRevenue)}</p>
+                      <MachineStatusBadge status={machine.status} />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

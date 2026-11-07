@@ -183,14 +183,24 @@ export default function StatisticsPage() {
               <h2 className="text-[14px] font-semibold text-slate-900">Intäkt per kategori</h2>
               <p className="text-[11px] text-slate-400 mt-0.5">Fördelning per maskintyp</p>
             </div>
-            <ResponsiveContainer width="100%" height={195}>
-              <PieChart>
-                <Pie data={revenueByCategory} cx="50%" cy="50%" innerRadius={44} outerRadius={72} paddingAngle={3} dataKey="value">
-                  {revenueByCategory.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Legend iconType="circle" iconSize={7} formatter={(v) => <span style={{ fontSize: 10, color: '#64748B' }}>{v}</span>} />
-              </PieChart>
-            </ResponsiveContainer>
+            {revenueByCategory.every((c) => c.value === 0) ? (
+              <div className="flex flex-col items-center justify-center h-[195px] text-center px-6">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                  <BarChart2 className="w-5 h-5 text-slate-400" />
+                </div>
+                <p className="text-[13px] font-medium text-slate-700">Ingen intäkt ännu</p>
+                <p className="text-[11px] text-slate-400 mt-1">Visas här när första ordern faktureras</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={195}>
+                <PieChart>
+                  <Pie data={revenueByCategory} cx="50%" cy="50%" innerRadius={44} outerRadius={72} paddingAngle={revenueByCategory.length > 1 ? 3 : 0} dataKey="value" isAnimationActive={false}>
+                    {revenueByCategory.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Pie>
+                  <Legend iconType="circle" iconSize={7} formatter={(v) => <span style={{ fontSize: 10, color: '#64748B' }}>{v}</span>} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -254,6 +264,15 @@ export default function StatisticsPage() {
             <h2 className="text-[14px] font-semibold text-slate-900">Intäkt per kund (top 8)</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">De mest värdefulla kunderna</p>
           </div>
+          {revenueByCustomer.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-[200px] text-center px-6">
+              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                <BarChart2 className="w-5 h-5 text-slate-400" />
+              </div>
+              <p className="text-[13px] font-medium text-slate-700">Ingen intäkt ännu</p>
+              <p className="text-[11px] text-slate-400 mt-1">Visas här när första ordern faktureras</p>
+            </div>
+          ) : (
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={revenueByCustomer} layout="vertical" margin={{ top: 0, right: 20, left: 80, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
@@ -263,6 +282,7 @@ export default function StatisticsPage() {
               <Bar dataKey="value" name="Intäkt" fill="#3B82F6" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          )}
         </div>
 
         {/* Top Machines Table */}

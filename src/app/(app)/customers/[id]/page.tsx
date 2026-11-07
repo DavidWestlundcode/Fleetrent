@@ -18,6 +18,8 @@ export default function CustomerDetailPage() {
   const customer = customers.find((c) => c.id === id);
 
   const [spMachines, setSpMachines] = useState<SpMachine[] | null>(null);
+  const [openFacility, setOpenFacility] = useState<number | null>(null);
+  const [dialog, setDialog] = useState<'deactivate' | 'delete' | 'blocked' | null>(null);
   useEffect(() => {
     if (!customer?.fortnoxCustomerNumber) return;
     fetch(`/api/serviceprotokoll/customer-machines?customerNo=${encodeURIComponent(customer.fortnoxCustomerNumber)}`)
@@ -38,8 +40,6 @@ export default function CustomerDetailPage() {
     );
   }
 
-  const [openFacility, setOpenFacility] = useState<number | null>(null);
-  const [dialog, setDialog] = useState<'deactivate' | 'delete' | 'blocked' | null>(null);
   const activeOrders = customerOrders.filter((o) => o.status === 'aktiv' || o.status === 'reserverad');
   const completedOrders = customerOrders.filter((o) => o.status === 'avslutad');
   const totalSpent = getCustomerTotalSpent(orders, customer.id);

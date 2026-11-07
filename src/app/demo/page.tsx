@@ -311,7 +311,7 @@ function DashboardTab() {
           <p className="text-[11px] text-slate-400 mb-3">Fördelning just nu</p>
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
-              <Pie data={fleetStatus} cx="50%" cy="50%" innerRadius={48} outerRadius={72} paddingAngle={3} dataKey="value">
+              <Pie data={fleetStatus} cx="50%" cy="50%" innerRadius={48} outerRadius={72} paddingAngle={fleetStatus.length > 1 ? 3 : 0} dataKey="value" isAnimationActive={false}>
                 {fleetStatus.map((entry, i) => <Cell key={i} fill={STATUS_COLORS[entry.name] ?? '#94A3B8'} />)}
               </Pie>
               <Legend iconType="circle" iconSize={7} formatter={(v) => <span style={{ fontSize: 11, color: '#64748B' }}>{v}</span>} />
@@ -662,7 +662,7 @@ function StatistikTab() {
           <p className="text-[11px] text-slate-400 mb-3">Fördelning</p>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
-              <Pie data={byCategory} cx="50%" cy="50%" innerRadius={48} outerRadius={72} paddingAngle={3} dataKey="value">
+              <Pie data={byCategory} cx="50%" cy="50%" innerRadius={48} outerRadius={72} paddingAngle={byCategory.length > 1 ? 3 : 0} dataKey="value" isAnimationActive={false}>
                 {byCategory.map((_, i) => <Cell key={i} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />)}
               </Pie>
               <Legend iconType="circle" iconSize={7} formatter={(v) => <span style={{ fontSize: 10.5, color: '#64748B' }}>{v}</span>} />

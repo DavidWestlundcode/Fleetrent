@@ -105,6 +105,9 @@ export default function MachineDetailPage() {
     return months;
   }, [machineOrders, swappedAwayEntries]);
 
+  // Must be before the early return too, for the same reason as revenueChartData above.
+  const machineStats = useMemo(() => getMachineStats(orders, id), [orders, id]);
+
   if (!machine) {
     return (
       <div className="flex items-center justify-center flex-1 text-slate-400">
@@ -135,8 +138,6 @@ export default function MachineDetailPage() {
     machine.powerUnit && { label: 'Aggregat', value: machine.powerUnit },
     machine.cabin && { label: 'Hytt', value: machine.cabin },
   ].filter(Boolean) as { label: string; value: string }[];
-
-  const machineStats = useMemo(() => getMachineStats(orders, machine.id), [orders, machine.id]);
 
   const cost = getMachineCost(machine);
   const totalCosts = cost.total;
@@ -223,8 +224,8 @@ export default function MachineDetailPage() {
                   { label: 'Intern kod', value: machine.internalCode, icon: Hash },
                   { label: 'Drifttimmar', value: `${machine.operatingHours.toLocaleString('sv-SE')} h`, icon: Clock },
                   { label: 'Reg.nummer', value: machine.registrationNumber || '–', icon: Hash },
-                  { label: 'Placering', value: machine.location, icon: MapPin },
-                  { label: 'Inköpsdatum', value: formatDate(machine.purchaseDate), icon: Calendar },
+                  { label: 'Placering', value: machine.location || '–', icon: MapPin },
+                  { label: 'Inköpsdatum', value: machine.purchaseDate ? formatDate(machine.purchaseDate) : '–', icon: Calendar },
                 ].map(({ label, value, icon: Icon }) => (
                   <div key={label}>
                     <p className="text-[11px] text-slate-400 flex items-center gap-1 mb-0.5">

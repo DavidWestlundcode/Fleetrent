@@ -47,6 +47,34 @@ export default function EditCustomerPage() {
   const { customers, updateCustomer } = useStore();
   const customer = customers.find((c) => c.id === id);
 
+  // Hooks must run unconditionally on every render (Rules of Hooks), so they're declared here,
+  // before the "not found" early return below, with safe fallbacks for when customer is undefined.
+  const invParsed = parseAddress(customer?.invoiceAddress ?? '');
+  const delParsed = parseAddress(customer?.deliveryAddress ?? '');
+  const sameAddr = customer ? customer.invoiceAddress === customer.deliveryAddress : true;
+
+  const [form, setForm] = useState({
+    companyName: customer?.companyName ?? '',
+    orgNumber: customer?.orgNumber ?? '',
+    email: customer?.email ?? '',
+    phone: customer?.phone ?? '',
+    fortnoxCustomerNumber: customer?.fortnoxCustomerNumber ?? '',
+    invoiceStreet: invParsed.street,
+    invoiceZip: invParsed.zip,
+    invoiceCity: invParsed.city,
+    deliveryStreet: delParsed.street,
+    deliveryZip: delParsed.zip,
+    deliveryCity: delParsed.city,
+    notes: customer?.notes ?? '',
+  });
+
+  const [contacts, setContacts] = useState<ContactPerson[]>(
+    customer && customer.contacts.length > 0 ? customer.contacts : [{ name: '', phone: '', email: '' }]
+  );
+  const [facilities, setFacilities] = useState<CustomerFacility[]>(customer?.facilities ?? []);
+  const [sameAsInvoice, setSameAsInvoice] = useState(sameAddr);
+  const [openFacility, setOpenFacility] = useState<number | null>(null);
+
   if (!customer) {
     return (
       <div className="flex items-center justify-center flex-1 text-slate-400">
@@ -54,32 +82,6 @@ export default function EditCustomerPage() {
       </div>
     );
   }
-
-  const invParsed = parseAddress(customer.invoiceAddress);
-  const delParsed = parseAddress(customer.deliveryAddress);
-  const sameAddr = customer.invoiceAddress === customer.deliveryAddress;
-
-  const [form, setForm] = useState({
-    companyName: customer.companyName,
-    orgNumber: customer.orgNumber,
-    email: customer.email,
-    phone: customer.phone,
-    fortnoxCustomerNumber: customer.fortnoxCustomerNumber ?? '',
-    invoiceStreet: invParsed.street,
-    invoiceZip: invParsed.zip,
-    invoiceCity: invParsed.city,
-    deliveryStreet: delParsed.street,
-    deliveryZip: delParsed.zip,
-    deliveryCity: delParsed.city,
-    notes: customer.notes,
-  });
-
-  const [contacts, setContacts] = useState<ContactPerson[]>(
-    customer.contacts.length > 0 ? customer.contacts : [{ name: '', phone: '', email: '' }]
-  );
-  const [facilities, setFacilities] = useState<CustomerFacility[]>(customer.facilities ?? []);
-  const [sameAsInvoice, setSameAsInvoice] = useState(sameAddr);
-  const [openFacility, setOpenFacility] = useState<number | null>(null);
 
   const set = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
 
