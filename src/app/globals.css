@@ -9,6 +9,10 @@
   --color-sidebar-hover: #1E293B;
   --color-brand: #2563EB;
   --color-brand-dark: #1D4ED8;
+  /* Landing palette: deep navy, a soft ice blue and jade (a stone green, not a neon). */
+  --color-ink: #0B1630;
+  --color-ice: #A5C8EE;
+  --color-jade: #5BC8A1;
   --font-sans: var(--font-jakarta), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
@@ -174,29 +178,88 @@ a:focus-visible, button:focus-visible {
    Marketing page, seen on first visit: entrances and explanatory loops are allowed.
    transform + opacity only, custom curves, reduced motion handled at the bottom. */
 
-/* Hero: copy enters in sequence, the screenshot settles from a slight 3D tilt.
-   The screenshot is never faded (it may be the LCP element), only transformed. */
+/* Hero: copy enters in sequence. */
 @keyframes hero-copy-in {
   from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: none; }
 }
-@keyframes hero-shot-in {
-  from { transform: perspective(1800px) rotateX(9deg) translateY(36px) scale(0.985); }
-  to { transform: perspective(1800px) rotateX(0deg) translateY(0) scale(1); }
-}
 .hero-copy > * { animation: hero-copy-in 700ms var(--ease-drawer) both; }
 .hero-copy > *:nth-child(2) { animation-delay: 70ms; }
 .hero-copy > *:nth-child(3) { animation-delay: 140ms; }
-.hero-shot { transform-origin: 50% 0%; animation: hero-shot-in 1100ms var(--ease-drawer) 120ms both; }
+
+/* Dark hero: the device photo's own #141414 ground meets the section's. Its light already
+   fades to transparent at the top and right inside the asset; the mask only softens the
+   left and the pedestal's bottom. It rises into place on load; never faded (LCP image). */
+.hero-devices {
+  -webkit-mask-image: linear-gradient(to bottom, #000 83%, transparent 100%),
+    linear-gradient(to right, transparent 0, #000 4%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to bottom, #000 83%, transparent 100%),
+    linear-gradient(to right, transparent 0, #000 4%);
+  mask-composite: intersect;
+  animation: hero-devices-in 1100ms var(--ease-drawer) 120ms both;
+}
+@keyframes hero-devices-in {
+  from { transform: translateY(28px) scale(0.985); }
+  to { transform: none; }
+}
+/* Event cards pop out of the screens after the devices land, then drift very slightly. */
+@keyframes hero-event-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes hero-event-drift {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -5px; }
+}
+.hero-event {
+  animation: hero-event-in 700ms var(--ease-out-strong) both, hero-event-drift 7s ease-in-out 1.6s infinite;
+}
+.hero-event-b { animation-delay: 1150ms, 2.4s; }
+.hero-event-a { animation-delay: 900ms, 1.6s; }
+
+/* The device band: the key light is a real blue, falling off into navy. */
+.device-glow {
+  background:
+    radial-gradient(60% 55% at 50% 38%, rgb(37 99 235 / 0.45), transparent 72%),
+    radial-gradient(40% 40% at 50% 100%, rgb(91 200 161 / 0.10), transparent 70%);
+}
+/* Feature stickers drift on their own phase (inline animation-delay staggers them). */
+.sticker { animation: hero-event-drift 6s ease-in-out infinite; }
+
+/* Where the headline runs over the phone (below lg), a soft shadow keeps it legible. */
+@media (max-width: 1023px) {
+  .hero-shade { text-shadow: 0 2px 18px rgb(0 0 0 / 0.6); }
+}
+/* Mobile hero phone: rises in, then floats; its left edge fades under the headline and its
+   lower part fades out before the lead and CTAs, so that copy never sits on a white screen. */
+.hero-phone {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 38%), linear-gradient(to bottom, #000 52%, transparent 88%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent 0, #000 38%), linear-gradient(to bottom, #000 52%, transparent 88%);
+  mask-composite: intersect;
+  animation: hero-devices-in 1100ms var(--ease-drawer) 120ms both, hero-event-drift 7s ease-in-out 1.4s infinite;
+}
+
+/* Section devices tip up from a tilt as they scroll into view (scroll-linked, no JS). */
+@supports (animation-timeline: view()) {
+  @keyframes device-rise {
+    from { transform: perspective(1600px) rotateX(22deg) translateY(48px) scale(0.94); }
+    to { transform: none; }
+  }
+  .device-rise { transform-origin: 50% 100%; animation: device-rise linear both; animation-timeline: view(); animation-range: entry 5% cover 45%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-devices { animation: none; }
+  .hero-event, .hero-event-a, .hero-event-b { animation: fade-only 300ms ease both; }
+  .sticker, .hero-phone { animation: none; }
+  .device-rise { animation: none; transform: none; }
+}
 
 @keyframes fade-only { from { opacity: 0; } to { opacity: 1; } }
 
 /* Subtle dot texture, faded out towards the edges. */
-.dot-field {
-  background-image: radial-gradient(rgb(15 23 42 / 0.14) 1px, transparent 1px);
-  background-size: 22px 22px;
-  mask-image: radial-gradient(ellipse 72% 68% at 50% 50%, #000 45%, transparent 88%);
-}
 .dot-field-dark {
   background-image: radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px);
   background-size: 22px 22px;
@@ -235,7 +298,6 @@ a:focus-visible, button:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .hero-copy > * { animation: fade-only 300ms ease both; animation-delay: 0ms !important; }
-  .hero-shot { animation: none; }
   .flow-pulse { animation: none; opacity: 0; }
   .step-fill { animation: none; transform: none; }
 }
