@@ -245,19 +245,23 @@ export function getSwedishHolidays(year: number): Set<string> {
 }
 
 // Inclusive of both endpoints, matching daysBetween — the return day is a billable day too.
+// Walks the days in UTC like the rest of this file. Stepping with local-time setDate() in a
+// Swedish browser kept the clock at local midnight+offset, so after the October DST switch the
+// cursor ran an hour past the UTC end and the last day was dropped (10 okt–9 nov gave 20, not 21),
+// and after the March switch isoDate() lagged a day and misplaced the Easter holidays.
 export function countBusinessDays(start: string, end: string): number {
-  const startDate = new Date(start);
-  const endDate = new Date(end);
+  const startDate = new Date(`${start.slice(0, 10)}T00:00:00Z`);
+  const endDate = new Date(`${end.slice(0, 10)}T00:00:00Z`);
   const holidays = new Set<string>();
-  for (let y = startDate.getFullYear(); y <= endDate.getFullYear(); y++) {
+  for (let y = startDate.getUTCFullYear(); y <= endDate.getUTCFullYear(); y++) {
     getSwedishHolidays(y).forEach((h) => holidays.add(h));
   }
   let count = 0;
   const cur = new Date(startDate);
   while (cur <= endDate) {
-    const day = cur.getDay();
+    const day = cur.getUTCDay();
     if (day !== 0 && day !== 6 && !holidays.has(isoDate(cur))) count++;
-    cur.setDate(cur.getDate() + 1);
+    cur.setUTCDate(cur.getUTCDate() + 1);
   }
   return Math.max(1, count);
 }
