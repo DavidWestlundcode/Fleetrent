@@ -136,12 +136,12 @@ function computeNotifications(
       });
     }
 
-    // 30+ dagar utan delfaktura (kortsiktiga ordrar — avtalshyra sköts av cronjobbet)
+    // Hyresmånaden slut, dags för delfaktura (kortsiktiga ordrar — avtalshyra sköts av cronjobbet)
     if (needsPartialInvoice(o)) {
       notifs.push({
         id: `partial-invoice-${o.id}`,
         type: 'warning',
-        title: `En månad sedan senaste faktura — ${o.orderNumber}`,
+        title: `Dags för delfaktura — ${o.orderNumber}`,
         desc: `${label}${customerName ? ` · ${customerName}` : ''}`,
         href: `/orders/${o.id}`,
       });

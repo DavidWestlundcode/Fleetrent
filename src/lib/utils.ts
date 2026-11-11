@@ -488,15 +488,28 @@ export function daysSinceLastInvoice(order: PartialInvoiceOrder): number {
   return Math.floor((Date.now() - new Date(referenceDate).getTime()) / 86400000);
 }
 
+// Last day of the one-month block the next delfaktura covers: it starts the day after the last
+// invoiced day (or on the start date), and ends the day before the same date next month — the
+// same block calcRentalBreakdown prices as exactly one month. 12 okt -> 11 nov, 12 nov -> 11 dec.
+export function nextPartialInvoiceDue(order: PartialInvoiceOrder): string {
+  const periods = order.invoicePeriods ?? [];
+  const nextStart = periods.length > 0
+    ? isoDate(new Date(new Date(lastInvoiceReferenceDate(order)).getTime() + 86400000))
+    : order.startDate;
+  return isoDate(new Date(new Date(addCalendarMonth(nextStart)).getTime() - 86400000));
+}
+
 // Short-term (non-avtalshyra) active orders don't get auto-invoiced by the cron — this flags
-// ones where a full calendar month has passed since the last delfaktura (or the start date, if
-// none exists yet), as a reminder to bill before too much unbilled time accumulates. Long-term
-// orders are excluded since the cron already handles them. Calendar-month-based (not a flat 30
-// days) so this lines up with when the order would actually reach the monthly price tier.
+// them on the last day of each rental month, so a delfaktura created that day (its end date
+// defaults to today) covers exactly one calendar month and the next one starts on the same
+// day-of-month: 12 okt–11 nov, 12 nov–11 dec, … A monthly-priced customer then sees the same
+// amount on every delfaktura. The first reminder used to be measured from the start date and
+// later ones from the last invoiced day, so the first period ran one day long (12 okt–12 nov)
+// and every later one started a day later (13 nov–12 dec). Long-term orders are excluded since
+// the cron already handles them.
 export function needsPartialInvoice(order: PartialInvoiceOrder): boolean {
   if (order.status !== 'aktiv' || order.isLongTerm) return false;
-  const referenceDate = lastInvoiceReferenceDate(order);
-  return addCalendarMonth(referenceDate) <= isoDate(new Date());
+  return nextPartialInvoiceDue(order) <= isoDate(new Date());
 }
 
 // "Försenad" isn't a status that ever gets written to an order — it's computed from
